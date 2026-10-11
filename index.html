@@ -192,9 +192,6 @@ h1.ttl { margin: 0; font: 34px/1.05 var(--disp); text-wrap: balance; text-align:
 .job .jtx b { font: 17px var(--disp); } .job .jtx span { font-size: 12px; color: var(--dim); font-weight: 700; }
 .job .stars { color: var(--accent); font-size: 14px; letter-spacing: 0.06em; }
 .job em { font-style: normal; font: 20px var(--disp); color: var(--good); }
-#dockUi { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; text-align: center; padding: 0 16px; }
-#dockUi b { font: clamp(28px, 7vw, 44px)/1 var(--disp); color: var(--good); text-shadow: 0 4px 0 var(--edge); }
-#dockUi span { font: clamp(16px, 4vw, 22px)/1.2 var(--disp); color: var(--accent); text-shadow: 0 3px 0 var(--edge); }
 #loading { position: absolute; inset: 0; display: grid; place-items: center; background: var(--night); font: 22px var(--disp); }
 @media (max-height: 560px) { .card { gap: 9px; padding: 14px 16px; } .logo { font-size: 40px; } }
 @media (max-width: 420px) { .cards { grid-template-columns: 1fr 1fr; } .pc .art { height: 70px; } .pc b { font-size: 15px; } }
@@ -208,10 +205,10 @@ h1.ttl { margin: 0; font: 34px/1.05 var(--disp); text-wrap: balance; text-align:
     <div id="hTop">
       <div class="pnl" id="pMain"><b id="hCash">$0</b><span id="hSub">0.0 km</span><div class="bar"><i id="hFuel"></i></div></div>
       <div class="pnl" id="pJob">
-        <div class="lbl"><span id="hJobLbl">HOT CARGO TO</span><em id="hStars"></em></div>
-        <b id="hName">Red Fox Logistics</b>
+        <div class="lbl"><span id="hJobLbl">MAP BONUS</span><em id="hStars"></em></div>
+        <b id="hName">x1 cash</b>
         <div class="bar y" id="hProgBar"><i id="hProg"></i></div>
-        <div class="row"><span id="hPay">$1,500</span><span id="hWhere">right exit · 700 m</span></div>
+        <div class="row"><span id="hPay"></span><span id="hWhere"></span></div>
         <div id="hBustRow" hidden><div class="lbl" style="margin-top:6px"><span id="hBustLbl">BUSTED</span><span id="hCops"></span></div><div class="bar r"><i id="hBust"></i></div></div>
       </div>
     </div>
@@ -228,8 +225,7 @@ h1.ttl { margin: 0; font: 34px/1.05 var(--disp); text-wrap: balance; text-align:
     <div id="fps" hidden></div>
   </div>
   <div id="pops"></div>
-  <div id="dockUi" hidden><b id="dockBig"></b><span id="dockSmall"></span></div>
-  <div id="fade"></div>
+    <div id="fade"></div>
   <div class="ov dim" id="menu" hidden></div>
   <div class="ov dim" id="screen" hidden></div>
   <div id="loading">Loading the world…</div>
@@ -394,6 +390,9 @@ var PLACES = [
     buildings: { style: 'chalet', lat: [22, 120] },
     scenery: [{ t: 'pine', n: 3, lat: [14, 150] }, { t: 'rock', n: 1.4, lat: [12, 150] }], landmark: ['matterhorn', 3500] }
 ];
+// map bonus, the same as the main game's: every map multiplies your cash, from x1 up to x2,000 on the hardest
+var MAP_CASH = [1, 1.5, 2.2, 3.3, 5, 7.5, 11, 16, 25, 37, 55, 80, 120, 180, 270, 400, 600, 900, 1350, 2000];
+PLACES.forEach(function (p, i) { p.cash = MAP_CASH[i] || 1; });
 function placeById(id) { for (var i = 0; i < PLACES.length; i++) if (PLACES[i].id === id) return PLACES[i]; return PLACES[0]; }
 var PL = PLACES[0];
 
@@ -597,6 +596,9 @@ function makeMaterials() {
   MAT.terrain = lambert({ vertexColors: true, map: TEX.detail });
   MAT.veg = lambert({ vertexColors: true });
   MAT.vegDS = lambert({ vertexColors: true, side: THREE.DoubleSide });
+  // (grass gets its own material: it's tinted per clump, and three.js r128 can't share a material between tinted and
+  // untinted instances without crashing)
+  MAT.tuft = lambert({ vertexColors: true, side: THREE.DoubleSide });
   MAT.rock = lambert({ vertexColors: true });
   MAT.lampHead = std({ color: col('#8a9098'), emissive: col('#fff1c8'), emissiveIntensity: 0, roughness: 0.4 });
   MAT.glass = std({ color: col('#0d1422'), metalness: 0.9, roughness: 0.06 });
@@ -1177,7 +1179,7 @@ function buildChunk(k) {
   // scenery
   var dens = DENS();
   (PL.scenery || []).forEach(function (sc) {
-    var cnt = Math.round(sc.n * CH / 100 * dens + r() * 0.8), list = [], geos = VEG[sc.t + (sc.snow ? 'Snow' : '')] || VEG[sc.t];
+    var cnt = Math.round(sc.n * CH / 100 * dens * (sc.t === 'rock' ? 1 : 1.6) + r() * 0.8), list = [], geos = VEG[sc.t + (sc.snow ? 'Snow' : '')] || VEG[sc.t];
     if (!geos) return;
     var buckets = geos.map(function () { return []; });
     for (var q = 0; q < cnt; q++) {
@@ -1190,6 +1192,24 @@ function buildChunk(k) {
     }
     buckets.forEach(function (bl, v) { inst(grp, geos[v], sc.t === 'palm' ? MAT.vegDS : sc.t === 'rock' ? MAT.rock : MAT.veg, bl, true); });
   });
+  // ground cover: grass clumps tinted to the ground they grow on (green meadows, dry desert grass), thickest near
+  // the road, and wildflowers where the land is green. None on snow, bare rock or sand.
+  if (QL !== 'low') {
+    var tuf = [[], [], []], flo = [[], [], []], lc = new THREE.Color(), nT = Math.round(720 * dens);
+    for (var q2 = 0; q2 < nT; q2++) {
+      var s2 = s0 + r() * CH, sd2 = r() < 0.5 ? -1 : 1, lat2 = sd2 * (RAIL + 2.5 + Math.pow(r(), 2.1) * 75);
+      world(s2, lat2, o); var G2 = groundAt(o.x, o.z);
+      if (G2.d < RAIL + 2 || (PL.sea && G2.h < seaY() + 0.7) || (FEAT.length && featAt(s2, 10))) continue;
+      landColor(G2.h, G2.y, G2.d, o.x, o.z, lc);
+      var mx = Math.max(lc.r, lc.g, lc.b), mn = Math.min(lc.r, lc.g, lc.b);
+      if (mn > 0.45 || (mx - mn) / mx < 0.28) continue;   // snow, sand and grey rock
+      var green = lc.g > lc.r * 1.02 && lc.g > lc.b;
+      if (green && r() < 0.14) flo[Math.floor(r() * 3)].push([o.x, G2.h - 0.04, o.z, r() * TAU, 0.8 + r() * 0.6]);
+      else tuf[Math.floor(r() * 3)].push([o.x, G2.h - 0.06, o.z, r() * TAU, 0.75 + r() * 0.75, null, 0, 0, lc.clone().multiplyScalar(green ? 1.3 : 1.45)]);
+    }
+    tuf.forEach(function (l, v) { inst(grp, VEG.tuft[v], MAT.tuft, l, false); });
+    flo.forEach(function (l, v) { inst(grp, VEG.flower[v], MAT.veg, l, false); });
+  }
   // buildings
   if (PL.buildings) buildBuildings(grp, s0, s1, r, o);
   // the landmark of this place
@@ -1216,23 +1236,52 @@ var VEG = {};
 function capsule(r, len, seg) { return mergeParts([{ geo: new THREE.CylinderGeometry(r, r, len, seg || 14, 1, true) }, { geo: new THREE.SphereGeometry(r, seg || 14, 8, 0, TAU, 0, Math.PI / 2), m: M4(0, len / 2, 0) }, { geo: new THREE.SphereGeometry(r, seg || 14, 8, 0, TAU, Math.PI / 2, Math.PI / 2), m: M4(0, -len / 2, 0) }]); }
 function vcol(a, b, t) { return col(a).lerp(col(b), clamp(t, 0, 1)); }
 function pineGeo(v, snowy, seed) {
-  var parts = [{ geo: new THREE.CylinderGeometry(0.16, 0.26, 2.6, 8), m: M4(0, 1.3, 0), c: '#5a3a1e' }];
-  for (var k = 0; k < 4; k++) {
-    var r = 2.5 - k * 0.52, h = 3.1 - k * 0.25, y = 2.1 + k * 1.5;
-    parts.push({ geo: new THREE.ConeGeometry(r, h, 16, 2), m: M4(0, y + h / 2, 0, 0, k * 0.7 + seed), cf: function (x, y, z, ny) {
-      var c = vcol('#1d4a2c', '#2f6b3a', noise2(x * 1.3 + seed, y * 1.1) + (y - 2) / 14);
-      if (snowy) c.lerp(CA.setRGB(0.93, 0.96, 1), smooth(0.15, 0.55, ny) * 0.9);
+  var parts = [{ geo: new THREE.CylinderGeometry(0.14, 0.3, 3.2, 9), m: M4(0, 1.6, 0), c: '#5a3a1e' }];
+  // seven layers of branches; each layer's rim is ragged (branch tips) and droops a little at the edge
+  for (var k = 0; k < 7; k++) {
+    var r = 2.7 - k * 0.36, h = 2.2 - k * 0.12, y = 1.9 + k * 1.05, cone = new THREE.ConeGeometry(r, h, 22, 3), p = cone.attributes.position;
+    for (var i = 0; i < p.count; i++) {
+      var px = p.getX(i), pz = p.getZ(i), py = p.getY(i), rad = Math.hypot(px, pz);
+      if (rad < 1e-4) continue;
+      var a = Math.atan2(pz, px), jag = 1 + (noise2(a * 3.2 + seed + k * 5.3, k) - 0.5) * 0.45 + (i % 2 ? 0.08 : -0.06), edge = rad / r;
+      p.setXYZ(i, px * jag, py - edge * edge * 0.35, pz * jag);
+    }
+    cone.computeVertexNormals();
+    parts.push({ geo: cone, m: M4(0, y + h / 2, 0, 0, k * 0.7 + seed), cf: function (x, y, z, ny) {
+      var c = vcol('#173f26', '#2f6b3a', noise2(x * 1.6 + seed, z * 1.6 + y) * 0.7 + (y - 2) / 16).multiplyScalar(0.8 + Math.max(0, ny) * 0.35);
+      if (snowy) c.lerp(CA.setRGB(0.93, 0.96, 1), smooth(0.2, 0.6, ny) * 0.92);
       return c;
     } });
   }
+  parts.push({ geo: new THREE.ConeGeometry(0.45, 1.3, 10), m: M4(0, 9.4, 0), c: snowy ? '#e8eef4' : '#2a5a34' });
   var g = mergeParts(parts); g.scale(v, v, v); return g;
 }
+// leaves lit like a real crown: brighter where they face the sky, darker underneath and deep inside, with dapples
+function crownCF(lc, seed, y0, y1) {
+  return function (x, y, z, ny) { return col(lc).multiplyScalar(0.5 + smooth(y0, y1, y) * 0.32 + Math.max(0, ny) * 0.26 + (noise2(x * 2.1 + seed, z * 2.1 + y) - 0.5) * 0.34); };
+}
 function oakGeo(v, leaf, seed) {
-  var lc = leaf || '#3f7a32', parts = [{ geo: new THREE.CylinderGeometry(0.2, 0.36, 3.4, 9), m: M4(0, 1.7, 0), c: '#5a3f28' }];
-  [[0, 4.8, 0, 2.2], [1.25, 4.2, 0.6, 1.6], [-1.15, 4.4, -0.5, 1.7], [0.2, 5.8, -0.4, 1.5], [-0.4, 4.1, 1.1, 1.4]].forEach(function (b, i) {
-    parts.push({ geo: blob(b[3], 0.22, seed + i * 3.1, 14, 10), m: M4(b[0], b[1], b[2]), cf: function (x, y, z) { return vcol(lc, '#ffffff', 0).multiplyScalar(0.62 + smooth(3, 6.8, y) * 0.5 + (noise2(x * 1.7 + seed, z * 1.7) - 0.5) * 0.3); } });
-  });
+  var lc = leaf || '#3f7a32', r = rng(seed * 31 + 7), parts = [{ geo: new THREE.CylinderGeometry(0.2, 0.4, 3.6, 10), m: M4(0, 1.8, 0), c: '#5a3f28' }];
+  // a few boughs leaving the trunk, then a crown of a dozen overlapping clumps
+  for (var b = 0; b < 4; b++) { var a = b / 4 * TAU + r(); parts.push({ geo: new THREE.CylinderGeometry(0.08, 0.16, 2.2, 6), m: M4(Math.cos(a) * 0.55, 3.6, Math.sin(a) * 0.55, Math.sin(a) * 0.7, 0, -Math.cos(a) * 0.7), c: '#4e3624' }); }
+  var cl = [[0, 5.0, 0, 2.3]];
+  for (var i = 0; i < 11; i++) { var a2 = r() * TAU, d = 1.1 + r() * 1.3, yy = 3.9 + r() * 2.6; cl.push([Math.cos(a2) * d, yy, Math.sin(a2) * d, 1.0 + r() * 0.8]); }
+  cl.forEach(function (q, k) { parts.push({ geo: blob(q[3], 0.24, seed + k * 3.1, 16, 11), m: M4(q[0], q[1], q[2]), cf: crownCF(lc, seed, 3.2, 7.2) }); });
   var g = mergeParts(parts); g.scale(v, v, v); return g;
+}
+// ground cover: a clump of grass blades (grey, so each clump takes the colour of the ground it grows on)
+function tuftGeo(seed) {
+  var r = rng(seed * 19 + 3), parts = [];
+  for (var i = 0; i < 11; i++) { var a = r() * TAU, d = r() * 0.26, h = 0.32 + r() * 0.5; parts.push({ geo: new THREE.ConeGeometry(0.04, h, 3, 1, true), m: M4(Math.cos(a) * d, h / 2, Math.sin(a) * d, Math.sin(a) * 0.35 * r(), r() * TAU, -Math.cos(a) * 0.35 * r()), cf: function (x, y) { var t = clamp(y / 0.7, 0, 1); return new THREE.Color(0.42 + t * 0.55, 0.42 + t * 0.55, 0.42 + t * 0.5); } }); }
+  return mergeParts(parts);
+}
+// wildflowers: green stems with a few bright heads
+function flowerGeo(seed) {
+  var r = rng(seed * 23 + 5), parts = [], cols = [['#f2d040', '#ffffff'], ['#e85a8a', '#b07ae0'], ['#ffffff', '#f08a3a']][seed % 3];
+  for (var i = 0; i < 8; i++) { var a = r() * TAU, d = r() * 0.3, h = 0.3 + r() * 0.35, x = Math.cos(a) * d, z = Math.sin(a) * d;
+    parts.push({ geo: new THREE.ConeGeometry(0.03, h, 3), m: M4(x, h / 2, z), c: '#4a7a32' });
+    if (i % 2 === 0) parts.push({ geo: new THREE.SphereGeometry(0.07, 6, 4), m: M4(x, h, z), c: cols[i % 4 === 0 ? 0 : 1] }); }
+  return mergeParts(parts);
 }
 function cypressGeo(v, seed) {
   var g = mergeParts([{ geo: new THREE.CylinderGeometry(0.15, 0.22, 1.6, 8), m: M4(0, 0.8, 0), c: '#5a3f28' }, { geo: blob(1, 0.16, seed, 12, 12), m: M4(0, 4.4, 0, 0, 0, 0, 1.25, 3.6, 1.25), cf: function (x, y, z) { return vcol('#1f4a2a', '#3a6a3a', (y - 1) / 8 + (noise2(x * 2, y) - 0.5) * 0.4); } }]);
@@ -1241,11 +1290,12 @@ function cypressGeo(v, seed) {
 function palmGeo(v, seed) {
   var bend = 0.8 + hash1(seed) * 0.8, curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(bend * 0.5, 4.5, 0), new THREE.Vector3(bend, 8.6, 0));
   var parts = [{ geo: new THREE.TubeGeometry(curve, 14, 0.2, 8, false), cf: function (x, y) { return vcol('#7a5a3a', '#5a4028', (Math.sin(y * 7) + 1) * 0.35); } }], top = curve.getPoint(1);
-  for (var i = 0; i < 9; i++) {
-    var leaf = new THREE.PlaneGeometry(0.85, 4.2, 1, 8), lp = leaf.attributes.position;
-    for (var j = 0; j < lp.count; j++) { var yy = lp.getY(j) + 2.1, t = yy / 4.2; lp.setXYZ(j, lp.getX(j) * (1 - t * 0.75), yy, -t * t * 1.9); }
+  // fourteen fronds in two rings; each frond is folded along its spine and its leaflets taper to a point
+  for (var i = 0; i < 14; i++) {
+    var leaf = new THREE.PlaneGeometry(1.15, 4.6, 2, 10), lp = leaf.attributes.position;
+    for (var j = 0; j < lp.count; j++) { var yy = lp.getY(j) + 2.3, t = yy / 4.6, xx = lp.getX(j); lp.setXYZ(j, xx * (1 - t * 0.8) * (0.85 + 0.15 * Math.sin(yy * 9)), yy, -t * t * 2.1 - Math.abs(xx) * 0.35); }
     leaf.computeVertexNormals();
-    var m = new THREE.Matrix4().makeTranslation(top.x, top.y, top.z).multiply(new THREE.Matrix4().makeRotationY(i / 9 * TAU + seed)).multiply(new THREE.Matrix4().makeRotationX(-1.15 + (i % 2) * 0.25));
+    var m = new THREE.Matrix4().makeTranslation(top.x, top.y, top.z).multiply(new THREE.Matrix4().makeRotationY(i / 14 * TAU * 2 + seed + (i % 2) * 0.2)).multiply(new THREE.Matrix4().makeRotationX(i < 7 ? -0.75 : -1.3));
     parts.push({ geo: leaf, m: m, cf: function (x, y, z) { return vcol('#2f7a3a', '#5a9a3a', noise2(x * 2 + seed, z * 2)); } });
   }
   parts.push({ geo: new THREE.SphereGeometry(0.32, 8, 6), m: M4(top.x, top.y - 0.2, top.z), c: '#6a4a24' });
@@ -1340,6 +1390,8 @@ function buildVeg() {
   VEG.shrub = keep([0.8, 1.1].map(function (v, i) { return shrubGeo(v, i * 4, PL.terrain === 'dunes' || PL.terrain === 'canyon'); }));
   VEG.rock = keep([0.8, 1.4, 2.4].map(function (v, i) { return rockGeo(v, i * 6 + 2); }));
   VEG.jungle = keep([0.85, 1, 1.2].map(function (v, i) { return jungleGeo(v, i * 4 + 3); }));
+  VEG.tuft = keep([0, 1, 2].map(function (i) { return tuftGeo(i); }));
+  VEG.flower = keep([0, 1, 2].map(function (i) { return flowerGeo(i); }));
   // the newer plants are only built for the places that use them
   var want = {}; (PL.scenery || []).forEach(function (s) { want[s.t] = 1; });
   var opt = { olive: oliveGeo, cherry: cherryGeo, bamboo: bambooGeo, cane: caneGeo, heather: heatherGeo, agave: agaveGeo, fynbos: fynbosGeo, stonepine: stonepineGeo };
@@ -1433,6 +1485,139 @@ function roofGeo(kind, w, d, h, col1, col2) {
   }
   return mergeParts(parts);
 }
+/* ---------- detailed houses (October 2026) ----------
+   Real roofs (tiled slopes with overhanging eaves, fascia boards and gable ends), and the walls get a stone plinth,
+   corner trims, a cornice, floor bands, a sill and lintel under and over every window, front doors and balconies.
+   The trims are one extra geometry per house size, drawn with the houses as instances, so a street costs the same
+   few draw calls as before. */
+// roof tiles: rows of rounded tiles with a shadow under each row (grey, tinted by the roof colour)
+TEX.tiles = canvasTex(256, 256, function (g, w, h) {
+  var r = rng(41), rows = 8, rh = h / rows, tw = w / 8;
+  g.fillStyle = '#d8d8d8'; g.fillRect(0, 0, w, h);
+  for (var j = 0; j < rows; j++) for (var i = -1; i < 9; i++) {
+    var x = i * tw + (j % 2) * tw / 2, y = j * rh, v = 190 + r() * 50, gr = g.createLinearGradient(x, 0, x + tw, 0);
+    gr.addColorStop(0, 'rgb(' + (v - 40) + ',' + (v - 40) + ',' + (v - 40) + ')'); gr.addColorStop(0.45, 'rgb(' + v + ',' + v + ',' + v + ')'); gr.addColorStop(1, 'rgb(' + (v - 55) + ',' + (v - 55) + ',' + (v - 55) + ')');
+    g.fillStyle = gr; g.fillRect(x + 1, y + 2, tw - 2, rh - 2);
+    g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(x, y + rh - 4, tw, 4);
+  }
+}, true, true);
+TEX.tiles.keep = true;
+MAT.roof = lambert({ vertexColors: true, map: TEX.tiles, side: THREE.DoubleSide });
+// a flat four-cornered (or three-cornered) panel, with UVs in metres along its edges so a tiling texture lies flat on it
+function panelGeo(pts, tile, out) {
+  var V = pts.map(function (p) { return new THREE.Vector3(p[0], p[1], p[2]); }), eu = V[1].clone().sub(V[0]).normalize();
+  var n = V[1].clone().sub(V[0]).cross(V[V.length - 1].clone().sub(V[0])).normalize();
+  if (out && n.dot(out) < 0) { V.reverse(); eu = V[1].clone().sub(V[0]).normalize(); n.negate(); }
+  var ev = n.clone().cross(eu), tri = V.length === 4 ? [0, 1, 2, 0, 2, 3] : [0, 1, 2], pos = [], nor = [], uv = [];
+  tri.forEach(function (k) { var p = V[k], d = p.clone().sub(V[0]); pos.push(p.x, p.y, p.z); nor.push(n.x, n.y, n.z); uv.push(d.dot(eu) / tile, d.dot(ev) / tile); });
+  var g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  return g;
+}
+// a box from one point to another (a fascia board along a sloping roof edge, a baluster...)
+function beamGeo(a, b, t, hgt) {
+  var A = new THREE.Vector3(a[0], a[1], a[2]), B = new THREE.Vector3(b[0], b[1], b[2]), len = A.distanceTo(B), g = new THREE.BoxGeometry(t, hgt || t, len);
+  var m = new THREE.Matrix4().lookAt(A, B, new THREE.Vector3(0, 1, 0)); m.setPosition(A.clone().add(B).multiplyScalar(0.5)); g.applyMatrix4(m); return g;
+}
+// tiled roofs: gable (ridge along the depth), hip, steep Japanese and wide chalet roofs
+function tiledRoof(kind, w, d, h, roofCol, wallUV) {
+  var ov = kind === 'chalet' ? 1.3 : kind === 'steep' ? 0.95 : 0.55, pitch = kind === 'steep' ? 0.62 : kind === 'chalet' ? 0.34 : 0.48;
+  var parts = [], gables = [], fascia = '#3a3430', rc = roofCol;
+  if (kind === 'hip') {
+    var W = w + ov * 2, D = d + ov * 2, along = D >= W, short = Math.min(W, D), rh = short * 0.5 * pitch, ye = h, yr = h + rh, half = (Math.max(W, D) - short) / 2;
+    function P(x, y, z) { return along ? [x, y, z] : [z, y, x]; }
+    var a = along ? W / 2 : D / 2, b = along ? D / 2 : W / 2;
+    var up = new THREE.Vector3(0, 1, 0);
+    [-1, 1].forEach(function (sx) {
+      parts.push({ geo: panelGeo([P(sx * a, ye, -b), P(sx * a, ye, b), P(0, yr, half), P(0, yr, -half)], 1.6, new THREE.Vector3(along ? sx : 0, 1, along ? 0 : sx)), c: rc });
+      parts.push({ geo: panelGeo([P(-a, ye, sx * b), P(a, ye, sx * b), P(0, yr, sx * half)], 1.6, new THREE.Vector3(along ? 0 : sx, 1, along ? sx : 0)), c: rc });
+    });
+    // gutters round the eaves, and a ridge cap
+    [[P(-a, ye, -b), P(a, ye, -b)], [P(-a, ye, b), P(a, ye, b)], [P(-a, ye, -b), P(-a, ye, b)], [P(a, ye, -b), P(a, ye, b)]].forEach(function (e) { parts.push({ geo: beamGeo([e[0][0], e[0][1] - 0.1, e[0][2]], [e[1][0], e[1][1] - 0.1, e[1][2]], 0.16, 0.2), c: fascia }); });
+    if (half > 0.05) parts.push({ geo: beamGeo(P(0, yr + 0.05, -half), P(0, yr + 0.05, half), 0.22, 0.14), c: shadeHex(rc, -0.25) });
+    return { roof: mergeParts(parts), gables: null };
+  }
+  var hw = w / 2 + ov, s = pitch, rh2 = (w / 2) * s, ye2 = h - ov * s, yr2 = h + rh2, z0 = -d / 2 - ov * 0.8, z1 = d / 2 + ov * 0.8;
+  [-1, 1].forEach(function (sx) {
+    parts.push({ geo: panelGeo([[sx * hw, ye2, z0], [sx * hw, ye2, z1], [0, yr2, z1], [0, yr2, z0]], 1.6, new THREE.Vector3(sx, 1, 0)), c: rc });
+    // fascia boards along the eave and up the two gable edges, thick enough to read as a real roof
+    parts.push({ geo: beamGeo([sx * hw, ye2 - 0.08, z0], [sx * hw, ye2 - 0.08, z1], 0.14, 0.24), c: fascia });
+    [z0, z1].forEach(function (z) { parts.push({ geo: beamGeo([sx * hw, ye2, z], [0, yr2 + 0.02, z], 0.16, 0.22), c: kind === 'steep' ? '#2a2420' : fascia }); });
+  });
+  parts.push({ geo: beamGeo([0, yr2 + 0.06, z0], [0, yr2 + 0.06, z1], 0.26, 0.16), c: shadeHex(rc, -0.25) });
+  if (kind === 'gable') parts.push({ geo: new THREE.BoxGeometry(0.75, 1.8, 0.75), m: M4(w * 0.22, h + rh2 * 0.55, d * 0.18), c: '#8a5a44' }, { geo: new THREE.BoxGeometry(0.9, 0.14, 0.9), m: M4(w * 0.22, h + rh2 * 0.55 + 0.95, d * 0.18), c: '#5a4a40' });
+  // the triangular wall at each gable end (wall colour, so it takes the house's own tint)
+  [-1, 1].forEach(function (sz) { gables.push(panelGeo([[-w / 2, h, sz * d / 2], [w / 2, h, sz * d / 2], [0, h + (w / 2) * s, sz * d / 2]], 100, new THREE.Vector3(0, 0, sz))); });
+  gables.forEach(function (gg) { var u = gg.attributes.uv; for (var i = 0; i < u.count; i++) u.setXY(i, wallUV[0], wallUV[1]); });
+  return { roof: mergeParts(parts), gables: gables };
+}
+function shadeHex(hex, a) { var c = new THREE.Color(hex); if (a < 0) c.multiplyScalar(1 + a); else c.lerp(new THREE.Color('#ffffff'), a); return '#' + c.getHexString(); }
+// trims on the walls of one house size: plinth, corners, cornice, floor bands, sills and lintels at every window,
+// doors and (on bigger houses) balconies. Window bays match the wall texture (one bay per ~4 m, one row per storey).
+var TRIM = { house: '#ece6da', redhouse: '#f2efe8', villa: '#f6f0e4', mansion: '#ffffff', beachhouse: '#ffffff', cyclades: '#ffffff', japan: '#3a2c22',
+  favela: '#d8d0c4', stone: '#c4bdb2', capedutch: '#ffffff', thai: '#5a4030', creole: '#ffffff', chalet: '#5a3a24' };
+function houseTrim(st, hs, w, d, h, lift) {
+  var tc = TRIM[st] || '#efe9de', base = st === 'japan' || st === 'thai' || st === 'chalet' ? '#4a3a2c' : '#8a8076', p = [], floors = Math.max(1, Math.round(h / 3.3)), fh = h / floors, L = lift || 0;
+  var wood = st === 'japan' || st === 'thai' || st === 'chalet';
+  function box(sx, sy, sz, x, y, z, c) { p.push({ geo: new THREE.BoxGeometry(sx, sy, sz), m: M4(x, y + L, z), c: c || tc }); }
+  if (!L) box(w + 0.18, 0.6, d + 0.18, 0, 0.3, 0, base);
+  // corner trims
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (q) { box(0.3, h - 0.1, 0.3, q[0] * (w / 2 - 0.1), h / 2, q[1] * (d / 2 - 0.1)); });
+  // cornice under the roof, and a band at each upper floor
+  box(w + 0.32, 0.24, d + 0.32, 0, h - 0.12, 0); box(w + 0.16, 0.14, d + 0.16, 0, h - 0.31, 0);
+  for (var f = 1; f < floors; f++) box(w + 0.1, 0.12, d + 0.1, 0, f * fh, 0);
+  if (st === 'japan') return mergeParts(p);
+  // sills and lintels round every window
+  var bottom = st === 'cyclades' ? 0.4 : 0.31, top = st === 'cyclades' ? 0.77 : 0.8;
+  [[w, d / 2, 0], [w, -d / 2, Math.PI], [d, w / 2, Math.PI / 2], [d, -w / 2, -Math.PI / 2]].forEach(function (face, fi) {
+    var len = face[0], off = face[1], nb = Math.max(1, Math.round(len / 4)), bw = len / nb, ww = bw * 0.5;
+    for (var b = 0; b < nb; b++) for (f = 0; f < floors; f++) {
+      var u = -len / 2 + (b + 0.5) * bw, y0 = f * fh, door = f === 0 && fi < 2 && b === Math.floor(nb / 2);
+      var place = function (sx, sy, sz, y, out, c) { var m = new THREE.Matrix4().makeRotationY(face[2]).multiply(M4(u, y + L, len === w ? 0 : 0)); var lm = M4(0, 0, (Math.abs(off) + out)); var geo = new THREE.BoxGeometry(sx, sy, sz); geo.applyMatrix4(lm); geo.applyMatrix4(m); p.push({ geo: geo, c: c || tc }); };
+      if (door) {
+        // a front door (with a step) instead of the ground-floor window in the middle bay
+        place(1.25, Math.min(2.4, fh * 0.76), 0.1, Math.min(2.4, fh * 0.76) / 2, 0.02, wood ? '#3a2a1e' : pick(['#5a3a28', '#2a4a6a', '#6a2a2a', '#2a5a3a'], hash1(w * 7 + fi)));
+        place(1.6, 0.2, 0.18, Math.min(2.4, fh * 0.76) + 0.1, 0.08);
+        if (!L) place(1.8, 0.18, 0.6, 0.09, 0.3, base);
+        continue;
+      }
+      place(ww + 0.32, 0.1, 0.2, y0 + fh * bottom - 0.08, 0.08);
+      place(ww + 0.2, 0.16, 0.12, y0 + fh * top + 0.06, 0.05);
+    }
+    // a balcony on the first floor of the long faces of the grander houses
+    if (fi < 2 && floors >= 2 && /villa|mansion|creole|beachhouse/.test(st)) {
+      var bwid = Math.min(len * 0.45, 4.2), by = fh;
+      place = function (sx, sy, sz, y, out, c, x) { var m = new THREE.Matrix4().makeRotationY(face[2]).multiply(M4(x || 0, y + L, 0)); var geo = new THREE.BoxGeometry(sx, sy, sz); geo.applyMatrix4(M4(0, 0, Math.abs(off) + out)); geo.applyMatrix4(m); p.push({ geo: geo, c: c || tc }); };
+      place(bwid, 0.16, 1.0, by, 0.5); place(bwid, 0.07, 0.08, by + 1.0, 0.96, '#3a3c40');
+      for (var k = 0; k <= Math.round(bwid / 0.32); k++) place(0.04, 0.95, 0.04, by + 0.5, 0.96, '#3a3c40', -bwid / 2 + k * bwid / Math.round(bwid / 0.32));
+    }
+  });
+  return mergeParts(p);
+}
+// towers: a paved plaza and a glazed podium at the foot, vertical fins up every face (rings on the round glass
+// towers), a band every few floors, a crown parapet, and a spire on the tallest
+function towerTrim(st, w, dd, h, round, r) {
+  var p = [], fin = st === 'casino' ? '#d8b060' : st === 'glass' ? '#cfd6de' : st === 'midrise' ? '#efe8da' : '#d4d6dc', dark = '#2a303c';
+  function box(sx, sy, sz, x, y, z, c, ry) { p.push({ geo: new THREE.BoxGeometry(sx, sy, sz), m: M4(x, y, z, 0, ry || 0, 0), c: c || fin }); }
+  var pw = round ? w * 1.2 : w, pd = round ? w * 1.2 : dd;
+  box(pw + 12, 0.5, pd + 12, 0, 0.25, 0, '#cbc6bc');
+  box(pw + 12.4, 0.2, 0.5, 0, 0.6, (pd + 12) / 2, '#9a968e'); box(pw + 12.4, 0.2, 0.5, 0, 0.6, -(pd + 12) / 2, '#9a968e');
+  if (round) {
+    var r0 = w * 0.55, r1 = w * 0.42;
+    p.push({ geo: new THREE.CylinderGeometry(r0 + 1.6, r0 + 1.8, 7, 28), m: M4(0, 3.5, 0), c: dark });
+    for (var y = 12; y < h - 3; y += 9) { var rr = lerp(r0, r1, y / h) + 0.3; p.push({ geo: new THREE.CylinderGeometry(rr, rr, 0.55, 28, 1, true), m: M4(0, y, 0), c: fin }); }
+    p.push({ geo: new THREE.CylinderGeometry(r1 + 0.6, r1 + 0.4, 2.4, 28), m: M4(0, h + 1.2, 0), c: fin });
+  } else {
+    box(w + 2.6, 7, dd + 2.6, 0, 3.5, 0, dark); box(w + 3.2, 0.6, dd + 3.2, 0, 7.3, 0);
+    [[w, dd / 2, 0], [w, -dd / 2, Math.PI], [dd, w / 2, Math.PI / 2], [dd, -w / 2, -Math.PI / 2]].forEach(function (face) {
+      var len = face[0], n = Math.max(2, Math.round(len / 3.4));
+      for (var i = 0; i <= n; i++) { var x = -len / 2 + i * len / n, geo = new THREE.BoxGeometry(i === 0 || i === n ? 0.6 : 0.3, h - 8, 0.5); geo.applyMatrix4(M4(x, 8 + (h - 8) / 2, Math.abs(face[1]) + 0.2)); geo.applyMatrix4(M4(0, 0, 0, 0, face[2], 0)); p.push({ geo: geo, c: fin }); }
+    });
+    for (var y2 = 8 + 13; y2 < h - 3; y2 += 13) box(w + 0.7, 0.55, dd + 0.7, 0, y2, 0);
+    box(w + 0.9, 1.4, dd + 0.9, 0, h - 0.5, 0);
+  }
+  if (h > 95) { p.push({ geo: new THREE.CylinderGeometry(0.15, 0.9, h * 0.16, 10), m: M4(0, h + 2 + h * 0.08, 0), c: '#d8dadf' }); }
+  return mergeParts(p);
+}
 // villages: houses gather in settlements every kilometre or so, with open country between them
 function villageAt(s) { var k = Math.floor(s / 900), c = k * 900 + 200 + hash1(k * 7.7 + PL.id.length) * 500; return Math.max(0, 1 - Math.abs(s - c) / (180 + hash1(k * 3.1) * 140)); }
 function buildBuildingKit() {
@@ -1446,11 +1631,13 @@ function buildBuildingKit() {
     for (k = 0; k < 3; k++) {
       var t = k / 2, hw2 = lerp(hs.size[0][0], hs.size[0][1], t), hd = lerp(hs.size[1][0], hs.size[1][1], 1 - t), hh = lerp(hs.size[2][0], hs.size[2][1], (t + r()) / 2), lift = hs.stilts || 0;
       var walls = wallsGeo(hw2, hh, hd); if (lift) walls.translate(0, lift, 0);
-      var rf = roofGeo(hs.roof, hw2, hd, hh + lift, hs.roofCol, hs.domeCol);
-      if (lift) { var posts = [rf]; [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (p) { posts.push(mergeParts([{ geo: new THREE.CylinderGeometry(0.16, 0.2, lift, 6), m: M4(p[0] * (hw2 / 2 - 0.3), lift / 2, p[1] * (hd / 2 - 0.3)), c: '#5a4632' }])); }); rf = mergeGeosColor(posts); }
-      geos.push(walls, rf); BLD.classes.push({ walls: walls, roof: rf, w: hw2, d: hd });
+      var tiled = /^(gable|hip|steep|chalet)$/.test(hs.roof), rf, trim = houseTrim(st, hs, hw2, hd, hh, lift);
+      if (tiled) { var tr = tiledRoof(hs.roof, hw2, hd, hh + lift, hs.roofCol, [0.09, 0.55]); rf = tr.roof; if (tr.gables) walls = mergeGeos([walls].concat(tr.gables)); }
+      else rf = roofGeo(hs.roof, hw2, hd, hh + lift, hs.roofCol, hs.domeCol);
+      if (lift) { var posts = [trim]; [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1], [0, 1]].forEach(function (p) { posts.push(mergeParts([{ geo: new THREE.CylinderGeometry(0.16, 0.2, lift, 8), m: M4(p[0] * (hw2 / 2 - 0.3), lift / 2, p[1] * (hd / 2 - 0.3)), c: '#5a4632' }])); }); trim = mergeGeosColor(posts); }
+      geos.push(walls, rf, trim); BLD.classes.push({ walls: walls, roof: rf, trim: trim, w: hw2, d: hd });
     }
-    var wm = std({ map: houseTex(hs.tex), roughness: 0.85 }); BLD.wallMat = wm; BLD.roofMat = MAT.veg; mats.push(wm); BLD.hs = hs;
+    var wm = std({ map: houseTex(hs.tex), roughness: 0.85 }); BLD.wallMat = wm; BLD.roofMat = /^(gable|hip|steep|chalet)$/.test(hs.roof) ? MAT.roof : MAT.veg; mats.push(wm); BLD.hs = hs;
     return;
   }
   var dims = { tower: [[16, 30], [40, 130]], glass: [[24, 38], [90, 300]], midrise: [[14, 26], [18, 52]], casino: [[24, 40], [50, 150]] }[st];
@@ -1467,7 +1654,8 @@ function buildBuildingKit() {
       if (h > 70) rp.push({ geo: new THREE.CylinderGeometry(0.18, 0.3, 14, 6), m: M4(-w * 0.15, h + 7, dd * 0.15), c: '#d8dadf' });
       top = mergeParts(rp); geos.push(top);
     }
-    geos.push(g); BLD.classes.push({ geo: g, w: w, d: dd, h: h, top: top });
+    var tt = towerTrim(st, w, dd, h, st === 'glass' && k % 2, r);
+    geos.push(g, tt); BLD.classes.push({ geo: g, w: w, d: dd, h: h, top: top, trim: tt });
   }
   var day = facadeTex(st, false), nite = night ? facadeTex(st, true) : null;
   var m = st === 'glass' ? std({ map: day, color: col('#dce8f0'), metalness: 0.65, roughness: 0.12 })
@@ -1501,7 +1689,10 @@ function buildBuildings(grp, s0, s1, r, o) {
         }
       });
     }
-    BLD.classes.forEach(function (cl, ci) { inst(grp, cl.walls, BLD.wallMat, per[ci], true); inst(grp, cl.roof, BLD.roofMat, roofs[ci], true); });
+    BLD.classes.forEach(function (cl, ci) {
+      // houses catch each other's shadows (and the trees') on High and Ultra
+      [inst(grp, cl.walls, BLD.wallMat, per[ci], true), inst(grp, cl.roof, BLD.roofMat, roofs[ci], true), inst(grp, cl.trim, MAT.veg, roofs[ci], true)].forEach(function (im) { if (im) im.receiveShadow = HQ(); });
+    });
     return;
   }
   for (i = 0; i < cnt; i++) {
@@ -1512,13 +1703,17 @@ function buildBuildings(grp, s0, s1, r, o) {
     var tint = BLD.tint ? col(pick(BLD.tint, r())) : null;
     var yaw = -o.h + (r() - 0.5) * 0.2;
     per[ci].push([o.x, G.h - 0.5, o.z, yaw, 1, 1, 0, 0, tint || col('#ffffff')]);
-    if (cl.top) roofs[ci].push([o.x, G.h - 0.5, o.z, yaw]);
+    roofs[ci].push([o.x, G.h - 0.5, o.z, yaw]);
     if (BLD.neon && r() < 0.75) {
       var nc = col(pick(['#ff4fd8', '#37e4f0', '#ffd23f', '#ff6a3a', '#7a6aff'], r())), hh = cl.h * (0.35 + r() * 0.5);
       neon.push([o.x, G.h + hh, o.z, -o.h, 1, 1, 0, 0, nc, cl]);
     }
   }
-  BLD.classes.forEach(function (cl, ci) { inst(grp, cl.geo, BLD.mat, per[ci], true); if (cl.top && roofs[ci].length) inst(grp, cl.top, MAT.veg, roofs[ci], false); });
+  BLD.classes.forEach(function (cl, ci) {
+    inst(grp, cl.geo, BLD.mat, per[ci], true);
+    if (cl.top && roofs[ci].length) inst(grp, cl.top, MAT.veg, roofs[ci], false);
+    if (cl.trim && roofs[ci].length) { var ti = inst(grp, cl.trim, MAT.veg, roofs[ci], true); if (ti) ti.receiveShadow = HQ(); }
+  });
   if (neon.length) {
     // glowing signs / bands on the towers
     var im = new THREE.InstancedMesh(BOX, BLD.neon, neon.length);
@@ -1760,7 +1955,6 @@ function makeLandmark(id, s, r) {
 }
 
 /* ================= exits ================= */
-var COMPANIES = ['Red Fox Logistics', 'Harbour Imports', 'Midnight Trading Co.', 'Silverline Freight', 'Big Mo’s Garage', 'Neon Pawn Shop', 'Blackwater Storage', 'Lucky Seven Warehouse', 'Gold Coast Movers', 'Shadow Valley Depot', 'Rusty Anchor Docks', 'Velvet Lounge'];
 var STREETS = ['Maple Street', 'Old Mill Road', 'Harbour Way', 'Station Road', 'Oak Avenue', 'Canal Street', 'Quarry Lane', 'King Street', 'Market Street', 'Bridge Road'];
 var exitNo = 12;
 function exitSignTex(e, dist) {
@@ -2001,8 +2195,30 @@ function carGeo(type) {
   else if (gs === 'shield') grl(roundBox(W * 0.13, 0.26, 0.06, 0.05), hy - 0.12, 0.26);
   else if (gs === 'bar') { grl(roundBox(W * 0.62, 0.05, 0.06, 0.02), hy + 0.02, 0.05); grl(roundBox(W * 0.62, 0.05, 0.06, 0.02), hy - 0.09, 0.05); }
   trim.push({ geo: roundBox(W * 0.5, 0.08, 0.05, 0.02), m: M4(0, yb + 0.14, -fb - 0.015) });
-  if (K !== 'bus' && K !== 'cyber') [-1, 1].forEach(function (sx) { trim.push({ geo: new THREE.CylinderGeometry(0.05, 0.05, 0.16, 10).rotateX(Math.PI / 2), m: M4(sx * W * 0.3, yb - 0.04, rb + 0.03) }); });
+  if (K !== 'bus' && K !== 'cyber') [-1, 1].forEach(function (sx) { chrome.push({ geo: new THREE.CylinderGeometry(0.055, 0.05, 0.16, 12).rotateX(Math.PI / 2), m: M4(sx * W * 0.3, yb - 0.04, rb + 0.03) }); });
   if (B.glass && !B.oneBox && !heavy) [-1, 1].forEach(function (sx) { var my = B.glass[0][1] + 0.06, mz = -B.glass[3][0] + 0.1; trim.push({ geo: roundBox(0.14, 0.12, 0.22, 0.04), m: M4(sx * (sideX(my, mz) + 0.06), my, mz) }); });
+  // body detail (October 2026): door shut lines, a pillar between the side windows, door handles, a window-line
+  // trim, side skirts, and brake discs with calipers behind the wheels
+  if (B.glass && !heavy && !B.oneBox && K !== 'cyber') {
+    var g0 = B.glass[0][0], g3 = B.glass[3][0], gl = g3 - g0, bl = B.belt || B.lamps + 0.25, gy = Math.min(B.glass[0][1], B.glass[3][1]);
+    var doors = B.open || gl < 1.6 ? [g3 - 0.08, g0 + gl * 0.12] : [g3 - 0.08, g0 + gl * 0.5, g0 + 0.05];
+    [-1, 1].forEach(function (sx) {
+      doors.forEach(function (dx) { var hy2 = (yb + 0.18 + bl) / 2; trim.push({ geo: new THREE.BoxGeometry(0.012, bl - yb - 0.3, 0.018), m: M4(sx * (sideX(hy2, -dx) + 0.004), hy2, -dx) }); });
+      // handles just behind each door's front edge
+      for (var di = 0; di < doors.length - 1; di++) { var hx = doors[di] - 0.35, hy3 = bl - 0.13; chrome.push({ geo: roundBox(0.035, 0.035, 0.2, 0.012), m: M4(sx * (sideX(hy3, -hx) + 0.012), hy3, -hx) }); }
+      if (!B.open && gl > 1.6) { var bx2 = g0 + gl * 0.55, gt = Math.min(H - 0.08, topY({ top: B.glass }, bx2) - 0.06), by2 = (gy + gt) / 2; if (gt - gy > 0.15) trim.push({ geo: new THREE.BoxGeometry(0.06, gt - gy, 0.1), m: M4(sx * (sideX(by2, -bx2) - 0.03), by2, -bx2) }); }
+      // a thin bright strip along the bottom of the side windows, and a dark skirt along the sill
+      (has('chrome') ? chrome : trim).push({ geo: new THREE.BoxGeometry(0.02, 0.025, Math.max(0.3, gl - 0.25)), m: M4(sx * (sideX(gy, -(g0 + g3) / 2) + 0.004), gy + 0.01, -(g0 + g3) / 2) });
+      trim.push({ geo: new THREE.BoxGeometry(0.05, 0.09, Math.max(0.3, fx - rx - 2 * ar - 0.1)), m: M4(sx * (sideX(yb + 0.1, -(fx + rx) / 2) + 0.01), yb + 0.08, -(fx + rx) / 2) });
+    });
+  }
+  if (!heavy && K !== 'bus') {
+    var sporty = /mid|hyper|fast|super|sports/.test(K) || B.wingS;
+    [fx, rx].forEach(function (wx) { (wx === fx && B.trike ? [] : [-1, 1]).forEach(function (sx) {
+      trim.push({ geo: new THREE.CylinderGeometry(B.R * 0.5, B.R * 0.5, 0.04, 18).rotateZ(Math.PI / 2), m: M4(sx * (W / 2 - 0.3), B.R, -wx), c: null });
+      (sporty ? chrome : trim).push({ geo: roundBox(0.09, B.R * 0.32, B.R * 0.42, 0.02), m: M4(sx * (W / 2 - 0.27), B.R + B.R * 0.12, -wx - B.R * 0.22) });
+    }); });
+  }
   // rear wings: on stands with endplates
   var wS = B.wingS || (B.wing ? 'wing' : null);
   if (wS === 'wing' || wS === 'big' || wS === 'swan') {
@@ -2451,15 +2667,8 @@ function wreckCar(c, push, byPlayer) {
 }
 MAT.wreck = std({ color: col('#2a2c30'), roughness: 0.9 });
 
-/* ---------- hot cargo ---------- */
-function heat() { return mode !== 'cargo' || nDel < WANTED_AT ? 0 : Math.min(5, nDel - WANTED_AT + 1); }
-function newCargo() {
-  var last = cargo && cargo.company, co; do co = pick(COMPANIES); while (co === last);
-  var len = Math.min(2600, 900 + 280 * nDel);
-  cargo = { company: co, len: len, pay: Math.round(1500 * (1 + 0.6 * nDel) * (PL.cash || 1) / 50) * 50, from: P.s };
-  cargo.exit = addExit(P.s + len, 'deliver', co);
-}
-function cargoRem() { return cargo ? cargo.exit.at - P.s : 0; }
+// (deliveries to companies were removed in October 2026: a cargo run is a free run now, so nobody is ever wanted)
+function heat() { return 0; }
 
 /* ---------- police chasing you ---------- */
 function spawnCop() {
@@ -2613,7 +2822,7 @@ function clearRun() {
   pops.forEach(function (p) { p.el.remove(); }); pops = [];
   exits.slice().forEach(removeExit); exits = [];
   if (chase && chase.sus) scene.remove(chase.sus.mesh); if (chase && chase.marker) { scene.remove(chase.marker); chase.marker = null; }
-  chase = null; cargo = null; closeDock();
+  chase = null; cargo = null;
 }
 function makePlayer() {
   if (P.mesh) scene.remove(P.mesh);
@@ -2631,7 +2840,7 @@ function startRun(m, lvl) {
   runStats = { crates: 0, km: 0 };
   makePlayer();
   updateRoadPts(true); updateChunks(P.s, true);
-  if (mode === 'cargo') newCargo(); else { chase = newChase(lvl || 0); newSuspect(); }
+  if (mode === 'police') { chase = newChase(lvl || 0); newSuspect(); }
   for (var i = 0; i < 7; i++) spawnCar(70 + i * 55);
   countT = 3.2; hideScreens(); $('hud').hidden = false; $('actBtn').hidden = mode !== 'police';
   fade(0);
@@ -2650,76 +2859,7 @@ function finish(reason) {
 }
 function fade(a) { $('fade').style.opacity = a; }
 
-/* ---------- the loading dock (a little 3D scene off to the side of the world) ---------- */
-var dock = null;
-function openDock(name, pay) {
-  closeDock();
-  var g = new THREE.Group(), base = new THREE.Vector3(camera.position.x + 9000, 0, camera.position.z);
-  g.position.copy(base); dock = { g: g, t: 0, car: null, name: name, pay: pay };
-  // (the detail texture is shared with the land, so the tiling goes in the uvs, not in texture.repeat)
-  var gGeo = new THREE.PlaneGeometry(400, 400).rotateX(-Math.PI / 2), guv = gGeo.attributes.uv; for (i = 0; i < guv.count; i++) guv.setXY(i, guv.getX(i) * 400 / TEXM, guv.getY(i) * 400 / TEXM);
-  var ground = new THREE.Mesh(gGeo, std({ color: col(PL.ground.low), map: TEX.detail, roughness: 0.95 })); ground.material.userData.own = true; ground.receiveShadow = true; g.add(ground);
-  var yard = new THREE.Mesh(new THREE.PlaneGeometry(70, 50).rotateX(-Math.PI / 2), std({ map: TEX.asphalt, color: col('#8a8a90'), roughness: 0.9 })); yard.material.userData.own = true; yard.position.set(0, 0.02, 4); yard.receiveShadow = true; g.add(yard);
-  for (var i = -3; i <= 3; i++) { var ln = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 9).rotateX(-Math.PI / 2), MAT.line); ln.position.set(i * 4.2 + 2.1, 0.04, 6); g.add(ln); }
-  var shed = new THREE.Mesh(roundBox(48, 11, 18, 0.25), std({ map: facadeTex('warehouse', false), color: col('#c8ccd4'), roughness: 0.6, metalness: 0.4 })); shed.material.userData.own = true; shed.position.set(0, 0, -16); shed.castShadow = true; shed.receiveShadow = true; g.add(shed);
-  [-12, 0, 12].forEach(function (x, k) { var door = new THREE.Mesh(new THREE.PlaneGeometry(7, 6), k === 1 ? flat('#15171c', 0.9) : flat('#9aa0ab', 0.5, 0.5)); door.position.set(x, 3, -6.9); g.add(door); var pad = new THREE.Mesh(roundBox(8, 1.2, 2.4, 0.1), MAT.concrete); pad.position.set(x, 0, -6.2); g.add(pad); });
-  var signT = textPlane(16, 3, 512, 96, function (c, w, h) { c.fillStyle = '#ffc21a'; c.fillRect(0, 0, w, h); c.strokeStyle = '#070912'; c.lineWidth = 8; c.strokeRect(4, 4, w - 8, h - 8); c.fillStyle = '#2a1100'; c.textAlign = 'center'; c.textBaseline = 'middle'; var fs = 56; do { c.font = '900 ' + fs + 'px Nunito, Arial'; fs -= 2; } while (c.measureText(dock.name).width > w - 40 && fs > 20); c.fillText(dock.name, w / 2, h / 2 + 3); });
-  signT.position.set(0, 9.4, -6.85); g.add(signT);
-  // a forklift and some pallets
-  // the forklift that unloads you: body, safety cage, mast, and a lift carriage with forks that carries a pallet
-  var fk = new THREE.Group(), yel = paint('#ffc21a'), add = function (geo, mat, x, y, z, rx) { var m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (rx) m.rotation.z = rx; m.castShadow = true; fk.add(m); return m; };
-  add(roundBox(1.3, 0.9, 2.1, 0.18), yel, 0, 0.25, 0.1); add(roundBox(1.2, 0.5, 0.7, 0.12), MAT.trim, 0, 1.1, 0.7);
-  [[-0.55, -0.35], [0.55, -0.35], [-0.55, 0.85], [0.55, 0.85]].forEach(function (p) { add(roundBox(0.08, 1.4, 0.08, 0.03), MAT.trim, p[0], 1.15, p[1]); });
-  add(roundBox(1.25, 0.08, 1.35, 0.03), MAT.trim, 0, 2.55, 0.25);
-  [[-0.6, -0.55], [0.6, -0.55], [-0.6, 0.75], [0.6, 0.75]].forEach(function (p) { add(new THREE.CylinderGeometry(0.3, 0.3, 0.26, 16), MAT.tire, p[0], 0.3, p[1], Math.PI / 2); });
-  [-0.4, 0.4].forEach(function (x) { add(roundBox(0.1, 3.1, 0.14, 0.03), MAT.trim, x, 0.05, -1.0); });
-  var lift = new THREE.Group(); lift.position.set(0, 0.15, 0); fk.add(lift);
-  var carr = new THREE.Mesh(roundBox(1.0, 0.6, 0.1, 0.03), MAT.trim); carr.position.set(0, 0, -1.12); lift.add(carr);
-  [-0.3, 0.3].forEach(function (x) { var f = new THREE.Mesh(roundBox(0.12, 0.06, 1.3, 0.02), MAT.trim); f.position.set(x, 0, -1.8); lift.add(f); });
-  // two loads: your old cargo going in, the new cargo coming out
-  function load(colr) {
-    var L = new THREE.Group(), pal = new THREE.Mesh(roundBox(1.15, 0.12, 1.15, 0.03), MAT.wood); pal.position.y = 0.06; L.add(pal);
-    [[-0.27, -0.27], [0.27, -0.27], [-0.27, 0.27], [0.27, 0.27]].forEach(function (p, i) { var c = new THREE.Mesh(MAT.bedCrate || roundBox(0.82, 0.7, 0.78, 0.06), i === 3 ? flat(colr, 0.6) : MAT.crate); c.scale.set(0.62, 0.62, 0.62); c.position.set(p[0], 0.13, p[1]); c.castShadow = true; L.add(c); });
-    L.position.set(0, 0.04, -1.8); L.visible = false; lift.add(L); return L;
-  }
-  dock.loadOld = load('#8a5a2a'); dock.loadNew = load('#3ddc97');
-  fk.position.set(0, 0, -10); fk.rotation.y = Math.PI; g.add(fk); dock.fork = fk; dock.lift = lift;
-  for (i = 0; i < 6; i++) { var pal = new THREE.Mesh(roundBox(1.2, 1.1, 1.2, 0.08), i % 2 ? MAT.crate : flat('#3ddc97', 0.6)); pal.position.set(14 + (i % 3) * 1.4, Math.floor(i / 3) * 1.15, -4); pal.castShadow = true; g.add(pal); }
-  var car = makeCar(CAR.type, CAR.col, { cyber: CAR.cyber, crates: !!BODIES[CAR.type].bed, look: CAR.look }); scene.remove(car); g.add(car); car.position.set(0, 0, 40); dock.car = car;
-  scene.add(g);
-  TER.mesh.visible = false; water.visible = false; if (ring) ring.visible = true;
-  $('dockUi').hidden = false; $('dockBig').textContent = ''; $('dockSmall').textContent = '';
-}
-function closeDock() {
-  if (!dock) return; disposeObj(dock.g); dock = null; $('dockUi').hidden = true;
-  if (TER.mesh) TER.mesh.visible = true; water.visible = !!PL.sea;
-}
-function updateDock(dt) {
-  var d = dock; d.t += dt; var tt = d.t, car = d.car;
-  car.position.z = lerp(40, 7.5, 1 - Math.pow(1 - Math.min(1, tt / 1.6), 3));
-  setBrake(car, tt > 1.1 && tt < 1.8);
-  // the forklift drives out of the warehouse, lifts your cargo off, takes it inside, brings the new load and sets it in
-  var fk = d.fork, L = car.userData.L || 5, zr = 7.5 + L / 2 - 0.9, bedY = BODIES[CAR.type].bed ? (BODIES[CAR.type].belt || 1.2) - 0.12 : 0.75;
-  var inside = { x: 0, z: -10, r: Math.PI }, door = { x: 0.6, z: -4, r: Math.PI * 0.75 }, pick = { x: 2.45, z: zr, r: Math.PI / 2 };
-  var seg = function (a, b, u) { u = clamp(u, 0, 1); u = u * u * (3 - 2 * u); fk.position.x = lerp(a.x, b.x, u); fk.position.z = lerp(a.z, b.z, u); fk.rotation.y = lerp(a.r, b.r, u); };
-  var path = function (from, to, t0, t1) { var u = (tt - t0) / (t1 - t0); if (u < 0.5) seg(from, door, u * 2); else seg(door, to, u * 2 - 1); };
-  var crates = car.children.filter(function (c) { return c.geometry === MAT.bedCrate; });
-  if (tt < 1.6) seg(inside, inside, 0);
-  else if (tt < 2.6) { path(inside, pick, 1.6, 2.6); d.lift.position.y = lerp(0.15, bedY - 0.15, clamp((tt - 1.9) / 0.7, 0, 1)); }
-  else if (tt < 2.9) { seg(pick, pick, 0); d.lift.position.y = lerp(bedY - 0.15, bedY + 0.15, (tt - 2.6) / 0.3); if (!d.loadOld.visible) { d.loadOld.visible = true; crates.forEach(function (c) { c.visible = false; }); sfx('tick'); } }
-  else if (tt < 3.9) { path(pick, inside, 2.9, 3.9); d.lift.position.y = lerp(bedY + 0.15, 0.5, clamp((tt - 2.9) / 0.6, 0, 1)); }
-  else if (tt < 4.2) { seg(inside, inside, 0); d.loadOld.visible = false; d.loadNew.visible = true; }
-  else if (tt < 5.2) { path(inside, pick, 4.2, 5.2); d.lift.position.y = lerp(0.5, bedY + 0.15, clamp((tt - 4.5) / 0.6, 0, 1)); }
-  else if (tt < 5.6) { seg(pick, pick, 0); d.lift.position.y = lerp(bedY + 0.15, bedY - 0.15, (tt - 5.2) / 0.4); if (tt > 5.45 && d.loadNew.visible) { d.loadNew.visible = false; crates.forEach(function (c) { c.visible = true; }); sfx('tick'); } }
-  else { seg(pick, { x: 5.5, z: zr - 3, r: Math.PI * 0.35 }, (tt - 5.6) / 0.8); d.lift.position.y = lerp(bedY - 0.15, 0.15, clamp((tt - 5.6) / 0.5, 0, 1)); }
-  if (tt > 2.9 && !$('dockBig').textContent) { $('dockBig').textContent = 'Delivered! +' + fmt(d.pay); sfx('win'); }
-  if (tt > 5.5 && !$('dockSmall').textContent) $('dockSmall').textContent = 'New cargo for ' + cargo.company + (nDel === WANTED_AT ? '. You’re WANTED: the cops will chase you!' : '');
-  // the camera slowly circles the truck
-  var a = 0.9 + tt * 0.22, cx = d.g.position.x + Math.sin(a) * 15, cz = d.g.position.z + car.position.z + Math.cos(a) * 15;
-  camera.position.set(cx, 6, cz); camera.lookAt(d.g.position.x, 1.6, d.g.position.z + car.position.z - 2);
-  sunLight.target.position.set(d.g.position.x, 0, d.g.position.z); sunLight.position.copy(sunLight.target.position).addScaledVector(SUN_DIR, 120);
-  fade(tt < 0.5 ? 1 - tt / 0.5 : tt > 6.2 ? Math.min(1, (tt - 6.2) / 0.5) : 0);
-}
+var dock = null;   // (the loading dock scene went with the deliveries)
 
 /* ---------- each frame ---------- */
 function update(dt) {
@@ -2731,8 +2871,6 @@ function update(dt) {
     if (now !== before) { if (now > 0) { bigMsg(String(now), 900); sfx('tick'); } else { bigMsg('GO!', 700); sfx('go'); } }
     P.v = 20; P.s += P.v * dt * 0.5; driveTraffic(dt); return;
   }
-  if (phase === 'depot') { updateDock(dt); phT += dt; if (phT > 6.8) rejoin(); return; }
-  if (phase === 'streets') { phT += dt; fade(phT < 0.3 ? 1 : phT > 1.7 ? 1 - (phT - 1.7) / 0.5 : 1); if (phT > 1.9) rejoin(); return; }
   t += dt;
   // speed: builds up over the run, nitro on top
   var base = Math.min(CAR.top, 22 + t * 0.22), target = base * (nitro > 0 ? 1.45 : 1) * (chase && chase.flat > 0 ? 0.75 : 1);
@@ -2745,7 +2883,7 @@ function update(dt) {
     fade(clamp((phT - 2.0) / 0.5, 0, 1));
     if (phT > 2.5) {
       lostCops = cops.some(function (c) { return !c.wreck; });
-      if (curExit.kind === 'deliver') startDepot(); else { phase = 'streets'; phT = 0; bigMsg(lostCops ? 'You lost the cops!' : 'Took a detour', 1600); }
+      phase = 'streets'; phT = 0; bigMsg(lostCops ? 'You lost the cops!' : 'Took a detour', 1600);
       return;
     }
   } else {
@@ -2799,7 +2937,6 @@ function update(dt) {
     if (e.passed || P.s < e.at) return;
     if (laneOf(P.lat) === exitLane(e)) { phase = 'exit'; phT = 0; curExit = e; pop(P.s + 10, P.lat, 'Taking the exit!', '#3ddc97'); sfx('whoosh'); return; }
     e.passed = true;
-    if (e.kind === 'deliver') { cargo.exit = addExit(P.s + 420, 'deliver', cargo.company); sfx('deny'); toast('Missed the exit! Next one for ' + cargo.company + ' in 0.4 km, ' + (cargo.exit.side > 0 ? 'RIGHT' : 'LEFT') + ' lane', 3200); }
   });
   exits.slice().forEach(function (e) { if (e.at < P.s - 300 && e !== curExit) removeExit(e); });
   // nitro flames
@@ -2839,27 +2976,6 @@ function driveTraffic(dt) {
     if (c.s < P.s - 80 || c.s > P.s + 650) { removeCar(c); cars.splice(i, 1); }
   }
 }
-function startDepot() {
-  phase = 'depot'; phT = 0;
-  cash += cargo.pay; nDel++; fuel = Math.min(100, fuel + 25);
-  var pay = cargo.pay, name = cargo.company;
-  cargo.exit.passed = true;
-  newCargo();
-  openDock(name, pay);
-}
-function rejoin() {
-  closeDock();
-  cops.forEach(function (c) { removeCar(c); if (c.light) c.light.intensity = 0; }); cops = [];
-  cars = cars.filter(function (c) { if (Math.abs(c.s - P.s) < 160) { removeCar(c); return false; } return true; });
-  exits.slice().forEach(function (e) { if (e.kind !== 'deliver' || e.passed) removeExit(e); });
-  if (cargo.exit.at - P.s < 250) { removeExit(cargo.exit); cargo.exit = addExit(P.s + 500, 'deliver', cargo.company); }
-  // a short breather after a delivery, a longer one after shaking the cops off down a side street
-  P.lane = exitLane(curExit); P.lat = laneLat(P.lane); P.lv = 0; P.inv = 2; bust = 0; if (heat()) { calm = lostCops ? 20 : 6; copT = 1; }
-  phase = 'drive'; curExit = null; fade(0);
-  toast(lostCops ? 'You lost the cops! Back to ' + cargo.company : 'Next drop-off: ' + cargo.company + ' (' + (cargo.exit.side > 0 ? 'right' : 'left') + ' exit)', 2800);
-  lostCops = false;
-}
-
 /* ---------- the start screen: your car cruising along on its own ---------- */
 function attract(dt) {
   P.v = 22; P.s += P.v * dt;
@@ -2993,21 +3109,14 @@ function updateHud(dt) {
   var chips = ''; if (nitro > 0) chips += '<span class="chip" style="color:#37e4f0">NITRO ' + nitro.toFixed(1) + 's</span>'; if (slip > 0) chips += '<span class="chip">SKID</span>'; $('chips').innerHTML = chips;
   $('vignette').style.opacity = nitro > 0 ? 1 : 0; $('hurt').style.opacity = hurtT * 2;
   var b = $('banner');
-  if (mode === 'cargo' && cargo) {
-    var rem = Math.max(0, cargoRem()), h = heat(), live = cops.filter(function (c) { return !c.wreck; }).length;
-    $('hJobLbl').textContent = phase === 'depot' ? 'LOADING CARGO FOR' : 'HOT CARGO TO';
-    $('hStars').textContent = h ? '★★★★★'.slice(0, h) : '#' + (nDel + 1); $('hStars').className = live ? 'hot' : '';
-    $('hName').textContent = cargo.company; $('hPay').textContent = fmt(cargo.pay);
-    $('hProg').style.width = clamp(1 - rem / cargo.len, 0, 1) * 100 + '%'; $('hProgBar').className = 'bar y';
-    $('hWhere').textContent = phase === 'depot' ? 'at the dock' : (cargo.exit.side > 0 ? 'right' : 'left') + ' exit · ' + Math.ceil(rem) + ' m';
-    $('hBustRow').hidden = !h; $('hBust').style.width = bust * 100 + '%';
-    $('hBustLbl').textContent = live ? 'BUSTED' : 'WANTED'; $('hCops').textContent = live ? live + (live === 1 ? ' cop' : ' cops') + ' on you' : calm > 0 ? 'lying low ' + Math.ceil(calm) + 's' : 'cops coming';
-    var e = phase === 'drive' ? nextExit() : null;
-    if (e && e.at - P.s < 330 && (e.kind === 'deliver' || live)) {
-      var inL = laneOf(P.lat) === exitLane(e), sd = e.side > 0 ? 'RIGHT' : 'LEFT', dm = Math.max(0, Math.round((e.at - P.s) / 10) * 10);
-      b.textContent = inL ? 'In the exit lane ' + (e.side > 0 ? '↗' : '↖') + ' ' + dm + ' m' : (e.kind === 'deliver' ? 'Drop-off exit ' : 'Escape exit ') + dm + ' m: move to the ' + sd + ' lane ' + (e.side > 0 ? '→' : '←');
-      b.className = (e.kind === 'deliver' ? '' : 'escape') + (inL ? '' : ' blink'); b.hidden = false;
-    } else b.hidden = true;
+  if (mode === 'cargo') {
+    // a free run: the panel shows what this map multiplies your cash by, and your crate streak
+    var sk = Math.min(5, 1 + Math.floor(streak / 4));
+    $('hJobLbl').textContent = 'MAP BONUS'; $('hStars').textContent = ''; $('hStars').className = '';
+    $('hName').textContent = 'x' + moneyMult(PL.cash || 1) + ' cash';
+    $('hPay').textContent = 'Crate streak x' + sk; $('hWhere').textContent = sk < 5 ? (4 - streak % 4) + (4 - streak % 4 === 1 ? ' crate' : ' crates') + ' to x' + (sk + 1) : 'max streak';
+    $('hProg').style.width = (sk < 5 ? (streak % 4) / 4 : 1) * 100 + '%'; $('hProgBar').className = 'bar y';
+    $('hBustRow').hidden = true; b.hidden = true;
   } else if (chase) {
     var ch = chase, w = ch.w, s = ch.sus, tl = Math.max(0, Math.ceil(ch.time));
     $('hJobLbl').textContent = 'WANTED: ' + w.name.toUpperCase(); $('hStars').textContent = '★★★★★'.slice(0, w.stars); $('hStars').className = '';
@@ -3041,7 +3150,7 @@ var ICONS = {
 function hideScreens() { $('menu').hidden = true; $('screen').hidden = true; }
 function showMenu() {
   closeShowroom();
-  state = 'menu'; mode = 'cargo'; phase = 'drive'; $('hud').hidden = true; $('banner').hidden = true; $('bigMsg').hidden = true; closeDock(); fade(0);
+  state = 'menu'; mode = 'cargo'; phase = 'drive'; $('hud').hidden = true; $('banner').hidden = true; $('bigMsg').hidden = true; fade(0);
   var m = $('menu');
   m.innerHTML = '<div class="card center">' +
     (window.name === 'cr3-embedded' ? '<button class="btn ghost sm" data-a="to2d" style="align-self:flex-start">‹ Back to 2D game</button>' : '') +
@@ -3060,7 +3169,8 @@ function showMenu() {
   m.hidden = false; $('screen').hidden = true;
 }
 // harder places pay more: shown everywhere as a bonus percentage
-function moneyTag(p) { return (p.cash || 1) > 1.001 ? '+' + Math.round(((p.cash || 1) - 1) * 100) + '% money' : 'Normal money'; }
+function moneyMult(m) { return m >= 10 ? Math.round(m).toLocaleString('en-US') : String(+m.toFixed(2)); }
+function moneyTag(p) { return 'x' + moneyMult(p.cash || 1) + ' cash'; }
 function placeArt(p) {
   var s = '<svg viewBox="0 0 200 84" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g' + p.id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + p.sky[0] + '"/><stop offset="1" stop-color="' + p.sky[1] + '"/></linearGradient></defs>';
   s += '<rect width="200" height="84" fill="url(#g' + p.id + ')"/>';
@@ -3212,7 +3322,7 @@ function showOver(reason, earned, nb) {
     '<div class="big2"><div><b>' + fmt(earned) + '</b><span>Earned</span></div><div><b>' + fmt(pol ? SAVE.bestCop : SAVE.best) + '</b><span>' + (pol ? 'Best shift' : 'Best run') + '</span></div></div>' +
     (nb && earned > 0 ? '<p class="note" style="color:var(--accent)">New personal best!</p>' : '') +
     '<p class="note">Added to your garage money: <span class="bank">' + fmt(SAVE.bank) + '</span></p>' +
-    '<div class="mini">' + (pol ? '<div><b>' + chase.busts + '</b><span>Busted</span></div><div><b>' + fmt(chase.total) + '</b><span>Bounties</span></div>' : '<div><b>' + nDel + '</b><span>Delivered</span></div><div><b>' + copsDown + '</b><span>Cops wrecked</span></div>') + '<div><b>' + ((P.s - 60) / 1000).toFixed(1) + '</b><span>km</span></div></div>' +
+    '<div class="mini">' + (pol ? '<div><b>' + chase.busts + '</b><span>Busted</span></div><div><b>' + fmt(chase.total) + '</b><span>Bounties</span></div>' : '<div><b>' + (runStats ? runStats.crates : 0) + '</b><span>Crates</span></div><div><b>x' + moneyMult(PL.cash || 1) + '</b><span>Map bonus</span></div>') + '<div><b>' + ((P.s - 60) / 1000).toFixed(1) + '</b><span>km</span></div></div>' +
     '<button class="btn" data-a="' + (pol ? 'chase' : 'play') + '" data-v="' + (pol ? chase.lvl : '') + '">' + (pol ? 'CHASE AGAIN' : 'DRIVE AGAIN') + '</button><button class="btn ghost" data-a="menu">Menu</button></div>';
   el.hidden = false; $('hud').hidden = true;
 }
@@ -3269,6 +3379,8 @@ window.addEventListener('message', function (e) {
   // the main game's Graphics setting (Low to Ultra) decides the 3D quality too; the world is rebuilt to match
   if (c.quality && /^(low|medium|high|ultra)$/.test(c.quality)) { SET.quality = c.quality; pickQuality(); applyQuality(); }
   clearRun(); applyPlace(placeById(c.place || PL.id));
+  // the main game decides the money: this map's bonus times your car's cash rating
+  if (c.mult > 0) PL.cash = c.mult;
   $('loading').hidden = true; startRun(c.mode === 'police' ? 'police' : 'cargo', c.lvl || 0);
 });
 function onKey(k, e) {
@@ -3326,7 +3438,7 @@ function boot() {
 }
 try { boot(); } catch (err) { console.error(err); $('loading').textContent = 'Something went wrong starting the 3D world: ' + err.message; }
 // test hooks
-window.__CR3 = { scene: scene, CARGEO: CARGEO, carGeo: carGeo, BODIES: BODIES, setTrafficBodies: setTrafficBodies,
+window.__CR3 = { scene: scene, camera: camera, BLD: function () { return BLD; }, CARGEO: CARGEO, carGeo: carGeo, BODIES: BODIES, setTrafficBodies: setTrafficBodies,
   bench: function () { var t0 = performance.now(); updateTerrain(true); var t1 = performance.now(), k = Math.floor(P.s / CH) + 3; disposeObj(chunks[k]); delete chunks[k]; buildChunk(k); var t2 = performance.now(); vergeGeo(k * CH, k * CH + CH).dispose(); var t3 = performance.now(); return { terrain: +(t1 - t0).toFixed(1), chunk: +(t2 - t1).toFixed(1), verge: +(t3 - t2).toFixed(1), n: TER.n }; },
   setQ: function (q) { SET.quality = q; pickQuality(); applyQuality(); },
   feats: function () { return FEAT.slice(0, 8).map(function (f) { return f.kind + '@' + Math.round(f.s0) + '-' + Math.round(f.s1); }); },
@@ -3349,6 +3461,12 @@ window.__CR3 = { scene: scene, CARGEO: CARGEO, carGeo: carGeo, BODIES: BODIES, s
     world(view ? s0 + ds : sm, lat + far, WP); camera.position.set(WP.x, roadY(sm) + (view ? 1.9 * Math.sqrt(k) : 1.6), WP.z);
     world(view ? s0 : sm, lat, WP); camera.lookAt(WP.x, roadY(sm) + 0.7, WP.z);
     renderer.render(scene, camera); return renderer.domElement.toDataURL('image/jpeg', 0.85);
+  },
+  // test: look at the roadside from (ahead, lat, height) towards (ahead2, lat2) and return the picture
+  view: function (a, lat, y, a2, lat2, y2) {
+    world(P.s + a, lat, WP); camera.position.set(WP.x, roadY(P.s + a) + y, WP.z);
+    world(P.s + a2, lat2, WP); camera.lookAt(WP.x, roadY(P.s + a2) + (y2 || 2), WP.z);
+    renderer.render(scene, camera); return renderer.domElement.toDataURL('image/jpeg', 0.9);
   },
   setN: function (x) { nDel = x; }, place: function (id) { clearRun(); applyPlace(placeById(id)); camReady = false; }, tick: function (k) { for (var i = 0; i < k; i++) { update(1 / 60); if (!(phase === 'depot' && dock)) { placePlayer(1 / 60); updateCamera(1 / 60); } updateWorld(1 / 60); } renderer.render(scene, camera); }, susLane: function () { return chase && chase.sus ? chase.sus.lane : null; } };
 
@@ -3870,17 +3988,17 @@ var CAR_ORDER = ['hauler', 'pebble', 'thimble', 'pocketto', 'mameko', 'button', 
 var NEW_CAR_AFTER = { tuktuk: 'thimble', akty: 'pocketto', nboks: 'mameko', gol: 'button', pandah: 'kettle', moke: 'courier', twocv: 'foxtrot',
   crownvic: 'tarrow', blackcab: 'dispatch', gti205: 'zing', turbo5: 'jolt', ute: 'stevedore', series3: 'badger', trueno: 'solane', stratoss: 'sidewinder',
   patrul: 'scree', evee9: 'ionica', unimug: 'moraine', gullwing: 'starlet', etipe: 'velvet', dmc: 'rotora', nsz: 'skyliner', gt4o: 'poniard', countash: 'quasar', f4o: 'helion' };
-// price ladder: free, then $2,500 up to $100,000,000, each car about 9% more than the one before
+// price ladder: free, then $2,500 up to $500,000,000, each car about 10% more than the one before
 (function () {
   function rank(c) { var i = CAR_ORDER.indexOf(c.id); return i < 0 ? 999 : i; }
   function niceP(p) { var step = Math.pow(10, Math.floor(Math.log(p) / Math.LN10) - 2) * 5; return Math.round(p / step) * step; }
-  var lo = 2500, hi = 100000000;
+  var lo = 2500, hi = 500000000;
   var ladder = CARS.filter(function (c) { return !NEW_CAR_AFTER[c.id]; }).sort(function (a, b) { return rank(a) - rank(b); }), n = ladder.length;
   ladder.forEach(function (c, i) {
     if (i === 0) { c.price = 0; return; }
     var p = lo * Math.pow(hi / lo, (i - 1) / (n - 2));
     c.price = i === n - 1 ? hi : niceP(p);
-    // dearer cars earn more per crate so the top of the ladder is reachable (about x24 at $100M)
+    // dearer cars earn more per crate so the top of the ladder is reachable (about x39 at $500M)
     c.pay = +(c.pay * Math.pow(c.price / lo, 0.3)).toFixed(2);
   });
   CARS.forEach(function (c) {
@@ -4336,7 +4454,7 @@ var HZ_NAMES = { rock: 'Rockfalls', barrel: 'Explosive barrels', oil: 'Oil slick
 function mapInfo(m) {
   var p = [m.lanes + ' lanes'];
   if (m.curve > 1.5) p.push('Hairpin bends'); else if (m.curve > 1.1) p.push('Winding');
-  if (m.cash !== 1) p.push((m.cash > 1 ? '+' : '') + Math.round((m.cash - 1) * 100) + '% cash');
+  if (m.cash !== 1) p.push('x' + fmtMult(m.cash) + ' cash');
   if (m.weather === 'rain') p.push('Rain'); if (m.weather === 'fog') p.push('Fog'); if (m.weather === 'snow') p.push('Snow');
   if (m.lightning) p.push('Lightning');
   if (m.dark && !m.weather) p.push('Night');
@@ -4412,7 +4530,13 @@ var PLACES = [
 // maps that were replaced in the October 2026 world tour: owners get back what they paid
 var OLD_PLACE_PRICE = { autobahn: 12000, keys: 15000, banff: 18000, greatocean: 26000, tokyo: 36000, amazon: 85000, vegas: 175000, mumbai: 215000, stelvio: 260000, karakoram: 290000, yungas: 320000 };
 Object.keys(OLD_PLACE_PRICE).forEach(function (id) { RETIRED_PRICE[id] = OLD_PLACE_PRICE[id]; });
-PLACES.forEach(function (m) {
+// map bonus: every map multiplies all the cash you earn, from x1 up to x2,000 on the hardest. Unlocking a map costs
+// about what a few runs on the map before it pay (owned maps stay owned; nobody pays again).
+var MAP_CASH = [1, 1.5, 2.2, 3.3, 5, 7.5, 11, 16, 25, 37, 55, 80, 120, 180, 270, 400, 600, 900, 1350, 2000];
+function fmtMult(x) { return x >= 10 ? Math.round(x).toLocaleString('en-US') : String(+x.toFixed(2)); }
+PLACES.forEach(function (m, i) {
+  m.cash = MAP_CASH[i] || 1;
+  if (i) { var p = 3000 * Math.pow(MAP_CASH[i - 1], 1.15), st = Math.pow(10, Math.floor(Math.log(p) / Math.LN10) - 1) * 5; m.price = Math.round(p / st) * st; }
   m.dark = !!m.dark; m.water = !!m.water; m.lightning = !!m.lightning; m.tint = m.tint || null; m.darkA = m.darkA || 0;
   m.weather = m.weather || 'none'; m.drain = m.drain || 1; m.steer = m.steer || 1; m.traffic = m.traffic || 1; m.aggr = m.aggr || 1; m.hz = m.hz || {};
   m.info = mapInfo(m);
@@ -4432,7 +4556,7 @@ var JOB_TYPES = [
   { k: 'fuel',   scope: 'run',   title: function (n) { return 'Pick up ' + n + ' fuel cans in one run'; },          sizes: [2, 3, 5, 7, 10],      pay: 130 },
   { k: 'booms',  scope: 'run',   title: function (n) { return 'Witness ' + n + ' explosions in one run'; },        sizes: [2, 4, 6, 9, 14],      pay: 90 },
   { k: 'earn',   scope: 'run',   title: function (n) { return 'Earn ' + fmt(n) + ' in one run'; },                 sizes: [500, 1200, 2500, 5000, 9000], pay: 0.45 },
-  { k: 'tcrate', scope: 'total', title: function (n) { return 'Deliver ' + n + ' crates (over any runs)'; },       sizes: [40, 80, 150, 250, 400], pay: 22 },
+  { k: 'tcrate', scope: 'total', title: function (n) { return 'Collect ' + n + ' crates (over any runs)'; },       sizes: [40, 80, 150, 250, 400], pay: 22 },
   { k: 'tkm',    scope: 'total', title: function (n) { return 'Drive ' + n + ' km in total'; },                    sizes: [5, 10, 20, 35, 60],   pay: 150 },
   { k: 'mapearn', scope: 'run',  title: function (n, j) { return 'Earn ' + fmt(n) + ' on ' + mapById(j.map).name; }, sizes: [400, 900, 1800, 3500, 6000], pay: 0.6, needMap: 1 },
   { k: 'classkm', scope: 'run',  title: function (n, j) { return 'Drive ' + n + ' km in a ' + j.cls + ' car'; },   sizes: [1, 2, 3, 4, 5],       pay: 420, dec: 1, needCls: 1 }
@@ -5667,7 +5791,6 @@ var nitro = 0, NITRO_T = 4;   // nitro pickup: seconds of boost left (faster, an
 var run = { crates: 0, near: 0, booms: 0, smash: 0, fuel: 0, lastHit: 0, cleanMax: 0, jobsDone: [] };
 var reserveUsed = false, jobTick = 0, hornT = 0;
 var mode = 'cargo', chaseLvl = 0, chase = null;   // police mode: which wanted level, and the live chase
-var smug = null;   // normal mode: the hot-cargo delivery run (deliveries, heat, cops)
 var M = mapById(save.map), S = statsFor(save.car);
 var P = { lane: 1, x: 0, y: 520, w: 34, h: 70, tilt: 0 };
 var traffic = [], items = [], parts = [], pops = [], wx = [], warns = [];
@@ -5759,14 +5882,13 @@ function reset() {
   run = { crates: 0, near: 0, booms: 0, smash: 0, fuel: 0, lastHit: 0, cleanMax: 0, jobsDone: [] };
   P.lane = Math.floor((LANES - 1) / 2); P.x = laneX(P.lane); P.w = S.w; P.h = S.h; P.tilt = 0;
   traffic = []; items = []; parts = []; pops = []; warns = []; flash = 0; nextBolt = 4 + Math.random() * 6;
-  chase = null; smug = null;
+  chase = null;
 }
 function prepare() { applyMap(mapById(save.map)); S = statsFor(save.car); reset(); }
 function startRun() {
   prepare();
-  // police bounties are driven in your police car; everything else in your own car with hot cargo on board
+  // police bounties are driven in your police car; everything else is a free run in your own car
   if (mode === 'police') { S = policeStats(pcById(save.police.car)); reset(); chase = newChase(); newSuspect(); }
-  else { smug = newSmuggle(); newDelivery(); }
   state = 'count'; countT = 3.2; lastCount = -1;
   Aud.init(); Aud.engine(true, 0.1);
   UIH.play();
@@ -5781,7 +5903,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-11.1', updBusy = false;
+var APP_VERSION = '2026-10-11.2', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || document.getElementById('cr3frame') || !/^https?:$/.test(location.protocol)) return;
@@ -5799,6 +5921,8 @@ function checkForUpdate() {
   }, function () { updBusy = false; });
 }
 
+// the leaderboard database only takes scores up to $100M (a check on its scores table); bigger runs post as $100M
+var LB_MAX = 100000000;
 var LB = { url: 'https://ookeigclbmfkkhrpuohv.supabase.co/rest/v1', key: 'sb_publishable_jhNq5ryWAVbL369MSRjtYw_huVw7Nzf' };
 function lbFetch(path, opts) {
   opts = opts || {};
@@ -5816,7 +5940,7 @@ function lbFetch(path, opts) {
 // only personal bests go online; a send that fails is kept and retried after the next run or on the next visit
 function lbSubmit(earned) {
   if (earned > (save.lbBest || 0) && save.name && (!save.lbQueue || earned > save.lbQueue.score)) {
-    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(100000000, Math.round(earned)), car: carById(save.car).name.slice(0, 24), map: mapById(save.map).name.slice(0, 24) };
+    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(LB_MAX, Math.round(earned)), car: carById(save.car).name.slice(0, 24), map: mapById(save.map).name.slice(0, 24) };
     persist();
   }
   return lbFlush();
@@ -5945,8 +6069,6 @@ function spawnTick(iv) {
   var free = all.filter(function (l) { return !laneBusy(l); });
   if (!free.length) return;
   // the lane leading to an exit stays quieter, so you can get into it
-  var ne = smug && mode !== 'police' ? nextExit() : null;
-  if (ne && exitRem(ne) < 380 && free.length > 1 && Math.random() < 0.8) { var xl = exitLane(ne); free = free.filter(function (l) { return l !== xl; }); }
   // never a wall of cars: two lanes stay open on wide roads, one on narrow ones
   var limit = LANES >= 4 ? LANES - 2 : LANES - 1;
   var n = (t > 12 && Math.random() < 0.3 + 0.1 * ag) ? 2 : 1;
@@ -6011,7 +6133,7 @@ function hit(a, b, pad) { pad = pad == null ? 4 : pad; return Math.abs(a.x - b.x
 function cashGain(base) { return Math.max(5, Math.round(base * S.pay * M.cash * (dbl > 0 ? 2 : 1) / 5) * 5); }
 function wreckCar(c, boomPower, safe) {
   if (c.wreck) return;
-  c.wreck = true; c.f = 1; c.eff = 1; c.beh = 'wreck'; c.burn = 6 + Math.random() * 4; copDown(c);
+  c.wreck = true; c.f = 1; c.eff = 1; c.beh = 'wreck'; c.burn = 6 + Math.random() * 4;
   explode(c.x, c.y, boomPower || 1, safe);
   if (S.hook && state === 'play' && Math.random() < 0.8) items.push({ type: 'crate', lane: c.lane, x: c.x + (Math.random() - .5) * 20, y: c.y - c.h / 2 - 20, w: 30, h: 30, salvage: true });
 }
@@ -6057,7 +6179,7 @@ function collect(it) {
 }
 
 function move(d) {
-  if (state !== 'play' || (smug && smug.phase !== 'drive')) return;
+  if (state !== 'play') return;
   if (slip > 0.25) return;
   var nl = clamp(P.lane + d, 0, LANES - 1);
   if (nl !== P.lane) { P.lane = nl; Aud.sfx('click'); if (S.look.smoke && !lq()) for (var q = 0; q < 6; q++) parts.push({ x: P.x + (Math.random() - .5) * P.w, y: P.y + P.h / 2, vx: (Math.random() - .5) * 40, vy: 10 + Math.random() * 20, life: 0.9, max: 0.9, col: S.look.smoke, tint: S.look.smoke, r: 5 + Math.random() * 4, g: 0, kind: 'smoke' }); }
@@ -6270,330 +6392,8 @@ function updateChase(dt, speed) {
   if (ch.time <= 0) escaped('Out of time. They got away!');
 }
 
-/* ================= hot cargo (normal mode) =================
-   Every run you carry cargo to a company off a highway exit. Exits leave from the far LEFT or far RIGHT lane:
-   when one comes up, that lane becomes an EXIT lane that splits off. Be in it and you turn off.
-   Deliver enough contraband and you're WANTED: police cars chase you, and if they stay on your tail the BUSTED
-   meter fills. Taking any exit shakes them off for a while.
-   smug.phase: 'drive' on the highway, 'exit' on an off-ramp, 'depot' at the loading dock, 'streets' losing the cops. */
-var COMPANIES = ['Red Fox Logistics', 'Harbour Imports', 'Midnight Trading Co.', 'Silverline Freight', 'Big Mo’s Garage', 'Neon Pawn Shop', 'Blackwater Storage', 'Lucky Seven Warehouse', 'Gold Coast Movers', 'Shadow Valley Depot', 'Rusty Anchor Docks', 'Velvet Lounge'];
-var STREETS = ['Maple Street', 'Old Mill Road', 'Harbour Way', 'Station Road', 'Oak Avenue', 'Canal Street', 'Quarry Lane', 'Airport Road', 'King Street', 'Riverside Drive'];
-var EXIT_WARN = 160;   // metres before an exit when its lane markings and hints appear
-var WANTED_AT = 3;     // deliveries before the police start chasing
-function newSmuggle() {
-  return { n: 0, len: 0, company: '', pay: 0, total: 0, phase: 'drive', t: 0, fade: 0, target: null, exits: [], cur: null,
-           bust: 0, calm: 0, copT: 4, sirenT: 1, exitNo: 10 + Math.floor(Math.random() * 20), done: '', donePay: 0, lost: false };
-}
-function heat() { return smug.n < WANTED_AT ? 0 : Math.min(5, smug.n - WANTED_AT + 1); }
-function addExit(at, kind, name) {
-  var sm = smug;
-  sm.exits = sm.exits.filter(function (e) { return e.kind === 'deliver' || Math.abs(e.at - at) > 150; });
-  var e = { at: at, side: Math.random() < 0.5 ? -1 : 1, kind: kind, name: name, no: sm.exitNo++ };
-  sm.exits.push(e); return e;
-}
-function newDelivery() {
-  var sm = smug, last = sm.company;
-  do sm.company = pick(COMPANIES, Math.random()); while (sm.company === last);
-  sm.len = Math.min(1800, 450 + 200 * sm.n);
-  sm.pay = Math.round(1500 * (1 + 0.6 * sm.n) * S.pay * M.cash / 50) * 50;
-  sm.target = addExit(dist + sm.len, 'deliver', sm.company);
-}
-function smugRem() { return smug.target.at - dist; }   // metres to the delivery exit
-function smugLeft() { return Math.max(0, smugRem()); }
-function exitRem(e) { return e.at - dist; }
-function exitY(e) { return P.y - P.h / 2 - exitRem(e) * 40; }   // screen row where the exit lane splits off
-function exitLane(e) { return e.side > 0 ? LANES - 1 : 0; }
-// how far sideways the off-ramp has drifted, d pixels past the split
-function rampDx(d) { return d <= 0 ? 0 : Math.min(900, 0.00045 * d * d + 0.02 * d); }
-function nextExit() { var b = null; smug.exits.forEach(function (e) { if (!e.passed && exitRem(e) > 0 && (!b || exitRem(e) < exitRem(b))) b = e; }); return b; }
-function copCount() { var n = 0; for (var i = 0; i < traffic.length; i++) if (traffic[i].cop && !traffic[i].wreck) n++; return n; }
-function updateSmuggle(dt) {
-  var sm = smug, i, e;
-  if (sm.fade > 0) sm.fade = Math.max(0, sm.fade - dt);
-  if (sm.phase === 'drive') {
-    for (i = sm.exits.length - 1; i >= 0; i--) {
-      e = sm.exits[i];
-      if (e.passed) { if (exitRem(e) < -60) sm.exits.splice(i, 1); continue; }
-      if (exitRem(e) > 0) continue;
-      if (laneOf(P.x) === exitLane(e)) { sm.phase = 'exit'; sm.t = 0; sm.cur = e; pop(P.x, P.y - 70, 'Taking the exit!', '#3ddc97', true); Aud.sfx('click'); return; }
-      e.passed = true;
-      if (e.kind === 'deliver') {
-        // missed the drop-off: loop round to another exit for the same company
-        sm.target = addExit(dist + 350, 'deliver', sm.company);
-        pop(W / 2, H * 0.36, 'Missed the exit!', '#ff8a8a', true); Aud.sfx('deny');
-        toast('Next exit for ' + sm.company + ' in 0.35 km, ' + (sm.target.side > 0 ? 'RIGHT' : 'LEFT') + ' lane', 2800);
-      }
-    }
-    updateCops(dt);
-  } else if (sm.phase === 'exit') {
-    sm.t += dt; inv = Math.max(inv, 0.3);
-    P.tilt = sm.cur.side * Math.atan(0.0009 * Math.max(0, -exitRem(sm.cur) * 40 - P.h / 2) + 0.02);   // point the car along the ramp
-    if (sm.t > 1.6) {
-      sm.lost = copCount() > 0;
-      if (sm.cur.kind === 'deliver') startDepot(); else { sm.phase = 'streets'; sm.t = 0; }
-    }
-  }
-}
-function startDepot() {
-  var sm = smug, p = sm.pay;
-  cash += p; sm.total += p; sm.done = sm.company; sm.donePay = p; sm.n++; run.deliv = (run.deliv || 0) + 1;
-  fuel = Math.min(100, fuel + 25);
-  sm.phase = 'depot'; sm.t = 0;
-  Aud.engine(true, 0); Aud.sfx('bust'); vibe([40, 40, 80]);
-  sm.exits = []; newDelivery();
-}
-// off the highway (loading dock or side streets): time passes, then you merge back on
-function updateDepot(dt) {
-  var sm = smug; sm.t += dt;
-  if (sm.t > (sm.phase === 'depot' ? 4.6 : 2.6)) rejoin();
-}
-function rejoin() {
-  var sm = smug, from = sm.phase, lane = exitLane(sm.cur);
-  sm.phase = 'drive'; sm.fade = 0.6; sm.bust = 0;
-  traffic = []; items = []; warns = []; spawnT = 1.2;
-  sm.exits = sm.exits.filter(function (e) { return e.kind === 'deliver'; });
-  if (exitRem(sm.target) < 150) sm.target.at = dist + 300;
-  if (heat()) sm.calm = 25;
-  P.lane = lane; P.x = laneX(lane); P.tilt = 0; inv = 2;
-  if (from === 'depot' && sm.n === WANTED_AT) toast('You’re WANTED! Cops will chase you. Take any exit to lose them.', 3600);
-  else if (from === 'depot') toast('Next drop-off: ' + sm.company + ' (' + (sm.target.side > 0 ? 'right' : 'left') + ' exit)', 2600);
-  else toast(sm.lost ? 'You lost the cops! Back to ' + sm.company : 'Back on the highway', 2400);
-}
-/* ---------- police chasing you ---------- */
-function updateCops(dt) {
-  var sm = smug, h = heat(), cops = copCount(), i, c;
-  sm.calm = Math.max(0, sm.calm - dt);
-  if (cops) {
-    sm.sirenT -= dt; if (sm.sirenT <= 0) { sm.sirenT = 2.6; Aud.sfx('siren'); }
-    // there's always an escape exit coming up while they're on you
-    if (!sm.exits.some(function (e) { return !e.passed && e.kind === 'side' && exitRem(e) < 700; })) addExit(dist + 260 + Math.random() * 160, 'side', pick(STREETS, Math.random()));
-  }
-  if (h && sm.calm <= 0) { sm.copT -= dt; if (sm.copT <= 0) { if (cops < Math.min(4, h) && t > 3) spawnCop(); sm.copT = Math.max(3, 8 - h) + Math.random() * 2; } }
-  // BUSTED meter: fills while a cop sits right behind you (half as fast when it's in the next lane)
-  var press = 0;
-  for (i = 0; i < traffic.length; i++) {
-    c = traffic[i]; if (!c.cop || c.wreck) continue;
-    if (Math.abs(c.y - P.y) < (c.h + P.h) / 2 + 40) { var dl = Math.abs(c.lane - P.lane); press += dl === 0 ? 1 : dl === 1 ? 0.5 : 0; }
-  }
-  sm.bust = press ? Math.min(1, sm.bust + 0.16 * press * dt) : Math.max(0, sm.bust - 0.06 * dt);
-  if (sm.bust >= 1) finish('Busted by the cops!');
-}
-function spawnCop() {
-  var h = heat(), kind = h >= 4 ? 'super' : h >= 2 ? 'muscle' : 'sedan', k = TK[kind], lanes = [], l;
-  for (l = 0; l < LANES; l++) if (!traffic.some(function (c) { return c.lane === l && c.y > H - 90; })) lanes.push(l);
-  if (!lanes.length) return;
-  l = pick(lanes, Math.random());
-  traffic.push({ spec: { t: k.t, w: k.w, h: k.h, color: h >= 2 ? '#15171c' : '#e9edf2', bar: 1, spoiler: kind === 'super' }, kind: kind, big: false, turn: 4, lane: l, x: laneX(l), y: H + 90, w: k.w, h: k.h,
-                 f: 0, eff: 0, beh: 'cop', flip: false, wreck: false, wt: 0.8, reckless: false, brake: false, near: true, burn: 0, pend: null, sigT: 0, sig: 0, sigHold: 0,
-                 cop: true, st: 'chase', stT: 1.5, react: Math.max(0.4, 1.2 - h * 0.15), ramV: 360 + h * 40, off: Math.random() * 30 });
-}
-// a lane a cop can move into: no traffic coming down it soon, and not into the side of your car
-function copLaneOk(c, l) {
-  if (l < 0 || l >= LANES || bendNear(c.y)) return false;
-  var lx = laneX(l);
-  for (var i = 0; i < traffic.length; i++) { var o = traffic[i]; if (o !== c && Math.abs(o.x - lx) < (o.w + c.w) / 2 + 2 && o.y > c.y - 220 && o.y < c.y + (o.h + c.h) / 2 + 20) return false; }
-  return !(P.lane === l && Math.abs(P.y - c.y) < (P.h + c.h) / 2 + 20);
-}
-function copMove(c, dt) {
-  var ty = null, ahead = null, ad = 1e9, i, o;
-  for (i = 0; i < traffic.length; i++) {
-    o = traffic[i]; if (o === c || o.cop) continue;
-    if (Math.abs(o.x - c.x) < (o.w + c.w) / 2 + 2 && o.y < c.y) { var gp = c.y - o.y - (o.h + c.h) / 2; if (gp < ad) { ad = gp; ahead = o; } }
-  }
-  c.wt -= dt; c.stT -= dt;
-  if (ahead && ad < 160 && c.wt <= 0 && c.st !== 'ram') { var ol = [c.lane - 1, c.lane + 1].filter(function (l) { return copLaneOk(c, l); }); if (ol.length) { c.lane = pick(ol, Math.random()); c.wt = 0.4; } }
-  switch (c.st) {
-    case 'chase':   // line up behind you, one lane at a time
-      ty = P.y + 92 + c.off;
-      if (c.wt <= 0 && c.lane !== P.lane) { var nl = c.lane + (P.lane > c.lane ? 1 : -1); if (copLaneOk(c, nl)) c.lane = nl; c.wt = c.react; }
-      if (c.lane === P.lane && Math.abs(c.x - P.x) < 8 && c.stT <= 0 && Math.abs(c.y - ty) < 40) { c.st = 'warn'; c.stT = 0.7; }
-      break;
-    case 'warn': ty = c.y; if (c.stT <= 0) { c.st = 'ram'; c.stT = 0.9; Aud.sfx('horn'); } break;   // lights flashing: about to ram
-    case 'ram': c.y -= c.ramV * dt; if (c.stT <= 0 || c.y < P.y - 140) { c.st = 'back'; c.stT = 1.2; } break;
-    case 'back': ty = P.y + 175; if (c.stT <= 0) { c.st = 'chase'; c.stT = 1.5 + Math.random() * 1.5; } break;
-  }
-  if (ty != null) c.y += clamp(ty - c.y, -230 * dt, 230 * dt);
-  // boxed in behind slower traffic (except mid-ram)
-  if (ahead && c.st !== 'ram' && Math.abs(laneX(c.lane) - ahead.x) < LANE_W * 0.5) { var minY = ahead.y + (ahead.h + c.h) / 2 + 3; if (c.y < minY) c.y = minY; }
-  c.brake = c.st === 'warn';
-}
-// a police car wrecked by traffic or a hazard: bonus cash
-function copDown(c) {
-  if (!c.cop || c.byPlayer || !smug || state !== 'play') return;
-  var g = Math.round(cashGain(300) * Math.max(1, heat()) / 5) * 5; cash += g; run.cops = (run.cops || 0) + 1;
-  pop(c.x, c.y - 30, 'Cop wrecked +$' + g, '#9be7ff', true);
-}
 function fitText(g, txt, maxW, size, weight) {
   for (var fs = size; fs > 9; fs--) { g.font = (weight || 800) + ' ' + fs + 'px ' + FONT; if (g.measureText(txt).width <= maxW) break; }
-}
-// painted on the straight road (so it bends with it): EXIT lane markings, then the off-ramp splitting away
-function drawExitRamp(g) {
-  if (!smug || state === 'menu' || smug.phase === 'depot' || smug.phase === 'streets') return;
-  smug.exits.forEach(function (e) { drawOneRamp(g, e); });
-}
-function drawOneRamp(g, e) {
-  var gy = exitY(e), sd = e.side, R = exitLane(e), lx = laneX(R), edge = sd > 0 ? ROAD_X + ROAD_W : ROAD_X, y, k;
-  if (gy - 1400 > H || gy + EXIT_WARN * 40 < -40) return;
-  var y0 = Math.max(-40, gy), y1 = Math.min(H + 40, gy + EXIT_WARN * 40), divX = sd > 0 ? ROAD_X + LANE_W * R : ROAD_X + LANE_W;
-  g.fillStyle = M.line;
-  for (y = y1 - ((y1 - gy) % 30); y > y0 - 30; y -= 30) g.fillRect(divX - 3, y, 6, 18);
-  for (k = gy + 260; k < y1; k += 420) {
-    if (k < -40 || k > H + 40) continue;
-    g.save(); g.translate(lx, k); g.fillStyle = 'rgba(255,255,255,0.85)';
-    g.save(); g.scale(sd, 1);
-    g.fillRect(-3, -6, 6, 26); g.beginPath(); g.moveTo(-3, -4); g.quadraticCurveTo(-2, -16, 10, -20); g.lineTo(9, -26); g.lineTo(20, -17); g.lineTo(9, -10); g.lineTo(10, -14); g.quadraticCurveTo(3, -12, 3, -4); g.closePath(); g.fill();
-    g.restore();
-    g.font = '800 13px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('EXIT', 0, 36);
-    g.restore();
-  }
-  // the off-ramp peels away, with a striped gore between it and the highway
-  var step = 6;
-  for (y = Math.min(gy, H + 20); y > -60; y -= step) {
-    var d = gy - y, cx = lx + sd * rampDx(d), left = cx - LANE_W / 2, right = cx + LANE_W / 2;
-    if (left > W + 300 || right < -300) break;
-    var gap = sd > 0 ? left - edge : edge - right;
-    if (gap > 0 && gap < 70) {
-      var gx = sd > 0 ? edge : right;
-      g.fillStyle = shade(M.road, 0.08); g.fillRect(gx, y, gap, step + 0.5);
-      if (Math.floor((y - gy) / 18) % 2 === 0) { g.fillStyle = 'rgba(255,255,255,0.55)'; g.fillRect(gx + 3, y, Math.max(0, gap - 6), 3); }
-    }
-    g.fillStyle = M.road; g.fillRect(left, y, LANE_W, step + 0.5);
-    g.fillStyle = M.line; g.fillRect(left, y, 3, step + 0.5); g.fillRect(right - 3, y, 3, step + 0.5);
-  }
-}
-// green overhead signs before each exit
-function drawExitSign() {
-  if (!smug || smug.phase !== 'drive' || state === 'menu') return;
-  var g = ctx;
-  smug.exits.forEach(function (e) {
-    if (e.passed) return;
-    var rem = exitRem(e), lx = laneX(exitLane(e));
-    [EXIT_WARN * 0.8, 40].forEach(function (m) {
-      var y = P.y - P.h / 2 - (rem - m) * 40;
-      if (y < -60 || y > H + 20) return;
-      bendPush(W / 2, y);
-      var w = Math.min(ROAD_W * 0.78, 200), x1 = clamp(lx - w / 2, ROAD_X - 6, ROAD_X + ROAD_W + 6 - w), arrow = e.side > 0 ? '↗' : '↖';
-      g.fillStyle = '#5b6380'; g.fillRect(ROAD_X - 18, y - 4, ROAD_W + 36, 5);
-      g.fillStyle = '#1f7a4d'; rr(g, x1, y - 42, w, 38, 5); g.fill(); g.strokeStyle = '#f1ecd9'; g.lineWidth = 2; g.stroke();
-      g.fillStyle = '#ffd23f'; rr(g, x1 + 4, y - 38, 40, 13, 3); g.fill();
-      g.fillStyle = '#1a1a1a'; g.font = '800 10px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('EXIT ' + e.no, x1 + 24, y - 31);
-      var label = e.kind === 'deliver' ? e.name : e.name;
-      g.fillStyle = '#fff'; fitText(g, label, w - 54, 13); g.textAlign = 'left'; g.fillText(label, x1 + 48, y - 31);
-      g.font = '800 12px ' + FONT; g.fillText((m > 50 ? Math.round(m) + ' m  ' : 'NOW  ') + arrow + (e.kind === 'deliver' ? '  drop-off' : ''), x1 + 8, y - 14);
-      g.restore();
-    });
-  });
-}
-function drawSmugHud(cpt, y) {
-  var sm = smug, g = ctx, L = 14, rem = smugLeft(), fr = clamp(1 - rem / sm.len, 0, 1), blink = Math.floor(clock * 4) % 2 === 0, h = heat(), cops = copCount(), endY;
-  var where = sm.phase === 'depot' ? 'at the dock' : (sm.target.side > 0 ? 'right' : 'left') + ' exit · ' + Math.ceil(rem) + ' m';
-  if (cpt) {
-    // one thin strip: company, exit, pay, progress, and the BUSTED meter while you're wanted
-    var x = 8, w = W - 16, hh = h ? 44 : 32;
-    panel(x, y, w, hh);
-    g.textBaseline = 'middle'; g.textAlign = 'right'; g.font = '800 12px ' + FONT; g.fillStyle = '#3ddc97';
-    var pay = fmt(sm.pay); g.fillText(pay, x + w - 10, y + 12); var pw = g.measureText(pay).width;
-    g.font = '700 11px ' + FONT; g.fillStyle = '#c9c5b3'; g.fillText(where, x + w - 18 - pw, y + 12); var ww = g.measureText(where).width;
-    g.textAlign = 'left'; var co = (sm.phase === 'depot' ? 'Loading: ' : '→ ') + sm.company; fitText(g, co, w - 40 - pw - ww, 13); g.fillStyle = '#f1ecd9'; g.fillText(co, x + 10, y + 12);
-    g.fillStyle = 'rgba(255,255,255,0.12)'; rr(g, x + 10, y + 22, w - 20, 4, 2); g.fill();
-    g.fillStyle = '#ffc21a'; rr(g, x + 10, y + 22, Math.max(4, (w - 20) * fr), 4, 2); g.fill();
-    if (h) {
-      g.font = '800 10px ' + FONT; g.fillStyle = cops ? (Math.floor(clock * 6) % 2 ? '#ff3b3b' : '#3d7bff') : '#ffc21a'; g.fillText(STARS.slice(0, h), x + 10, y + 35);
-      var sw2 = g.measureText(STARS.slice(0, h)).width + 16;
-      g.fillStyle = cops ? '#ff8a8a' : '#c9c5b3'; g.fillText(cops ? 'BUSTED' : (sm.calm > 0 ? 'lying low ' + Math.ceil(sm.calm) + 's' : 'WANTED'), x + 10 + sw2, y + 35);
-      var bx2 = x + 10 + sw2 + 60;
-      g.fillStyle = 'rgba(255,255,255,0.12)'; rr(g, bx2, y + 31, x + w - 10 - bx2, 7, 3.5); g.fill();
-      if (sm.bust > 0.01) { g.fillStyle = sm.bust > 0.7 && blink ? '#fff' : '#ff3b3b'; rr(g, bx2, y + 31, Math.max(6, (x + w - 10 - bx2) * sm.bust), 7, 3.5); g.fill(); }
-    }
-    endY = y + hh;
-  } else {
-  panel(L, y, 178, 84);
-  g.textAlign = 'left'; g.textBaseline = 'top';
-  g.font = '700 11px ' + FONT; g.fillStyle = '#c9c5b3'; g.fillText(sm.phase === 'depot' ? 'LOADING CARGO FOR' : 'HOT CARGO TO', L + 10, y + 9);
-  g.textAlign = 'right';
-  if (h) { g.font = '800 12px ' + FONT; g.fillStyle = cops ? (Math.floor(clock * 6) % 2 ? '#ff3b3b' : '#3d7bff') : '#ffc21a'; g.fillText(STARS.slice(0, h), L + 168, y + 8); }
-  else { g.fillStyle = '#ffc21a'; g.fillText('#' + (sm.n + 1), L + 168, y + 9); }
-  g.textAlign = 'left'; fitText(g, sm.company, 158, 15); g.fillStyle = '#f1ecd9'; g.fillText(sm.company, L + 10, y + 24);
-  g.fillStyle = 'rgba(255,255,255,0.12)'; rr(g, L + 10, y + 45, 158, 9, 4); g.fill();
-  g.fillStyle = '#ffc21a'; rr(g, L + 10, y + 45, Math.max(8, 158 * fr), 9, 4); g.fill();
-  g.font = '800 14px ' + FONT; g.fillStyle = '#3ddc97'; g.fillText(fmt(sm.pay), L + 10, y + 62);
-  g.textAlign = 'right'; g.font = '700 12px ' + FONT; g.fillStyle = '#c9c5b3';
-  g.fillText(where, L + 168, y + 63);
-  // the BUSTED meter while the police are after you
-  if (h) {
-    var by = y + 90; panel(L, by, 178, 30);
-    g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = '800 11px ' + FONT; g.fillStyle = cops ? '#ff8a8a' : '#c9c5b3'; g.fillText(cops ? 'BUSTED' : 'WANTED', L + 10, by + 15);
-    g.fillStyle = 'rgba(255,255,255,0.12)'; rr(g, L + 64, by + 10, 104, 10, 5); g.fill();
-    if (sm.bust > 0.01) { g.fillStyle = sm.bust > 0.7 && blink ? '#fff' : '#ff3b3b'; rr(g, L + 64, by + 10, Math.max(8, 104 * sm.bust), 10, 5); g.fill(); }
-    else if (!cops) { g.fillStyle = '#c9c5b3'; g.font = '700 10px ' + FONT; g.fillText(sm.calm > 0 ? 'lying low ' + Math.ceil(sm.calm) + 's' : 'cops on the way', L + 70, by + 15); }
-  }
-  endY = y + 84;
-  }
-  // getting close to an exit you should take: say which lane
-  var e = nextExit();
-  if (sm.phase === 'drive' && e && exitRem(e) < EXIT_WARN && state === 'play' && (e.kind === 'deliver' || cops)) {
-    var inLane = laneOf(P.x) === exitLane(e), side = e.side > 0 ? 'RIGHT' : 'LEFT';
-    var txt = inLane ? 'You’re in the EXIT lane ' + (e.side > 0 ? '↗' : '↖') : (e.kind === 'deliver' ? 'DROP-OFF EXIT: get in the ' : 'ESCAPE EXIT: get in the ') + side + ' lane';
-    g.textAlign = 'center'; g.textBaseline = 'middle'; fitText(g, txt, W - 40, 17);
-    var tw = g.measureText(txt).width + 24, bny = H * 0.3, col = e.kind === 'deliver' ? '31,122,77' : '160,30,40';
-    g.fillStyle = 'rgba(' + col + ',' + (inLane || blink ? 0.94 : 0.75) + ')'; rr(g, W / 2 - tw / 2, bny - 16, tw, 32, 10); g.fill();
-    g.strokeStyle = '#f1ecd9'; g.lineWidth = 2; g.stroke(); g.fillStyle = '#fff'; g.fillText(txt, W / 2, bny + 1);
-  }
-  return endY;
-}
-// the side streets: a short detour that loses the police
-function drawStreets() {
-  var g = ctx, sm = smug, t = sm.t, i, j, cx = W / 2;
-  g.fillStyle = '#2b2e35'; g.fillRect(0, 0, W, H);
-  var off = (t * 220) % 160;
-  for (i = -1; i < W / 160 + 1; i++) for (j = -1; j < H / 160 + 2; j++) {
-    var bx = i * 160 + 20, byy = j * 160 - 160 + off + 20;
-    if (Math.abs(bx + 60 - cx) < 90) continue;
-    g.fillStyle = ['#5a4a5e', '#4a5a6e', '#6e5a4a', '#4e6a5a'][(i * 7 + j * 3 + 40) % 4]; g.fillRect(bx, byy, 120, 120);
-    g.fillStyle = 'rgba(255,230,140,0.35)'; for (var w2 = 0; w2 < 4; w2++) g.fillRect(bx + 12 + w2 * 26, byy + 14, 12, 8);
-  }
-  g.fillStyle = 'rgba(241,236,217,0.6)'; for (j = -1; j < H / 40 + 1; j++) g.fillRect(cx - 2, j * 40 + (off % 40), 4, 20);
-  g.save(); g.translate(cx + Math.sin(t * 3) * 30, H * 0.62); g.rotate(Math.cos(t * 3) * 0.25); var lk = lookOpts(S.look); lk.clock = clock; drawCarFull(g, S.car, 0, 0, lk); g.restore();
-  g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '800 26px ' + FONT; g.lineWidth = 5; g.strokeStyle = '#070912';
-  var tx = sm.lost ? 'You lost the cops!' : 'Taking a detour…'; g.strokeText(tx, cx, H * 0.3); g.fillStyle = sm.lost ? '#3ddc97' : '#f1ecd9'; g.fillText(tx, cx, H * 0.3);
-  g.font = '700 15px ' + FONT; g.lineWidth = 4; var t2 = 'Exit ' + sm.cur.no + ' · ' + sm.cur.name; g.strokeText(t2, cx, H * 0.3 + 30); g.fillStyle = '#ffd23f'; g.fillText(t2, cx, H * 0.3 + 30);
-  var f = t < 0.4 ? 1 - t / 0.4 : t > 2.1 ? (t - 2.1) / 0.5 : 0;
-  if (f > 0) { g.fillStyle = 'rgba(7,9,18,' + clamp(f, 0, 1) + ')'; g.fillRect(0, 0, W, H); }
-}// the loading dock: you pull in, the old cargo is unloaded, new cargo is loaded, then back to the highway
-function drawDepot() {
-  var g = ctx, sm = smug, t = sm.t, i, cx = W / 2;
-  g.fillStyle = '#3a3d44'; g.fillRect(0, 0, W, H);
-  g.fillStyle = 'rgba(255,255,255,0.05)'; for (i = 0; i < 12; i++) g.fillRect((i * 97) % W, (i * 61) % H, 40, 6);
-  // parking bays
-  g.fillStyle = 'rgba(241,236,217,0.7)'; for (i = -3; i <= 4; i++) g.fillRect(cx + i * 70 - 37, by + 170, 4, 150);
-  // warehouse
-  var by = 70, bw = Math.min(W - 30, 520);
-  g.fillStyle = '#6b6f7a'; g.fillRect(cx - bw / 2, by - 40, bw, 170);
-  g.fillStyle = '#585c66'; for (i = 0; i < 10; i++) g.fillRect(cx - bw / 2, by - 40 + i * 17, bw, 2);
-  g.fillStyle = '#2b2f38'; g.fillRect(cx - bw / 2, by + 130, bw, 10);
-  [-1, 0, 1].forEach(function (k) { var dx = cx + k * 110 - 40; g.fillStyle = k === 0 ? '#15171c' : '#9aa0ab'; g.fillRect(dx, by + 60, 80, 70); if (k) { g.fillStyle = '#7d828c'; for (var j = 0; j < 6; j++) g.fillRect(dx, by + 64 + j * 11, 80, 2); } g.fillStyle = '#ffd23f'; g.fillRect(dx, by + 140, 80, 6); });
-  // company sign
-  fitText(g, sm.done.toUpperCase(), bw - 60, 22); var sw = g.measureText(sm.done.toUpperCase()).width + 30;
-  g.fillStyle = '#ffc21a'; rr(g, cx - sw / 2, by - 22, sw, 40, 8); g.fill(); g.strokeStyle = '#070912'; g.lineWidth = 3; g.stroke();
-  g.fillStyle = '#2a1100'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(sm.done.toUpperCase(), cx, by - 1);
-  // your car rolls in and stops at the dock
-  var e = Math.min(1, t / 1.1), carY = lerp(H + 90, by + 210 + S.h / 2, 1 - Math.pow(1 - e, 3));
-  g.save(); g.translate(cx, carY); var lk = lookOpts(S.look); lk.clock = clock; lk.brake = t > 0.7 && t < 1.3; drawCarFull(g, S.car, 0, 0, lk); g.restore();
-  // boxes: old cargo out (1.2s to 2.4s), new cargo in (2.6s to 3.8s)
-  function box(x, y, col) { g.fillStyle = col; rr(g, x - 11, y - 11, 22, 22, 3); g.fill(); g.strokeStyle = '#5a3a1e'; g.lineWidth = 1.5; g.stroke(); g.fillStyle = 'rgba(255,255,255,0.5)'; g.fillRect(x - 2, y - 11, 4, 22); }
-  var dockY = by + 100, carTop = carY - S.h / 2 + 10;
-  for (i = 0; i < 3; i++) {
-    var a = (t - 1.2 - i * 0.25) / 0.6, b = (t - 2.6 - i * 0.25) / 0.6;
-    if (a > 0 && a < 1) box(cx + (i - 1) * 8, lerp(carTop, dockY, a) - Math.sin(a * Math.PI) * 26, '#c98f4f');
-    if (b > 0 && b < 1) box(cx + (i - 1) * 8, lerp(dockY, carTop, b) - Math.sin(b * Math.PI) * 26, '#3ddc97');
-  }
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  if (t > 1.2) { g.font = '800 26px ' + FONT; g.lineWidth = 5; g.strokeStyle = '#070912'; var dt1 = 'DELIVERED! +' + fmt(sm.donePay); g.strokeText(dt1, cx, H * 0.72); g.fillStyle = '#3ddc97'; g.fillText(dt1, cx, H * 0.72); }
-  if (t > 2.6) { fitText(g, 'New cargo for ' + sm.company, W - 40, 18); g.lineWidth = 4; var dt2 = 'New cargo for ' + sm.company; g.strokeText(dt2, cx, H * 0.72 + 34); g.fillStyle = '#ffd23f'; g.fillText(dt2, cx, H * 0.72 + 34); }
-  if (t > 1.2) { g.font = '700 14px ' + FONT; g.fillStyle = '#9be7ff'; g.fillText('+25 fuel', cx, H * 0.72 + 62); }
-  // fade in from the off-ramp, fade out back to the highway
-  var f = t < 0.4 ? 1 - t / 0.4 : t > 4.1 ? (t - 4.1) / 0.5 : 0;
-  if (f > 0) { g.fillStyle = 'rgba(7,9,18,' + clamp(f, 0, 1) + ')'; g.fillRect(0, 0, W, H); }
 }
 
 /* ================= bends =================
@@ -6704,14 +6504,11 @@ function update(dt) {
     return;
   }
 
-  if (smug && (smug.phase === 'depot' || smug.phase === 'streets')) { updateDepot(dt); return; }
   t += dt; dist += speed * dt / 40;
   var steer = S.agility * (S.ice ? 1 : lerp(M.steer, 1, S.grip));
   if (slip > 0) { slip -= dt; steer *= 0.25; }
   var tx = laneX(P.lane), ox = P.x;
-  // on the off-ramp your car follows the ramp off to the right
-  if (smug && smug.phase === 'exit') { P.x = laneX(exitLane(smug.cur)) + smug.cur.side * rampDx(-exitRem(smug.cur) * 40 - P.h / 2); P.vx = 0; }
-  else {
+  {
     // a smooth S-shaped lane change: eases in, swings across, eases out
     var wn = Math.max(5, steer * 0.55), h1 = Math.min(dt, 1 / 40);
     for (var sub = 0; sub < dt - 1e-6; sub += h1) { var hh = Math.min(h1, dt - sub); P.vx = (P.vx || 0) + (wn * wn * (tx - P.x) - 2 * wn * (P.vx || 0)) * hh; P.x += P.vx * hh; }
@@ -6744,7 +6541,6 @@ function update(dt) {
     c = traffic[i];
     if (c.wreck) { c.eff = 1; c.sig = 0; continue; }
     if (c.beh === 'stall') { c.eff = 1; c.brake = false; c.sig = 2; continue; }
-    if (c.cop) { c.eff = 0; continue; }   // police cars have their own brain, see copMove()
     var f = c.f; c.brake = false; c.wt -= dt;
     if (!c.flip && c.f > 0 && !c.reckless) {
       var block = null, bd = 1e9;
@@ -6798,7 +6594,7 @@ function update(dt) {
       hornT = 0.45;
       for (i = 0; i < traffic.length; i++) {
         c = traffic[i];
-        if (c.wreck || c.beh === 'stall' || c.flip || c.cop || c.pend != null || bendNear(c.y)) continue;
+        if (c.wreck || c.beh === 'stall' || c.flip || c.pend != null || bendNear(c.y)) continue;
         if (Math.abs(c.x - P.x) < LANE_W * .6 && c.y < P.y && P.y - c.y < 320 && Math.random() < 0.7) {
           var ho = [c.lane - 1, c.lane + 1].filter(function (l) { return l >= 0 && l < LANES && laneClear(c, l); });
           if (ho.length) wantLane(c, pick(ho, Math.random()), 0.3, true);
@@ -6810,7 +6606,7 @@ function update(dt) {
   for (i = traffic.length - 1; i >= 0; i--) {
     c = traffic[i];
     var py = c.y;
-    if (c.cop && !c.wreck) copMove(c, dt); else c.y += speed * c.eff * dt;
+    c.y += speed * c.eff * dt;
     var lx = laneX(c.lane);
     c.x += (lx - c.x) * Math.min(1, dt * (c.wreck ? 0 : (c.beh === 'over' ? 5 : c.turn)));
     if (c.wreck) { c.burn -= dt; if (Math.random() < (lq() ? 0.15 : 0.45)) smoke(c.x, c.y - 4, 1); }
@@ -6834,8 +6630,8 @@ function update(dt) {
       if (!hit(c, d, 3)) continue;
       if (c.y < -40 || d.y < -40) { if (!c.wreck && !d.wreck) { traffic.splice(c.y < d.y ? i : j, 1); j = traffic.length; } continue; }
       var both = !c.wreck && !d.wreck, mx = (c.x + d.x) / 2, my = (c.y + d.y) / 2;
-      if (!c.wreck) { c.wreck = true; c.f = c.eff = 1; c.burn = 7; copDown(c); }
-      if (!d.wreck) { d.wreck = true; d.f = d.eff = 1; d.burn = 7; copDown(d); }
+      if (!c.wreck) { c.wreck = true; c.f = c.eff = 1; c.burn = 7; }
+      if (!d.wreck) { d.wreck = true; d.f = d.eff = 1; d.burn = 7; }
       explode(mx, my, both ? 1.15 : 0.8);
       pop(mx, my - 30, 'CRASH!', '#ff8a3d', true);
       if (S.hook && state === 'play') items.push({ type: 'crate', lane: c.lane, x: mx, y: my - 50, w: 30, h: 30 });
@@ -6895,13 +6691,11 @@ function update(dt) {
     if (inv <= 0) {
       if (c.wreck) { traffic.splice(i, 1); burst(c.x, c.y, 20, '#ff8a3d', 200, 0.5, 3, 0); }
       else { c.byPlayer = true; wreckCar(c, 0.7, true); }
-      if (c.cop && smug) smug.bust = Math.min(1, smug.bust + 0.25);
-      if (takeHit(c.cop ? 'Rammed by the cops' : c.flip ? 'Head-on crash' : 'Crashed')) return;
+      if (takeHit(c.flip ? 'Head-on crash' : 'Crashed')) return;
       break;
     }
   }
   if (chase) { updateChase(dt, speed); if (state !== 'play') return; }
-  if (smug) updateSmuggle(dt);
   jobTick -= dt; if (jobTick <= 0) { jobTick = 0.4; checkJobs(); }
   for (i = pops.length - 1; i >= 0; i--) { pops[i].life -= dt; pops[i].y -= 42 * dt; if (pops[i].life <= 0) pops.splice(i, 1); }
 }
@@ -6944,7 +6738,6 @@ function drawRoad() {
   var off = scroll % 80;
   for (var ln = 1; ln < LANES; ln++) for (y = -80 + off; y < H; y += 80) g.fillRect(ROAD_X + LANE_W * ln - 2, y, 4, 34);
   drawDecor(g);
-  drawExitRamp(g);
 }
 
 function drawItem(it) {
@@ -7028,10 +6821,7 @@ function drawPlayer() {
   g.save(); g.translate(x, y); g.rotate(P.tilt + bendAng(P.y));
   var lk = lookOpts(S.look);
   lk.clock = clock; lk.brake = slip > 0 || (chase && chase.flat > 0);
-  var ne = smug && smug.phase === 'drive' ? nextExit() : null; lk.sig = Math.abs(P.x - laneX(P.lane)) > 4 ? (laneX(P.lane) > P.x ? 1 : -1) : 0; lk.lq = lq();
-  // your own blinker: on the ramp, and when you're lined up for an exit that's coming up
-  if (smug && smug.phase === 'exit') lk.sig = smug.cur.side;
-  else if (ne && exitRem(ne) < 90 && laneOf(P.x) === exitLane(ne)) lk.sig = ne.side;
+  lk.sig = Math.abs(P.x - laneX(P.lane)) > 4 ? (laneX(P.lane) > P.x ? 1 : -1) : 0; lk.lq = lq();
   drawCarFull(g, S.car, 0, 0, lk);
   g.restore();
   if (magnet > 0) { g.save(); g.strokeStyle = 'rgba(181,123,255,0.5)'; g.lineWidth = 2; g.setLineDash([6, 8]); g.lineDashOffset = -clock * 30; g.beginPath(); g.arc(x, y - 60, 100 * S.magRange / 280, 0, TAU); g.stroke(); g.restore(); }
@@ -7252,7 +7042,6 @@ function drawHud() {
       if (fuel > 0.5) { g.fillStyle = fb ? '#fff' : fcol; rr(g, fx + 12, y + 16, Math.max(6, (fw - 12) * fuel / 100), 8, 4); g.fill(); }
     }
     var sy = y + 54;   // clear of the pause button
-    if (smug) sy = drawSmugHud(true, sy);
     if (chase) sy = drawChaseHud(true, sy);
     CHIP_Y = sy + 18;
   } else {
@@ -7275,11 +7064,10 @@ function drawHud() {
     for (i = 0; i < maxLives; i++) { g.fillStyle = i < lives ? '#ffb020' : 'rgba(255,255,255,0.18)'; rr(g, W - 14 - lw + 8 + i * lsp + (lsp - lpw) / 2, LT + 9, lpw, 22, 4); g.fill(); }
     CHIP_Y = HUD_RT + 66;
     if (chase) drawChaseHud(false, 116);
-    if (smug) drawSmugHud(false, 116);
     // active jobs (left out on phones held upright, where there's no room)
     var aj = activeJobs();
     if (aj.length && state !== 'count' && !chase) {
-      var jy = T + 104 + (smug ? (heat() ? 128 : 92) : 0); panel(L, jy, 178, 10 + aj.length * 26);
+      var jy = T + 104; panel(L, jy, 178, 10 + aj.length * 26);
       aj.forEach(function (j, ji) {
         var v = jobVal(j), fr = clamp(v / j.n, 0, 1), yy = jy + 8 + ji * 26, off = (j.k === 'mapearn' && save.map !== j.map) || (j.k === 'classkm' && S.car.cls !== j.cls);
         g.textAlign = 'left'; g.textBaseline = 'top'; g.font = '700 12px ' + FONT; g.fillStyle = off ? '#7d7a6c' : '#e8e4d2';
@@ -7306,7 +7094,7 @@ function drawHud() {
     var kb = SET().ctrl === 'tap' && HAS_MOUSE;
     var tip = kb ? 'Press ← → or A / D to change lane' : SET().ctrl === 'swipe' ? 'Swipe left or right to change lane' : (SET().ctrl === 'buttons' ? 'Use the arrow buttons to change lane' : 'Tap left or right to change lane');
     if (chase) { g.fillText('Stay in the red car’s lane to catch up', W / 2, H * 0.42); g.fillText('then ram it until it pulls over!', W / 2, H * 0.42 + 22); }
-    else { g.fillText('Deliver the hot cargo: take the EXIT', W / 2, H * 0.42); g.fillText('Grab green crates, dodge everything else', W / 2, H * 0.42 + 22); g.fillText(tip, W / 2, H * 0.42 + 44); }
+    else { g.fillText('Grab green crates, dodge everything else', W / 2, H * 0.42); g.fillText('This map pays x' + fmtMult(M.cash) + ' cash', W / 2, H * 0.42 + 22); g.fillText(tip, W / 2, H * 0.42 + 44); }
   }
   if (SET().fps) { g.fillStyle = '#9be7ff'; g.font = '700 12px ' + FONT; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillText(Math.round(fpsA) + ' fps', cpt ? 12 : L, cpt ? CHIP_Y + 10 : T + 108); }
 }
@@ -7324,7 +7112,6 @@ function draw() {
   g.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   g.save();
   if (shakeT > 0 && SET().shake && !reduceMotion) g.translate((Math.random() - 0.5) * 12 * shakeT, (Math.random() - 0.5) * 12 * shakeT);
-  if (smug && (smug.phase === 'depot' || smug.phase === 'streets')) { if (smug.phase === 'depot') drawDepot(); else drawStreets(); g.restore(); drawHud(); return; }
   bendFrame();
   drawRoadBent();
   var i, o;
@@ -7335,7 +7122,6 @@ function draw() {
   for (i = 0; i < traffic.length; i++) { o = traffic[i]; if (!o.wreck) { bendPush(o.x, o.y); drawTraffic(o); g.restore(); } }
   if (chase) drawChase();
   drawPlayer();
-  if (smug) drawExitSign();
   drawParts();
   // nitro: speed streaks rushing past
   if (nitro > 0 && state === 'play' && !reduceMotion) {
@@ -7358,7 +7144,6 @@ function draw() {
   if (!lq()) { var vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.45, W / 2, H / 2, Math.max(W, H) * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.35)'); g.fillStyle = vg; g.fillRect(0, 0, W, H); }
   if (flash > 0) { g.fillStyle = 'rgba(255,255,255,' + Math.min(0.7, flash) + ')'; g.fillRect(0, 0, W, H); }
   // fade to black going down the off-ramp, and back in when you rejoin the highway
-  if (smug) { var fa = smug.phase === 'exit' ? (smug.t - 1.2) / 0.4 : smug.fade / 0.6; if (fa > 0) { g.fillStyle = 'rgba(7,9,18,' + clamp(fa, 0, 1) + ')'; g.fillRect(-20, -20, W + 40, H + 40); } }
   g.restore();
   if (state === 'play' || state === 'count' || state === 'paused') { drawWarns(); drawHud(); }
   if (state === 'count') drawCount();
@@ -8051,7 +7836,7 @@ function rOver(res) {
   OV.over.innerHTML = '<div class="card narrow center"><h1 class="ttl">' + esc(res.reason) + '</h1>' +
     '<div class="big2"><div><b>' + fmt(res.earned) + '</b><span>Earned</span></div><div><b>' + fmt(res.best) + '</b><span>Best run</span></div></div>' +
     (res.newBest && res.earned > 0 ? '<p class="nb">New personal best!</p>' : '') +
-    '<div class="mini"><div><b>' + (r.deliv || 0) + '</b><span>Delivered</span></div><div><b>' + r.near + '</b><span>Near misses</span></div><div><b>' + r.crates + '</b><span>Crates</span></div><div><b>' + res.km.toFixed(1) + '</b><span>km</span></div></div>' +
+    '<div class="mini"><div><b>x' + fmtMult(M.cash) + '</b><span>Map bonus</span></div><div><b>' + r.near + '</b><span>Near misses</span></div><div><b>' + r.crates + '</b><span>Crates</span></div><div><b>' + res.km.toFixed(1) + '</b><span>km</span></div></div>' +
     (r.jobsDone && r.jobsDone.length ? '<div class="jdone">' + r.jobsDone.map(function (jd) { return '<div><span>' + esc(jd.title) + '</span><b>+' + fmt(jd.reward) + '</b></div>'; }).join('') + '</div>' : '') +
     '<p class="fine">Wallet: ' + fmt(save.wallet) + '</p><p id="ovRank" class="fine"></p>' +
     '<button class="btn big ibtn" data-act="play" autofocus>' + ICON.restart + 'RUN AGAIN</button><div class="grid2"><button class="btn c-blue ibtn" data-act="go" data-to="garage">' + ICON.garage + 'Garage</button><button class="btn c-grey ibtn" data-act="go" data-to="menu">' + ICON.home + 'Menu</button></div></div>';
@@ -8065,7 +7850,7 @@ function rOver(res) {
 }
 var HELP = [
   { t: 'Dodge ’em!', p: 'Tap the left or right side of the screen to swerve between lanes. Don’t hit anything!', art: 'dodge' },
-  { t: 'Hot cargo', p: 'Your trunk is full of contraband. Each company is off a highway exit. When the EXIT comes up, be in the right lane to turn off. At the loading dock you get paid and load new cargo.', art: 'cops' },
+  { t: 'Map bonus', p: 'Harder maps multiply all the cash you earn, from x1 on the first map up to x2,000 on the hardest. Unlock new maps to earn faster.', art: 'cash' },
   { t: 'Winding roads', p: 'The road twists left and right. Your car follows its lane, so just watch what’s coming.', art: 'dodge' },
   { t: 'Stack that cash', p: 'Green crates are money. Grab them in a row without crashing to build a multiplier.', art: 'cash' },
   { t: 'Keep it fuelled', p: 'Your tank drains as you drive. Snag the orange cans before the bar hits zero.', art: 'fuel' },
@@ -8319,7 +8104,7 @@ function boot() {
   show(save.name ? 'menu' : 'name');
   // put players' existing best run on the online leaderboard, and retry any score that didn't send last time
   if (save.name && save.best > (save.lbBest || 0) && !save.lbQueue) {
-    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(100000000, save.best), car: carById(save.car).name.slice(0, 24), map: mapById(save.map).name.slice(0, 24) };
+    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(LB_MAX, save.best), car: carById(save.car).name.slice(0, 24), map: mapById(save.map).name.slice(0, 24) };
     persist();
   }
   lbFlush(); bustFlush();
@@ -8366,7 +8151,11 @@ function trafficDesigns() {
   pool.forEach(function (c) { var k = TRAFFIC_KIND[c.body.base]; if (out.length < max && (n[k] = (n[k] || 0) + 1) <= (k === 'super' ? 2 : 4)) out.push({ k: k, body: c.body }); });
   return out;
 }
-function start3D() { return open3D({ mode: mode, lvl: chaseLvl, place: save.map, car: car3D(), traffic: trafficDesigns(), quality: SET().quality || 'high' }); }
+function start3D() {
+  // mult: what a crate is worth there, scaled like in 2D (this map's bonus, times your car's cash rating in a free run)
+  var m = mapById(save.map), mult = (m.cash || 1) * (mode === 'police' ? 1 : statsFor(save.car).pay);
+  return open3D({ mode: mode, lvl: chaseLvl, place: save.map, car: car3D(), traffic: trafficDesigns(), mult: mult, quality: SET().quality || 'high' });
+}
 function close3D() { var f = document.getElementById('cr3frame'); if (f) f.remove(); run3D = null; if (Aud.ctx) Aud.ctx.resume(); }
 // the 3D run is over: bank it exactly like a 2D run (wallet, best, stats, jobs, leaderboard, police record)
 function done3D(r) {
@@ -8378,7 +8167,7 @@ function done3D(r) {
     chase.busts = r.busts | 0; chase.total = r.bounty || 0;
     save.police.caught[chaseLvl] += r.busts | 0; save.police.busts += r.busts | 0;
     if (r.busts && chaseLvl < WANTED.length - 1 && save.police.caught[chaseLvl] === (r.busts | 0)) toast(WANTED[chaseLvl + 1].name + ' unlocked on the Wanted board!', 2600);
-  } else { chase = null; smug = newSmuggle(); }
+  } else chase = null;
   cash = Math.max(0, r.cash || 0); dist = Math.max(0, (r.km || 0) * 1000);
   run.deliv = r.deliv | 0; run.crates = r.crates | 0; run.booms = r.booms | 0;
   state = 'play'; finish(r.reason || 'Run over');
@@ -8422,12 +8211,7 @@ if (window.__CR_TEST || /[?&]crtest\b/.test(location.search)) window.__CR = {
   save: function () { return save; }, persist: persist, show: show, start: function () { mode = 'cargo'; startRun(); }, prepare: prepare,
   st: function () { return { state: state, cash: cash, t: t, traffic: traffic.length, booms: run.booms, lives: lives, fuel: fuel, parts: parts.length, W: W, H: H,
     chase: chase ? { gap: Math.round(chase.gap), time: chase.time, busts: chase.busts, total: chase.total, hp: chase.sus ? chase.sus.hp : null, lane: chase.sus ? chase.sus.lane : null, pl: P.lane, why: chase.why, items: items.map(function (i) { return i.type; }).join(',') } : null }; },
-  smug: function () { return smug ? { why: run.why, n: smug.n, left: Math.round(smugLeft()), deliv: run.deliv || 0, lives: lives, pl: P.lane,
-    bend: Math.round(bendAt(0)) } : null; },
   step: function () { if (state === 'count') countT = 0; if (state === 'paused') state = 'play'; update(1 / 60); },
-  exitInfo: function () { var e = smug && nextExit(); return e ? { lane: exitLane(e), rem: Math.round(exitRem(e)), kind: e.kind, cops: copCount(), bust: +smug.bust.toFixed(2), heat: heat() } : null; },
-  setN: function (n) { smug.n = n; },
-  phase: function () { return smug ? smug.phase + ' t=' + smug.t.toFixed(2) + ' rem=' + Math.round(smugRem()) : null; },
   world: function () { return { traffic: traffic, items: items, P: P, LANES: LANES, laneX: laneX }; },
   lanesCut: function () { return traffic.filter(function (c) { return c.pend != null; }).length; },
   chase: function (lvl) { mode = 'police'; chaseLvl = lvl || 0; hideAll(); startRun(); },
