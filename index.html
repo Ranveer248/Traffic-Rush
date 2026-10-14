@@ -196,6 +196,10 @@ input { -webkit-user-select: text; user-select: text; }
 .dgoal { background: #10142a; border: 3px solid var(--edge); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
 .dgoal small { font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: #ff8ac0; } .dgoal b { font-family: var(--disp); font-weight: 400; font-size: 24px; color: #fff; } .dgoal em { font-style: normal; font-weight: 800; color: var(--good); }
 .mbtn.wide2 { grid-column: 1 / -1; justify-content: center; }
+.mlab { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; line-height: 1.1; text-align: left; }
+.mdesc { display: none; }
+.menuCard > .mnext { display: none; }
+body.bigtext .ov > * { zoom: 1.14; }
 .ico { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 0.35em; flex-shrink: 0; }
 .sync.link, .row2 .link { display: inline-flex; align-items: center; }
 .sndask span { display: inline-flex; align-items: center; flex-wrap: wrap; }
@@ -364,24 +368,32 @@ ol.board li.top { background: linear-gradient(90deg, #2a2440, var(--panel) 60%);
    narrow column in the middle that has to be scrolled. Left: the showroom with your car and stats. Middle: PLAY and the
    daily things. Right: every menu button. */
 @media (min-width: 900px) and (min-height: 600px) {
-  #sc-menu { padding: 18px 26px; }
+  #sc-menu { padding: 8px 20px; }
   #sc-menu > .menuCard { max-width: 1500px; width: 100%; min-height: calc(100% - 4px); margin: auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr);
-    grid-template-rows: auto repeat(5, auto) minmax(0, 1fr) auto; column-gap: 22px; row-gap: 12px; align-content: center; padding: 20px 24px; }
+    grid-template-rows: auto repeat(5, auto) minmax(0, 1fr) auto auto; column-gap: 22px; row-gap: 9px; align-content: center; padding: 10px 22px; }
   .menuCard > .topline { grid-column: 1 / -1; grid-row: 1; }
-  .menuCard > .logo { grid-column: 1; grid-row: 2; margin: 6px 0 4px; font-size: clamp(46px, 4.6vw, 72px); }
-  .menuCard > .ride { grid-column: 1; grid-row: 3 / span 5; align-self: stretch; justify-content: center; }
-  .menuCard > .ride canvas { height: clamp(150px, 30vh, 320px); }
-  .menuCard > .mini { grid-column: 1; grid-row: 8; }
-  .menuCard > .btn.big { grid-column: 2; grid-row: 2; min-height: 74px; font-size: 32px; }
+  .menuCard > .logo { grid-column: 1; grid-row: 2; margin: 2px 0 0; font-size: clamp(36px, 3.4vw, 56px); }
+  .menuCard > .ride { grid-column: 1; grid-row: 3 / span 6; align-self: stretch; justify-content: center; }
+  .menuCard > .ride canvas { height: clamp(110px, 24vh, 300px); }
+  .menuCard > .mini { grid-column: 1; grid-row: 9; }
+  .menuCard > .btn.big { grid-column: 2; grid-row: 2; min-height: 68px; font-size: 32px; align-self: center; }
   .menuCard > .pbtn { grid-column: 2; grid-row: 3; }
   .menuCard > .gift:not(.dch) { grid-column: 2; grid-row: 4; }
   .menuCard > .gift.dch { grid-column: 2; grid-row: 5; }
   .menuCard > .wkbar { grid-column: 2; grid-row: 6; }
-  .menuCard > .sndask { grid-column: 2; grid-row: 7; align-self: start; }
-  .menuCard > .grid2 { grid-column: 3; grid-row: 2 / span 6; align-self: stretch; align-content: start; gap: 10px; }
+  .menuCard > .sndask { grid-column: 2; grid-row: 8; align-self: start; }
+  .menuCard > .grid2 { grid-column: 3; grid-row: 2 / span 7; align-self: stretch; align-content: stretch; gap: 10px; }
+  .menuCard > .mnext { display: flex; grid-column: 2; grid-row: 7; align-self: stretch; flex-direction: column; align-items: stretch; justify-content: center; gap: 8px; padding: 12px 14px; }
+  .menuCard > .mnext canvas { width: 100%; height: clamp(44px, 11vh, 150px); flex: 0 0 auto; }
+  .menuCard > .mnext span { flex: 0; }
+  .menuCard .mdesc { display: block; font: 700 12px/1.25 var(--body, system-ui), sans-serif; opacity: .88; margin-top: 3px; white-space: normal; text-shadow: none; }
+  .menuCard > .grid2 { grid-auto-rows: 1fr; }
+  .menuCard > .grid2 .mbtn { justify-content: flex-start; }
+  .menuCard > .grid2 .mbtn.wide2 { justify-content: flex-start; }
+  .menuCard > .grid2 .mbtn .badge { align-self: center; }
   .menuCard > .grid2 .mbtn { min-height: 56px; font-size: clamp(13px, 1.3vw, 19px); gap: 6px; padding: 10px 8px; }
   .menuCard > .grid2 .mbtn svg { width: 24px; height: 24px; flex-shrink: 0; }
-  .menuCard > .row2 { grid-column: 2 / -1; grid-row: 8; align-self: center; }
+  .menuCard > .row2 { grid-column: 2 / -1; grid-row: 9; align-self: center; }
 }
 </style>
 </head>
@@ -3030,7 +3042,7 @@ function buildings(g, kind) {
 
 /* ================= save data ================= */
 var KEY = 'cargorun-save-v4', KEY_OLD = 'cargorun-save-v3';
-var DEFSET = { sfx: true, sfxVol: 80, music: true, musicVol: 40, vibe: true, shake: true, quality: 'high', ctrl: 'tap', nosSide: 'center', fps: false, motion: true, autoq: true, focus: false };
+var DEFSET = { sfx: true, sfxVol: 80, music: true, musicVol: 40, vibe: true, shake: true, quality: 'high', ctrl: 'tap', nosSide: 'center', fps: false, motion: true, autoq: true, focus: false, bigText: false };
 var EMPTY_G = { paints: {}, mods: {}, opt: {} };
 function defaults() {
   return { name: '', wallet: 0, best: 0, car: 'hauler', map: 'atacama', owned: { hauler: 1 }, maps: { atacama: 1 }, garage: {}, codes: {}, lbBest: 0, lbQueue: null,
@@ -3094,6 +3106,7 @@ function loadLocal() {
 }
 var save = loadLocal();
 function SET() { return save.settings; }
+function applyTextSize() { try { document.body.classList.toggle('bigtext', !!SET().bigText); } catch (e) {} }
 var saveOk = true;
 function persist() {
   save.rev = (save.rev || 0) + 1; save.ts = Date.now();
@@ -3469,7 +3482,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.19', updBusy = false;
+var APP_VERSION = '2026-10-14.20', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -5748,6 +5761,16 @@ function draw() {
   drawGhosts();
   drawPlayer();
   drawParts();
+  // high speed: faint streaks along both road edges, a little stronger the faster you go
+  var spd = state === 'play' ? speedNow() : 0;
+  if (spd > 560 && nitro <= 0 && !reduceMotion && !focusOn() && !lq()) {
+    var sa = clamp((spd - 560) / 260, 0, 1) * 0.22; g.strokeStyle = 'rgba(255,255,255,' + sa + ')'; g.lineWidth = 1.5; g.beginPath();
+    for (i = 0; i < 10; i++) {
+      var side = i % 2 ? ROAD_X - 6 - hsh(i, 9) * 18 : ROAD_X + ROAD_W + 6 + hsh(i, 9) * 18, yy = ((clock * spd * 1.3 + i * 157) % (H + 140)) - 70;
+      g.moveTo(side + bendAt(yy), yy); g.lineTo(side + bendAt(yy + 50), yy + 50 + hsh(i, 4) * 30);
+    }
+    g.stroke();
+  }
   // nitro: speed streaks rushing past
   if (nitro > 0 && state === 'play' && !reduceMotion) {
     g.strokeStyle = 'rgba(190,245,255,' + (0.25 + 0.2 * Math.min(1, nitro)) + ')'; g.lineWidth = 2; g.beginPath();
@@ -6009,6 +6032,15 @@ function giftHtml() {
   if (g.ready) return '<button class="gift" data-act="gift">' + ICON.gift + '<div><b>Daily gift: ' + fmt(g.amount) + '</b><span>Day ' + g.day + ' of 7. Tap to open!</span><div class="streak">' + bars + '</div></div></button>';
   return '<div class="gift done">' + ICON.gift + '<div><b>Come back tomorrow for ' + fmt(g.next) + '</b><span>Day ' + g.day + ' streak. Don’t break it!</span><div class="streak">' + bars + '</div></div></div>';
 }
+// a menu button's name, with a short line about it underneath (the line only shows where there's room)
+function mlab(name, desc) { return '<span class="mlab">' + name + '<small class="mdesc">' + esc(desc) + '</small></span>'; }
+// the menu's "your next car" card: what to save up for, and how close you are
+function menuNextHtml() {
+  var c = nextCarGoal(); if (!c) return '';
+  var fr = clamp(save.wallet / c.price, 0, 1), can = fr >= 1;
+  return '<button class="nextcar mnext' + (can ? ' can' : '') + '" data-act="gonext" data-id="' + c.id + '"><canvas id="mnNext" width="360" height="160"></canvas><span><small>' + (can ? 'You can buy it now!' : 'Your next car') + '</small><b>' + esc(c.name) + '</b>' +
+    '<i class="pbarn"><u style="width:' + Math.round(fr * 100) + '%"></u></i><em>' + (can ? fmt(c.price) + ' · tap to buy' : fmt(c.price - save.wallet) + ' to go · ' + fmt(c.price)) + '</em></span></button>';
+}
 function rMenu() {
   var car = carById(save.car), map = mapById(save.map), st = save.stats;
   OV.menu.innerHTML =
@@ -6019,20 +6051,20 @@ function rMenu() {
       '<div class="ride"><canvas id="menuCar" width="880" height="300"></canvas>' +
         '<div class="rideTx"><div><small>' + esc(car.brand) + ' · ' + esc(car.cls) + '</small><b>' + esc(car.model) + '</b></div><em>' + fmt(save.wallet) + '</em></div>' +
         '<div class="rideTags"><span>' + esc(map.name) + '</span><span class="g">x' + fmtMult(map.cash) + ' map</span><span>' + Math.round(topSpeed(car) * 3.6) + ' km/h</span>' + ((save.prestige || 0) ? '<span class="p">★ ' + save.prestige + ' · x' + bigNum(prestigeMult()) + '</span>' : '') + '</div></div>' +
-      giftHtml() + dailyCardHtml() + weekHtml() + soundAskHtml() + focusAskHtml() +
+      giftHtml() + dailyCardHtml() + weekHtml() + soundAskHtml() + focusAskHtml() + menuNextHtml() +
       '<button class="btn big ibtn" data-act="play">' + ICON.play + 'PLAY</button>' +
       prestigeBtn() +
       '<div class="grid2">' +
-        '<button class="btn c-navy mbtn" data-act="go" data-to="police">' + ICON.police + 'Police</button>' +
-        '<button class="btn c-blue mbtn" data-act="go" data-to="garage">' + ICON.garage + 'Garage</button>' +
-        '<button class="btn c-green mbtn" data-act="go" data-to="maps">' + ICON.maps + 'Maps</button>' +
-        '<button class="btn c-orange mbtn" data-act="go" data-to="jobs">' + ICON.jobs + 'Jobs<span class="badge">' + save.jobs.active.length + '/3</span></button>' +
-        '<button class="btn c-purple mbtn" data-act="go" data-to="codes">' + ICON.codes + 'Codes</button>' +
-        '<button class="btn c-teal mbtn" data-act="go" data-to="board">' + ICON.board + 'Leaderboard</button>' +
-        '<button class="btn c-grey mbtn" data-act="settings" data-back="menu">' + ICON.settings + 'Settings</button>' +
-        '<button class="btn c-pink mbtn" data-act="go" data-to="help">' + ICON.help + 'How to play</button>' +
-        '<button class="btn c-green mbtn wide2" data-act="go" data-to="race">' + ICON.flag + 'Race friends<span class="badge">LIVE</span></button>' +
-        '<button class="btn c-orange mbtn wide2" data-act="go" data-to="achieve">' + ICON.trophy + 'Achievements<span class="badge">' + achCount() + '/' + ACH.length + '</span></button>' +
+        '<button class="btn c-navy mbtn" data-act="go" data-to="police">' + ICON.police + mlab('Police', 'Chase criminals for bounties') + '</button>' +
+        '<button class="btn c-blue mbtn" data-act="go" data-to="garage">' + ICON.garage + mlab('Garage', Object.keys(save.owned).length + ' of ' + CARS.length + ' cars') + '</button>' +
+        '<button class="btn c-green mbtn" data-act="go" data-to="maps">' + ICON.maps + mlab('Maps', Object.keys(save.maps).length + ' of ' + MAPS.length + ' maps unlocked') + '</button>' +
+        '<button class="btn c-orange mbtn" data-act="go" data-to="jobs">' + ICON.jobs + mlab('Jobs', 'Extra pay for goals') + '<span class="badge">' + save.jobs.active.length + '/3</span></button>' +
+        '<button class="btn c-purple mbtn" data-act="go" data-to="codes">' + ICON.codes + mlab('Codes', 'Free cash and cars') + '</button>' +
+        '<button class="btn c-teal mbtn" data-act="go" data-to="board">' + ICON.board + mlab('Leaderboard', 'The best drivers this week') + '</button>' +
+        '<button class="btn c-grey mbtn" data-act="settings" data-back="menu">' + ICON.settings + mlab('Settings', 'Sound, controls, display') + '</button>' +
+        '<button class="btn c-pink mbtn" data-act="go" data-to="help">' + ICON.help + mlab('How to play', 'Tips and controls') + '</button>' +
+        '<button class="btn c-green mbtn wide2" data-act="go" data-to="race">' + ICON.flag + mlab('Race friends', 'Live races with a room code') + '<span class="badge">LIVE</span></button>' +
+        '<button class="btn c-orange mbtn wide2" data-act="go" data-to="achieve">' + ICON.trophy + mlab('Achievements', 'Badges that pay out') + '<span class="badge">' + achCount() + '/' + ACH.length + '</span></button>' +
       '</div>' +
       '<div class="mini">' +
         '<div><b>' + fmt(save.best) + '</b><span>Best run</span></div>' +
@@ -6046,6 +6078,8 @@ function rMenu() {
   var c = document.getElementById('menuCar'), cb = c.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
   if (cb.width > 40 && cb.height > 40) { c.width = Math.round(cb.width * dpr); c.height = Math.round(cb.height * dpr); }
   topPreview(c, car, lookOf(car.id));
+  var nc = nextCarGoal(), ncv = document.getElementById('mnNext');
+  if (nc && ncv && ncv.offsetWidth) { var nb = ncv.getBoundingClientRect(); ncv.width = Math.round(nb.width * dpr); ncv.height = Math.round(nb.height * dpr); topPreview(ncv, nc, {}); }
 }
 
 /* ---------- garage ---------- */
@@ -6593,7 +6627,7 @@ function rSettings() {
     '<h4>Sound</h4>' + tog('sfx', 'Sound effects') + slider('sfxVol', 'Effects volume') + tog('music', 'Music') + slider('musicVol', 'Music volume') +
     '<h4>Controls</h4>' + segs('ctrl', 'Steering', [['tap', 'Tap sides'], ['swipe', 'Swipe'], ['buttons', 'Buttons']]) +
     '<p class="fine">Keyboard: ← → or A D to steer, Esc or P to pause. Game controllers work too.</p>' +
-    '<h4>Display</h4>' + fullscreenRow() + tog('focus', 'Focus mode (calmer screen: plain roadside, fewer effects)') + segs('quality', 'Graphics', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['ultra', 'Ultra']]) + tog('autoq', 'Auto graphics (lowers detail if the game stutters)') + tog('shake', 'Screen shake') + tog('vibe', 'Vibration') + tog('fps', 'Show FPS') +
+    '<h4>Display</h4>' + fullscreenRow() + tog('focus', 'Focus mode (calmer screen: plain roadside, fewer effects)') + tog('bigText', 'Larger text in menus') + segs('quality', 'Graphics', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['ultra', 'Ultra']]) + tog('autoq', 'Auto graphics (lowers detail if the game stutters)') + tog('shake', 'Screen shake') + tog('vibe', 'Vibration') + tog('fps', 'Show FPS') +
     '<h4>Driver</h4><div class="it"><div class="itx"><b>' + esc(save.name) + '</b><span>' + (auth ? 'Saved on this device and online' : 'Saved in this browser · ' + syncLabel()) + '</span></div>' +
       (setBack === 'pause' ? '' : '<button class="btn ghost sm" data-act="rename" data-back="settings">Change name</button>') + '</div>' +
     (setBack === 'pause' ? '' : accountHtml()) +
@@ -6616,8 +6650,14 @@ function nextCarHtml() {
   return '<button class="nextcar' + (can ? ' can' : '') + '" data-act="gonext" data-id="' + c.id + '"><canvas id="ovNext" width="240" height="110"></canvas><span><small>' + (can ? 'You can buy it now!' : 'Your next car') + '</small><b>' + esc(c.name) + '</b>' +
     '<i class="pbarn"><u style="width:' + Math.round(fr * 100) + '%"></u></i><em>' + (can ? fmt(c.price) + ' · tap to buy' : fmt(c.price - save.wallet) + ' to go') + '</em></span></button>';
 }
+// the earned amount counts up from zero on the results screen (skipped for players who prefer less motion)
+function countUp(id, to) {
+  var el = document.getElementById(id); if (!el || reduceMotion || focusOn() || !(to > 0)) return;
+  var t0 = performance.now(), dur = 700;
+  (function step() { var f = Math.min(1, (performance.now() - t0) / dur), e = 1 - Math.pow(1 - f, 3); if (!el.isConnected) return; el.textContent = fmt(Math.round(to * e)); if (f < 1) requestAnimationFrame(step); })();
+}
 function rOver(res) {
-  var r = res.run; lastRes = res;
+  var r = res.run; lastRes = res; setTimeout(function () { countUp('ovEarn', res.earned); }, 30);
   if (res.race) {
     OV.over.innerHTML = '<div class="card narrow center"><h1 class="ttl">' + esc(res.reason) + '</h1>' +
       '<p class="sub" id="raceNote">Waiting for the others to finish…</p>' + raceResultsHtml() +
@@ -6630,7 +6670,7 @@ function rOver(res) {
   if (res.police) {
     var pz = res.police;
     OV.over.innerHTML = '<div class="card narrow center"><h1 class="ttl">' + esc(res.reason) + '</h1>' +
-      '<div class="big2"><div><b>' + fmt(res.earned) + '</b><span>Earned</span></div><div><b>' + fmt(res.best) + '</b><span>Best shift</span></div></div>' +
+      '<div class="big2"><div><b id="ovEarn">' + fmt(res.earned) + '</b><span>Earned</span></div><div><b>' + fmt(res.best) + '</b><span>Best shift</span></div></div>' +
       (res.newBest && res.earned > 0 ? '<p class="nb">New best shift!</p>' : '') +
       '<div class="mini"><div><b>' + pz.busts + '</b><span>Busted</span></div><div><b>' + fmt(pz.bounty) + '</b><span>Bounties</span></div><div><b>' + r.crates + '</b><span>Crates</span></div><div><b>' + res.km.toFixed(1) + '</b><span>km</span></div></div>' +
       (r.jobsDone && r.jobsDone.length ? '<div class="jdone">' + r.jobsDone.map(function (jd) { return '<div><span>' + esc(jd.title) + '</span><b>+' + fmt(jd.reward) + '</b></div>'; }).join('') + '</div>' : '') +
@@ -6640,7 +6680,7 @@ function rOver(res) {
     return;
   }
   OV.over.innerHTML = '<div class="card narrow center"><h1 class="ttl">' + esc(res.reason) + '</h1>' +
-    '<div class="big2"><div><b>' + fmt(res.earned) + '</b><span>Earned</span></div><div><b>' + fmt(res.best) + '</b><span>Best run</span></div></div>' +
+    '<div class="big2"><div><b id="ovEarn">' + fmt(res.earned) + '</b><span>Earned</span></div><div><b>' + fmt(res.best) + '</b><span>Best run</span></div></div>' +
     (res.newBest && res.earned > 0 ? '<p class="nb">New personal best!</p>' : '') +
     '<div class="mini"><div><b>x' + fmtMult(M.cash) + '</b><span>Map bonus</span></div><div><b>' + r.near + '</b><span>Near misses</span></div><div><b>' + r.crates + '</b><span>Crates</span></div><div><b>' + res.km.toFixed(1) + '</b><span>km</span></div></div>' +
     (r.jobsDone && r.jobsDone.length ? '<div class="jdone">' + r.jobsDone.map(function (jd) { return '<div><span>' + esc(jd.title) + '</span><b>+' + fmt(jd.reward) + '</b></div>'; }).join('') + '</div>' : '') +
@@ -6879,7 +6919,7 @@ function act(a, el) {
       m = mapById(d('id'));
       if (!save.maps[m.id] && spend(m.price)) { save.maps[m.id] = 1; save.map = m.id; persist(); prepare(); Aud.sfx('buy'); toast(m.name + ' unlocked!'); } else Aud.sfx('deny');
       rMaps(); return;
-    case 'tog': SET()[d('k')] = !SET()[d('k')]; persist(); Aud.apply(); if (d('k') === 'fps') {} rSettings(); return;
+    case 'tog': SET()[d('k')] = !SET()[d('k')]; persist(); Aud.apply(); applyTextSize(); if (d('k') === 'focus' && state === 'menu') prepare(); rSettings(); return;
     case 'set':
       SET()[d('k')] = d('v'); persist(); if (d('k') === 'quality') { layout(); } Aud.sfx('click'); rSettings(); return;
   }
@@ -6934,7 +6974,7 @@ OV.settings.addEventListener('click', function (e) {
 
 /* ---------- boot ---------- */
 function boot() {
-  authFromHash();
+  authFromHash(); applyTextSize();
   grantCodeCars(); fixDrivenCar();
   setTimeout(function () { checkAch(); }, 2600);
   // the collection starts with every car you own now (no rewards for those, they were already earned)
