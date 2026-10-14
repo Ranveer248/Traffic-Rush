@@ -196,6 +196,19 @@ input { -webkit-user-select: text; user-select: text; }
 .dgoal { background: #10142a; border: 3px solid var(--edge); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
 .dgoal small { font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: #ff8ac0; } .dgoal b { font-family: var(--disp); font-weight: 400; font-size: 24px; color: #fff; } .dgoal em { font-style: normal; font-weight: 800; color: var(--good); }
 .mbtn.wide2 { grid-column: 1 / -1; justify-content: center; }
+.rcode { font-family: var(--disp); font-size: 56px; letter-spacing: .18em; color: var(--accent); line-height: 1; }
+.rplayers { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.rplayers > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #10142a; border-radius: 12px; padding: 8px 12px; font-weight: 800; }
+.rplayers > div.me { outline: 2px solid var(--accent); } .rplayers small { color: var(--dim); font-weight: 700; font-size: 12px; } .rplayers b { color: var(--good); font-size: 18px; }
+.frbox { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.frlist { display: flex; flex-wrap: wrap; gap: 6px; } .frchip { display: inline-flex; align-items: center; gap: 4px; background: #1d2240; border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 14px; font-weight: 800; }
+.frchip button { background: rgba(255,255,255,0.12); border: 0; color: #fff; border-radius: 999px; width: 24px; height: 24px; font-size: 16px; line-height: 1; cursor: pointer; }
+.wkbar { display: flex; flex-direction: column; gap: 2px; background: #10142a; border: 2px solid #2d3666; border-radius: 14px; padding: 7px 12px; }
+.wkbar span { font-size: 14px; color: var(--ink); } .wkbar b { color: #9be7ff; } .wkbar small { font-size: 12px; color: var(--dim); }
+.sndask { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #1d2240; border-radius: 14px; padding: 8px 12px; font-size: 14px; font-weight: 800; }
+.sndask span { flex: 1; min-width: 140px; }
+.tunerow { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; color: var(--dim); } .tunerow input { flex: 1; accent-color: var(--accent); }
+.row2 .link + .link { margin-left: 12px; }
 .errbox { position: fixed; left: 10px; right: 10px; bottom: 10px; z-index: 99999; background: #2a0f16; border: 3px solid #ff5d5d; border-radius: 14px; padding: 10px 12px; color: #fff; display: flex; flex-direction: column; gap: 4px; font: 13px/1.35 system-ui, sans-serif; cursor: pointer; }
 .errcode { display: block; background: #2a0f16; border: 2px solid #ff5d5d; border-radius: 10px; padding: 8px 10px; font-size: 11px; color: #ffd6d6; word-break: break-word; white-space: pre-wrap; }
 .errbox b { font-size: 15px; color: #ff9a9a; } .errbox code { font-size: 11px; color: #ffd6d6; word-break: break-word; white-space: pre-wrap; }
@@ -330,6 +343,7 @@ ol.board li.top { background: linear-gradient(90deg, #2a2440, var(--panel) 60%);
   .menuCard > .gift { grid-column: 1; grid-row: 4; }
   .menuCard > .gift.dch { grid-column: 2; grid-row: 5; }
   .menuCard > .mini { grid-column: 1; grid-row: 5; }
+  .menuCard > .wkbar, .menuCard > .sndask { grid-column: 1 / -1; }
   .menuCard > .pbtn { grid-column: 1; grid-row: 6; }
   .menuCard > .btn.big { grid-column: 2; grid-row: 2; }
   .menuCard > .grid2 { grid-column: 2; grid-row: 3 / span 2; gap: 8px; }
@@ -2827,6 +2841,7 @@ function drawScene(g, sc) {
 function sideList(water) { return [-1, 1]; }
 function drawDecor(g) {
   // the real-world maps use the roadside scenery above; the old decor is kept for anything without a scene
+  if (focusOn()) return;   // (Focus mode: plain verges, nothing to look at but the road)
   var scn = SCENES[M.env]; if (scn) { drawScene(g, scn); return; }
   var vs = clamp(ROAD_X / 30, 1, 1.6), lx = ROAD_X * .5, rx = W - ROAD_X * .5, d = M.decor, y, n;
   var cols = vergeCols(d === 'trees' ? 46 : 64), allX = cols.L.concat(cols.R);
@@ -2985,7 +3000,7 @@ function buildings(g, kind) {
 
 /* ================= save data ================= */
 var KEY = 'cargorun-save-v4', KEY_OLD = 'cargorun-save-v3';
-var DEFSET = { sfx: true, sfxVol: 80, music: true, musicVol: 40, vibe: true, shake: true, quality: 'high', ctrl: 'tap', nosSide: 'center', fps: false, motion: true };
+var DEFSET = { sfx: true, sfxVol: 80, music: true, musicVol: 40, vibe: true, shake: true, quality: 'high', ctrl: 'tap', nosSide: 'center', fps: false, motion: true, autoq: true, focus: false };
 var EMPTY_G = { paints: {}, mods: {}, opt: {} };
 function defaults() {
   return { name: '', wallet: 0, best: 0, car: 'hauler', map: 'atacama', owned: { hauler: 1 }, maps: { atacama: 1 }, garage: {}, codes: {}, lbBest: 0, lbQueue: null,
@@ -3064,6 +3079,18 @@ function Gw(id) {
 }
 function spend(n) { if (save.wallet < n) return false; save.wallet -= n; return true; }
 
+// tuning slider: 0 = all grip, 50 = balanced, 100 = all speed (returns -1 .. 1)
+function tuneOf(g) { return clamp(((g && g.tune != null ? g.tune : 50) - 50) / 50, -1, 1); }
+function tuneText(v) {
+  var t = (v - 50) / 50; if (Math.abs(t) < 0.05) return 'Balanced';
+  return 'Top speed ' + (t > 0 ? '+' : '−') + Math.round(Math.abs(8 * t)) + '% · steering ' + (t > 0 ? '−' : '+') + Math.round(Math.abs(15 * t)) + '%';
+}
+function tuneHtml(g) {
+  var v = g.tune != null ? g.tune : 50;
+  return '<div class="it col"><div class="itx"><b>Tuning</b><span>Slide towards Grip for sharper steering, or Speed for a higher top speed.</span></div>' +
+    '<div class="tunerow"><span>Grip</span><input type="range" min="0" max="100" step="5" class="tune" value="' + v + '" aria-label="Tuning: grip or speed"><span>Speed</span></div>' +
+    '<span class="fine" id="tuneTx">' + tuneText(v) + '</span></div>';
+}
 function statsFor(id) {
   var c = carById(id), g = Gr(id), m = g.mods || {}, o = g.opt || {};
   function L(k) { return g[k] || 0; }
@@ -3072,8 +3099,8 @@ function statsFor(id) {
     car: c, id: c.id, w: c.w, h: c.h,
     lives: c.lives + L('armor'),
     drain: c.drain * (1 - 0.07 * L('tank')) * (m.hybrid ? 0.88 : 1),
-    agility: (c.agility + 2 * L('steer')) * (1 + 0.08 * L('brakes')),
-    grip: Math.min(0.8, 0.2 * L('tires')),
+    agility: (c.agility + 2 * L('steer')) * (1 + 0.08 * L('brakes')) * (1 - 0.15 * tuneOf(g)),
+    grip: clamp(0.2 * L('tires') - 0.1 * tuneOf(g), 0, 0.8), speedMul: 1 + 0.08 * tuneOf(g),
     pay: c.pay * (1 + 0.1 * L('pay')),
     mag: 8 * c.pu * (m.coil ? 1.4 : 1) * (1 + 0.1 * L('magnet')),
     magRange: (m.coil ? 400 : 280) * (1 + 0.1 * L('magnet')),
@@ -3128,6 +3155,7 @@ function jobById(id) { var b = save.jobs.board; for (var i = 0; i < b.length; i+
 function activeJobs() { return save.jobs.active.map(jobById).filter(Boolean); }
 function jobTitle(j) { return jobTypeOf(j.k).title(j.n, j); }
 // the payout follows your progress: a job taken before you bought a better car or map pays at today's rate
+function jobRefreshCost() { return niceAmt(250 * econScale() * bestMapCash()); }
 function jobReward(j) { var r = j.base ? Math.max(j.reward, j.base * econScale() * bestMapCash()) : j.reward * 3; return niceAmt(r * statsFor(save.car).cargo); }
 // rewards scale with how far you've got: about what a crate pays in your best car, times your prestige multiplier
 function econScale() { var best = 1; Object.keys(save.owned).forEach(function (id) { var c = carById(id); if (c && c.pay > best && !carLocked(c)) best = c.pay; }); return best * prestigeMult(); }   // (only cars you're allowed to drive count)
@@ -3283,6 +3311,9 @@ var UIH = { over: function () {}, pause: function () {}, play: function () {} };
 function laneX(i) { return ROAD_X + LANE_W * i + LANE_W / 2; }
 function laneOf(x) { return clamp(Math.floor((x - ROAD_X) / LANE_W), 0, LANES - 1); }
 function lq() { return SET().quality === 'low'; }
+// Focus mode: a calmer screen for players who find busy screens hard (plain roadside, no shake, fewer effects and
+// pop-ups, no weather or surprise events, and your car and the cars in your lane stand out)
+function focusOn() { return !!SET().focus; }
 
 function layout() {
   var aw = appEl.clientWidth, ah = appEl.clientHeight;
@@ -3350,6 +3381,7 @@ function buildPool() {
 function applyMap(m) { M = m; LANES = m.lanes; var rw = LANES <= 3 ? 252 : LANES === 4 ? 288 : 300, relay = rw !== ROAD_W; ROAD_W = rw; ROAD_X = Math.round((W - ROAD_W) / 2); LANE_W = ROAD_W / LANES; buildPool(); if (relay) layout(); initWx(); }
 function initWx() {
   wx = [];
+  if (focusOn()) return;
   var w = M.weather, n = w === 'rain' ? 90 : (w === 'snow' ? 80 : (w === 'embers' ? 40 : 0));
   if (lq()) n = Math.floor(n / 2);
   for (var i = 0; i < n; i++) wx.push({ x: Math.random() * W, y: Math.random() * H, r: 1 + Math.random() * 2, v: 0.6 + Math.random() * 0.8, p: Math.random() * TAU });
@@ -3360,7 +3392,7 @@ function speedNow() {
   if (state !== 'play') return state === 'menu' ? 160 : 0;
   // each car has its own top speed (police cars keep the old cap)
   var cap = S.car && S.car.rank != null ? clamp(560 + (topSpeed(S.car) - 48) * 6.5, 520, 770) : 720;
-  return Math.min(cap, 280 + t * 7) * (nitro > 0 ? 1.5 : 1);
+  return Math.min(cap * (S.speedMul || 1), 280 + t * 7) * (nitro > 0 ? 1.5 : 1);
 }
 function multNow() { return Math.min(S.multCap, 1 + Math.floor(streak / S.streakStep)); }
 function darkA() { var a = M.darkA || 0; return S.vision ? a * 0.45 : a; }
@@ -3380,6 +3412,7 @@ function startRun() {
   if (mode === 'police') { S = policeStats(pcById(save.police.car)); reset(); chase = newChase(); newSuspect(); }
   // the daily challenge: today's map and car, whatever you normally drive
   if (mode === 'daily') { var D = dailyToday(); applyMap(mapById(D.map)); S = statsFor(D.car); reset(); run.daily = D; }
+  if (mode === 'race') { applyMap(mapById(R.map || save.map)); S = statsFor(save.car); reset(); run.race = true; }
   state = 'count'; countT = 3.2; lastCount = -1;
   Aud.init(); Aud.setStyle(mode === 'police' ? 'chase' : (ENV_MUSIC[M.env] || 'menu')); Aud.engine(true, 0.1);
   UIH.play();
@@ -3394,7 +3427,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.11', updBusy = false;
+var APP_VERSION = '2026-10-14.14', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3433,7 +3466,7 @@ function lbFetch(path, opts) {
 function lbSubmit(earned) {
   // (a weekly best goes up too, even when it isn't an all-time best, so the weekly board stays fair)
   if ((earned > (save.lbBest || 0) || earned > weekBest()) && save.name && (!save.lbQueue || earned > save.lbQueue.score || save.lbQueue.wk !== weekStart())) {
-    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(LB_MAX, Math.round(earned)), car: (S && S.car ? S.car.name : carById(save.car).name).slice(0, 24), map: M.name.slice(0, 24), wk: weekStart() };
+    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(LB_MAX, Math.round(earned)), car: (S && S.car ? S.car.name : carById(save.car).name).slice(0, 24), map: M.name.slice(0, 24), wk: weekStart(), badge: badgeText() };
     persist();
   }
   return lbFlush();
@@ -3441,7 +3474,12 @@ function lbSubmit(earned) {
 function lbFlush() {
   var q = save.lbQueue;
   if (!q || !q.name) return Promise.resolve(false);
-  function post(row) { return lbFetch('/scores', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name: row.name, score: row.score, car: row.car, map: row.map }) }); }
+  function post(row) {
+    var body = { name: row.name, score: row.score, car: row.car, map: row.map }; if (row.badge) body.badge = row.badge;
+    var send = function () { return lbFetch('/scores', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(body) }); };
+    // (if the database doesn't take badges, send the score without one)
+    return send().catch(function (e) { if (body.badge && /HTTP 4/.test(e && e.message)) { delete body.badge; return send(); } throw e; });
+  }
   function sent(score) {
     save.lbBest = Math.max(save.lbBest || 0, score);
     if (q.wk === weekStart()) save.lbWeek = { wk: q.wk, best: Math.max(weekBest(), score) };
@@ -3453,14 +3491,29 @@ function lbFlush() {
     return post(capped).then(function () { return sent(LB_OLD_MAX); }, function () { return false; });
   });
 }
-function lbTop() { return lbFetch('/top_runs?select=name,score,car,map&order=score.desc&limit=50'); }
+function lbTop() { return lbFetch('/top_runs?select=*&order=score.desc&limit=50'); }
+function badgeText() { var p = save.prestige || 0, a = achCount(); return ((p ? '★' + p : '') + (a ? (p ? ' ' : '') + '🏆' + a : '')).slice(0, 24); }
 // the weekly board starts again every Monday at midnight (UTC): the best run each driver has sent this week
 function weekStart() { var d = new Date(), day = (d.getUTCDay() + 6) % 7; return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day); }
 function weekBest() { var w = save.lbWeek; return w && w.wk === weekStart() ? w.best : 0; }
 function lbWeek() {
-  return lbFetch('/scores?select=name,score,car,map&created_at=gte.' + encodeURIComponent(new Date(weekStart()).toISOString()) + '&order=score.desc&limit=400').then(function (rows) {
+  return lbFetch('/scores?select=*&created_at=gte.' + encodeURIComponent(new Date(weekStart()).toISOString()) + '&order=score.desc&limit=400').then(function (rows) {
     var seen = {}, out = []; (rows || []).forEach(function (r) { var k = String(r.name).toLowerCase(); if (!seen[k] && out.length < 50) { seen[k] = 1; out.push(r); } }); return out;
   });
+}
+// friends: driver names you follow (saved with your progress); the board shows your and their best runs
+function lbFriends() {
+  var names = (save.friends || []).concat(save.name ? [save.name] : []);
+  if (!names.length) return Promise.resolve([]);
+  var or = '(' + names.map(function (n) { return 'name.ilike."' + String(n).replace(/[^A-Za-z0-9 ]/g, '') + '"'; }).join(',') + ')';
+  return lbFetch('/top_runs?select=*&or=' + encodeURIComponent(or) + '&order=score.desc&limit=50');
+}
+function friendsEditHtml() {
+  var f = save.friends || [];
+  return '<div class="frbox"><div class="codeRow"><input id="frIn" maxlength="12" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Friend’s driver name" aria-label="Friend’s driver name"><button class="btn" data-act="fradd">Add</button></div>' +
+    '<p id="frMsg" class="codeMsg" role="status"></p>' +
+    (f.length ? '<div class="frlist">' + f.map(function (n) { return '<span class="frchip">' + esc(n) + '<button data-act="frdel" data-v="' + esc(n) + '" aria-label="Remove ' + esc(n) + '">×</button></span>'; }).join('') + '</div>' : '') +
+    '<p class="fine">Ask your friends for their driver name. It’s shown at the top of their main menu.</p></div>';
 }
 function weekLeft() { var ms = weekStart() + 7 * 864e5 - Date.now(), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5); return (d ? d + 'd ' : '') + h + 'h'; }
 /* ================= Google sign-in + cloud save =================
@@ -3495,6 +3548,18 @@ function authFromHash() {
 function signIn() {
   if (!AUTH_OK) { toast('Sign-in works on the game’s website: ranveer248.github.io/cargo-run', 3600); return; }
   location.href = SB + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(location.origin + location.pathname);
+}
+function emailSignIn() {
+  var inp = document.getElementById('emIn'), msg = document.getElementById('emMsg'), em = inp ? inp.value.trim() : '';
+  var say = function (t) { if (msg) msg.textContent = t; };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { say('Type a valid email address.'); Aud.sfx('deny'); return; }
+  if (!AUTH_OK) { say('Sign-in works on the game’s website: ranveer248.github.io/cargo-run'); return; }
+  say('Sending…');
+  fetch(SB + '/auth/v1/otp?redirect_to=' + encodeURIComponent(location.origin + location.pathname), { method: 'POST', headers: { apikey: LB.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: em, create_user: true }) })
+    .then(function (r) {
+      say(r.ok ? 'Sent! Check your email (and the spam folder) and open the link on this device.' : r.status === 429 ? 'Too many sign-in emails right now. Please try again later, or use Google.' : 'Couldn’t send the email (error ' + r.status + '). Try again, or use Google.');
+      if (r.ok) Aud.sfx('buy');
+    }, function () { say('No internet connection. Try again when you’re online.'); });
 }
 function signOut() {
   var a = auth; storeAuth(null); cloud.state = 'off'; try { localStorage.removeItem(LINK_KEY); localStorage.removeItem(BASE_KEY); } catch (e) {}
@@ -3667,10 +3732,211 @@ function syncTagHtml() {
 function accountHtml() {
   if (!auth) return '<h4>Account</h4><div class="it"><div class="itx"><b>Not signed in</b><span>Sign in to keep your progress online and play on any device.</span></div></div>' +
     '<button class="btn gbtn" data-act="signin">' + ICON.google + 'Sign in with Google</button>' +
+    '<p class="fine">No Google account? Get a sign-in link by email:</p>' +
+    '<div class="codeRow"><input id="emIn" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" aria-label="Email address"><button class="btn" data-act="emaillink">Send link</button></div>' +
+    '<p id="emMsg" class="codeMsg" role="status"></p>' +
     (AUTH_OK ? '' : '<p class="fine">Sign-in works on the game’s website: ranveer248.github.io/cargo-run</p>');
   return '<h4>Account</h4><div class="it"><div class="itx"><b>' + esc(auth.gname || 'Google account') + '</b><span>' + esc(auth.email) + '</span></div></div>' +
     '<div class="it"><div class="itx"><b>Cloud save</b><span id="cloudLine">' + cloudLine() + '</span></div></div>' +
     '<button class="btn ghost wide" data-act="signout">Sign out</button>';
+}
+
+/* ================= install as an app + play offline =================
+   The game can be installed to a phone's home screen or a computer like a normal app. Android/Chrome/Edge show their
+   own install box (beforeinstallprompt); iPhones need Share → Add to Home Screen, so we show the steps. A small
+   service worker (sw.js, next to index.html) keeps a copy of the game so it opens and plays without internet. */
+var installEvt = null;
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvt = e; if (cur === 'menu') rMenu(); });
+window.addEventListener('appinstalled', function () { installEvt = null; toast('Installed! Open Cargo Run from your home screen.', 3000); if (cur === 'menu') rMenu(); });
+function isInstalled() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+function canInstall() { return !isInstalled() && (AUTH_OK || !!installEvt); }
+function installApp() {
+  if (installEvt) { var ev = installEvt; installEvt = null; ev.prompt(); (ev.userChoice || Promise.resolve()).then(function () { if (cur === 'menu') rMenu(); }); return; }
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var android = /android/i.test(navigator.userAgent);
+  toast(ios ? 'Tap the Share button (square with an arrow), then “Add to Home Screen”.' : android ? 'Tap the ⋮ menu at the top right, then “Install app” or “Add to Home screen”.' : 'Click the install icon at the right end of the address bar, or the ⋮ menu → “Install Cargo Run”.', 6000);
+}
+function registerSW() {
+  if (!('serviceWorker' in navigator) || !/^https:$|^http:$/.test(location.protocol)) return;
+  if (location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return;
+  try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {}
+}
+
+/* ================= race friends (live) =================
+   One driver makes a room and gets a 4-letter code; up to 3 friends join with it. When the host starts, everyone drives
+   the host's map for 2 minutes in their own car, and sees the others as see-through "ghost" cars (no bumping).
+   Score = crates x10 + near misses x5 + 1 point per 25 m, so the price of your car doesn't decide the winner.
+   It uses Supabase Realtime broadcast + presence (no database table); the small Supabase library is only loaded
+   when you open Race friends. */
+var SUPA_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+var RACE_LEN = 120, RACE_MAX = 4;
+var R = { st: 'idle', code: '', host: false, players: {}, others: {}, ch: null, client: null, id: '', msg: '', map: null, len: RACE_LEN, sendT: 0, startAt: 0, final: false, bonus: 0, myPts: 0, joinedAt: 0 };
+function raceId() { if (!R.id) R.id = 'p' + Math.random().toString(36).slice(2, 10); return R.id; }
+function loadSupa() {
+  if (window.supabase && window.supabase.createClient) return Promise.resolve(window.supabase);
+  return new Promise(function (res, rej) {
+    var s = document.createElement('script'); s.src = SUPA_JS; s.async = true;
+    s.onload = function () { if (window.supabase && window.supabase.createClient) res(window.supabase); else rej(new Error('library missing')); };
+    s.onerror = function () { rej(new Error('library failed to load')); };
+    document.head.appendChild(s);
+  });
+}
+function raceClient() {
+  return loadSupa().then(function (lib) {
+    // (its own sign-in handling is switched off: the game does sign-in itself)
+    if (!R.client) R.client = lib.createClient(SB, LB.key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+    return R.client;
+  });
+}
+function newRaceCode() { var L = 'ABCDEFGHJKLMNPQRSTUVWXYZ', c = ''; for (var i = 0; i < 4; i++) c += L[Math.floor(Math.random() * L.length)]; return c; }
+function raceJoin(code, host) {
+  raceLeave();
+  if (navigator.onLine === false) { R.msg = 'You’re offline. Racing friends needs the internet.'; rRace(); return; }
+  R.code = code; R.host = host; R.st = 'joining'; R.msg = host ? 'Making your room…' : 'Joining room ' + code + '…'; R.joinedAt = Date.now(); rRace();
+  raceClient().then(function (cl) {
+    if (R.code !== code) return;
+    var ch = cl.channel('cargo-race-' + code, { config: { broadcast: { self: false }, presence: { key: raceId() } } });
+    R.ch = ch;
+    ch.on('presence', { event: 'sync' }, function () {
+      var ps = ch.presenceState(), k; R.players = {};
+      for (k in ps) if (ps[k] && ps[k][0]) R.players[k] = ps[k][0];
+      raceCheckFull(); if (cur === 'race') rRace();
+    });
+    ch.on('broadcast', { event: 'start' }, function (m) { raceBegin(m.payload || {}); });
+    ch.on('broadcast', { event: 'pos' }, function (m) { var p = m.payload; if (p && p.id && p.id !== raceId()) { p.at = Date.now(); R.others[p.id] = p; } });
+    ch.subscribe(function (status) {
+      if (R.ch !== ch) return;
+      if (status === 'SUBSCRIBED') {
+        R.st = 'lobby'; R.msg = '';
+        ch.track({ name: (save.name || 'Driver').slice(0, 12), car: save.car, host: host, at: R.joinedAt });
+        if (!host) setTimeout(function () { raceCheckHost(code); }, 4000);
+        if (cur === 'race') rRace();
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        raceLeave(); R.msg = 'Can’t connect right now. Check your internet and try again.'; if (cur === 'race') rRace();
+      }
+    });
+  }, function () { R.st = 'idle'; R.msg = 'Can’t load racing right now. Check your internet and try again.'; if (cur === 'race') rRace(); });
+}
+// joining a code nobody is hosting: say so instead of waiting for ever
+function raceCheckHost(code) {
+  if (R.st !== 'lobby' || R.host || R.code !== code) return;
+  var any = Object.keys(R.players).some(function (k) { return R.players[k].host; });
+  if (!any) { raceLeave(); R.msg = 'No room with the code ' + code + '. Check it with your friend.'; if (cur === 'race') rRace(); }
+}
+// a room holds 4 drivers: whoever joined last leaves again
+function raceCheckFull() {
+  var ks = Object.keys(R.players); if (ks.length <= RACE_MAX || R.host) return;
+  var order = ks.slice().sort(function (a, b) { return (R.players[a].at || 0) - (R.players[b].at || 0); });
+  if (order.indexOf(raceId()) >= RACE_MAX) { raceLeave(); R.msg = 'That room is full (4 drivers max).'; }
+}
+function raceLeave() {
+  var ch = R.ch; R.ch = null;
+  if (ch) { try { ch.untrack(); } catch (e) {} try { R.client.removeChannel(ch); } catch (e) {} }
+  R.st = 'idle'; R.players = {}; R.others = {}; R.host = false; R.code = '';
+}
+function raceStart() {
+  if (!R.host || !R.ch || Object.keys(R.players).length < 2) { Aud.sfx('deny'); return; }
+  var pl = { map: save.map, len: RACE_LEN };
+  R.ch.send({ type: 'broadcast', event: 'start', payload: pl });
+  raceBegin(pl);
+}
+function raceBegin(pl) {
+  if (inRun()) return;   // (busy in another run: this race goes ahead without you)
+  R.st = 'racing'; R.map = MAPS.some(function (m) { return m.id === pl.map; }) ? pl.map : save.map; R.len = pl.len || RACE_LEN;
+  R.others = {}; R.final = false; R.bonus = 0; R.myPts = 0; R.sendT = 0; R.startAt = Date.now() + 3200;
+  // everyone in the room right now is in this race: wait for each of them at the end
+  R.expect = Object.keys(R.players).filter(function (k) { return k !== raceId(); }).map(function (k) { return { id: k, name: R.players[k].name }; });
+  mode = 'race'; hideAll(); startRun();
+}
+function racePts() { return run && run.race ? Math.round(run.crates * 10 + run.near * 5 + dist / 25) : 0; }
+function raceSend(alive) {
+  if (!R.ch) return;
+  try { R.ch.send({ type: 'broadcast', event: 'pos', payload: { id: raceId(), name: (save.name || 'Driver').slice(0, 12), car: save.car, d: Math.round(dist * 10) / 10, lf: Math.round((P.x - ROAD_X) / LANE_W * 100) / 100, pts: racePts(), alive: alive } }); } catch (e) {}
+}
+function raceTick(dt) {
+  R.sendT -= dt; if (R.sendT <= 0) { R.sendT = 0.15; raceSend(true); }
+  if (t >= R.len) finish('Time! Race over');
+}
+// everyone's score, best first
+function raceStandings() {
+  var me = { name: save.name || 'You', pts: run && run.race ? racePts() : R.myPts, me: true, alive: state === 'play' }, list = [me], k;
+  if (state === 'over') me.pts = R.myPts;
+  // (a driver counts as finished only when they say so, or when the race time is well and truly up, so a slow connection can't end the race early)
+  for (k in R.others) { var o = R.others[k]; list.push({ name: o.name, pts: o.pts, alive: o.alive && Date.now() < R.startAt + (R.len + 6) * 1000 }); }
+  (R.expect || []).forEach(function (x) { if (!R.others[x.id]) list.push({ name: x.name, pts: 0, alive: Date.now() < R.startAt + (R.len + 6) * 1000 }); });
+  return list.sort(function (a, b) { return b.pts - a.pts; });
+}
+function drawGhosts() {
+  if (!run || !run.race) return;
+  var g = ctx, k;
+  for (k in R.others) {
+    var o = R.others[k]; if (Date.now() - o.at > 4000) continue;
+    var gx = ROAD_X + o.lf * LANE_W, gy = P.y - (o.d - dist) * 40, car = carById(o.car);
+    if (gy < -60 || gy > H + 60) {
+      // off screen: a little tag at the top (ahead of you) or bottom (behind)
+      var ty = gy < 0 ? 132 : H - 30, txt = (gy < 0 ? '▲ ' : '▼ ') + o.name + ' ' + (o.d > dist ? '+' : '') + Math.round(o.d - dist) + ' m';
+      g.font = '800 12px ' + FONT; var tw = g.measureText(txt).width + 16, tx = clamp(gx, tw / 2 + 6, W - tw / 2 - 6);
+      g.fillStyle = 'rgba(11,14,28,0.75)'; rr(g, tx - tw / 2, ty - 11, tw, 22, 9); g.fill();
+      g.fillStyle = '#9be7ff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, tx, ty);
+      continue;
+    }
+    g.save(); g.globalAlpha = 0.42; g.translate(gx, gy); drawCarFull(g, car, 0, 0, { clock: clock, lq: lq() }); g.restore();
+    g.font = '800 12px ' + FONT; var nw = g.measureText(o.name).width + 14;
+    g.fillStyle = 'rgba(11,14,28,0.7)'; rr(g, gx - nw / 2, gy - car.h / 2 - 26, nw, 20, 8); g.fill();
+    g.fillStyle = '#9be7ff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(o.name, gx, gy - car.h / 2 - 16);
+  }
+}
+function drawRaceHud() {
+  var g = ctx, y = compactHud() ? 92 : 128, list = raceStandings().slice(0, 4), w = Math.min(230, W - 30), x = W / 2 - w / 2, h = 30 + list.length * 18;
+  var left = Math.max(0, Math.ceil(R.len - t)), tt = Math.floor(left / 60) + ':' + (left % 60 < 10 ? '0' : '') + (left % 60);
+  g.fillStyle = 'rgba(11,14,28,0.8)'; rr(g, x, y, w, h, 12); g.fill(); g.strokeStyle = '#37e4f0'; g.lineWidth = 2; g.stroke();
+  g.textBaseline = 'middle'; g.font = '800 14px ' + FONT; g.textAlign = 'left'; g.fillStyle = '#37e4f0'; g.fillText('RACE · ' + R.code, x + 10, y + 15);
+  g.textAlign = 'right'; g.fillStyle = left <= 10 ? '#ff5d5d' : '#fff'; g.fillText('⏱ ' + tt, x + w - 10, y + 15);
+  list.forEach(function (p, i) {
+    var ly = y + 34 + i * 18; g.font = '700 13px ' + FONT; g.textAlign = 'left'; g.fillStyle = p.me ? '#ffd23f' : (p.alive ? '#fff' : 'rgba(255,255,255,0.5)');
+    g.fillText((i + 1) + '. ' + p.name, x + 10, ly); g.textAlign = 'right'; g.fillText(String(p.pts), x + w - 10, ly);
+  });
+}
+function rRace() {
+  if (cur !== 'race') return;
+  var h = head('Race friends') + '<div class="card narrow center">', ps = Object.keys(R.players);
+  if (R.st === 'idle') {
+    h += '<p class="sub">Race up to 3 friends live! Everyone drives the same map for 2 minutes and sees the others as ghost cars.</p>' +
+      '<p class="fine">Score: crates ×10, near misses ×5, and 1 point every 25 m. Your car’s price doesn’t decide the winner. The winner gets a cash prize.</p>' +
+      (R.msg ? '<p class="codeMsg">' + esc(R.msg) + '</p>' : '') +
+      '<button class="btn big ibtn" data-act="racenew">' + ICON.flag + 'MAKE A ROOM</button>' +
+      '<p class="fine">or join a friend’s room:</p>' +
+      '<div class="codeRow"><input id="rcIn" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" aria-label="Room code"><button class="btn" data-act="racejoin">Join</button></div>';
+  } else if (R.st === 'joining') {
+    h += '<p class="sub">' + esc(R.msg) + '</p><button class="btn ghost wide" data-act="raceleave">Cancel</button>';
+  } else {
+    h += '<p class="fine">Room code</p><div class="rcode">' + esc(R.code) + '</div>' +
+      '<p class="fine">Tell your friends to tap <b>Race friends</b> and type this code.</p><div class="rplayers">' +
+      ps.map(function (k) { var p = R.players[k]; return '<div class="' + (k === raceId() ? 'me' : '') + '"><span>' + (p.host ? '👑 ' : '🚗 ') + esc(p.name) + (k === raceId() ? ' (you)' : '') + '</span><small>' + esc(carById(p.car).name) + '</small></div>'; }).join('') + '</div>' +
+      (R.host ? (ps.length >= 2 ? '<button class="btn big ibtn" data-act="racestart">' + ICON.play + 'START RACE</button><p class="fine">You’ll race on your map: ' + esc(mapById(save.map).name) + '.</p>'
+                                : '<p class="sub">Waiting for friends to join… (' + ps.length + '/' + RACE_MAX + ')</p>')
+              : '<p class="sub">Waiting for the host to start the race…</p>') +
+      '<button class="btn ghost wide" data-act="raceleave">Leave room</button>';
+  }
+  OV.race.innerHTML = h + '</div>';
+}
+// the results screen for a race: live standings until everyone has finished, then the winner (and the prize)
+function raceResultsHtml() { return '<div id="raceStand" class="rplayers">' + raceStandingsHtml() + '</div>'; }
+function raceStandingsHtml() {
+  return raceStandings().map(function (p, i) { return '<div class="' + (p.me ? 'me' : '') + '"><span>' + (i === 0 && R.final ? '🏆 ' : (i + 1) + '. ') + esc(p.name) + (p.alive && !R.final ? ' <small>still driving…</small>' : '') + '</span><b>' + p.pts + '</b></div>'; }).join('');
+}
+function raceWatch() {
+  if (cur !== 'over' || R.final) return;
+  var list = raceStandings(), late = Date.now() > R.startAt + (R.len + 6) * 1000;
+  var anyDriving = !late && (R.expect || []).some(function (x) { var o = R.others[x.id]; return !o || o.alive; });
+  if (!anyDriving) {
+    R.final = true;
+    if (list.length > 1 && list[0].me) { R.bonus = niceAmt(20000 * econScale() * bestMapCash()); save.wallet += R.bonus; save.stats.raceWins = (save.stats.raceWins || 0) + 1; persist(); confetti(70); Aud.sfx('bust'); }
+    var nb = document.getElementById('raceNote'); if (nb) nb.innerHTML = list.length < 2 ? 'Race finished.' : list[0].me ? 'You won the race! +' + fmt(R.bonus) : esc(list[0].name) + ' won the race!';
+    R.st = R.ch ? 'lobby' : 'idle';
+  }
+  var el = document.getElementById('raceStand'); if (el) el.innerHTML = raceStandingsHtml();
+  if (!R.final) setTimeout(raceWatch, 500);
 }
 
 // Top cops: every driver's lifetime criminals busted. Sent whenever the total goes up; a failed send is retried later.
@@ -3694,7 +3960,7 @@ function finish(reason) {
   state = 'over'; Aud.engine(false, 0); Aud.sfx('lose'); vibe([80, 60, 120]);
   var earned = Math.round(cash);
   save.wallet += earned;
-  var st = save.stats; st.runs++;
+  var st = save.stats; st.runs++; if (run.bosses) st.bosses = (st.bosses || 0) + run.bosses;
   // the first run ends with a welcome bonus, enough for a first new car
   var starter = 0; if (!chase && !save.starterGiven) { save.starterGiven = true; var fc = nextCarGoal(); starter = fc ? Math.max(2500, fc.price - save.wallet + 100) : 2500; save.wallet += starter; } st.km += dist / 1000; st.booms += run.booms; st.near += run.near; st.crates += run.crates; st.earned += earned; st.deliv += run.deliv || 0;
   var res;
@@ -3708,6 +3974,7 @@ function finish(reason) {
     persist();
     res = { reason: reason, earned: earned, best: save.best, newBest: newBest, km: dist / 1000, run: run, sub: lbSubmit(earned), starter: starter, carId: S.id, daily: run.daily ? { won: !!run.dailyWon, pay: run.dailyPay || 0, title: dailyTitle(run.daily), val: jobVal(run.daily.goal), goal: run.daily.goal } : null };
   }
+  if (run.race) { R.myPts = racePts(); raceSend(false); res.race = true; }
   checkAch(); cloudFlushNow();
   setTimeout(function () { if (state === 'over') UIH.over(res); }, 800);
 }
@@ -3719,17 +3986,86 @@ function finish(reason) {
 var EV = null, evT = 20, coachI = 0;
 var COACH = [[2, 'Tap the left or right side to change lanes'], [7.5, 'Grab crates for cash. Gold and diamonds pay more!'], [13, 'Skim past cars for near-miss cash'],
   [18.5, 'Orange cans refill your fuel'], [24, 'Blue shields save you from one crash']];
-function resetEvents() { EV = null; evT = save.stats.runs === 0 ? 34 : 16 + Math.random() * 10; coachI = 0; }
+function resetEvents() { EV = null; evT = save.stats.runs === 0 ? 34 : 16 + Math.random() * 10; coachI = 0; boss = null; }
+/* ---------- weekly event: one twist for everyone, changing every Monday ---------- */
+var WEEKLY = [
+  { k: 'gold', name: 'Gold rush', info: 'Gold, diamond and mystery crates are twice as common' },
+  { k: 'crates', name: 'Crate fever', info: '50% more crates on the road' },
+  { k: 'near', name: 'Daredevil week', info: 'Near misses pay 3 times as much' },
+  { k: 'boss', name: 'Boss week', info: 'Boss trucks show up 3 times as often' },
+  { k: 'cash', name: 'Payday week', info: 'Every run pays 25% more' }
+];
+function weekEvent() { return WEEKLY[Math.floor(weekStart() / 6048e5) % WEEKLY.length]; }
+function isWeek(k) { return weekEvent().k === k; }
+function weekHtml() { var w = weekEvent(); return '<div class="wkbar"><span>This week: <b>' + w.name + '</b></span><small>' + w.info + ' · ' + weekLeft() + ' left</small></div>'; }
+/* ---------- boss chase: an armoured truck that has to be rammed three times ----------
+   It sits ahead of you, changes lanes, then slams the brakes and drops back towards you (its brake lights flash first).
+   Be in its lane when it does and you ram it: no damage to you, cash for every hit, a big payout for the third.
+   It smashes any traffic in its way. If it isn't stopped in time it gets away. */
+var boss = null;
+function bossStart() {
+  var spec = wantedSpec(WANTED[5]), lane = Math.floor(Math.random() * LANES);
+  boss = { spec: spec, w: spec.w, h: spec.h, lane: lane, x: laneX(lane), y: -spec.h, hp: 3, max: 3, ph: 'hold', pt: 2.4, hitCd: 0 };
+}
+function updateBoss(dt) {
+  var b = boss; if (!b) return;
+  b.hitCd = Math.max(0, b.hitCd - dt); b.pt -= dt;
+  var hold = P.y - 290, target = hold, rate = 260;
+  if (b.ph === 'hold' && b.pt <= 0) { b.ph = 'warn'; b.pt = 0.8; }
+  else if (b.ph === 'warn' && b.pt <= 0) { b.ph = 'charge'; b.pt = 1.6; }
+  else if (b.ph === 'charge' && (b.pt <= 0 || b.y > P.y + 60)) {
+    b.ph = 'hold'; b.pt = 2 + Math.random() * 1.2;
+    var opts = [b.lane - 1, b.lane + 1].filter(function (l) { return l >= 0 && l < LANES; }); if (Math.random() < 0.75) b.lane = pick(opts, Math.random());
+  }
+  if (b.ph === 'charge') { target = P.y + 90; rate = 420; }
+  b.y += clamp(target - b.y, -rate * dt, rate * dt);
+  b.x += (laneX(b.lane) - b.x) * Math.min(1, dt * 2.6);
+  // it ploughs through traffic
+  for (var i = 0; i < traffic.length; i++) { var c = traffic[i]; if (!c.wreck && hit(b, c, 2)) { c.byPlayer = false; wreckCar(c, 0.8, true); } }
+  // ramming it
+  if (state === 'play' && b.hitCd <= 0 && hit(P, b, 2)) {
+    b.hp--; b.hitCd = 1; inv = Math.max(inv, 0.7); shakeT = Math.max(shakeT, 0.5); vibe(60); Aud.sfx('crash');
+    burst((P.x + b.x) / 2, P.y - P.h / 2, 22, '#ffd98a', 220, 0.5, 2.6, 0);
+    if (b.hp <= 0) { bossDown(); return; }
+    var g1 = cashGain(400); cash += g1; pop(b.x, P.y - 110, 'BOSS HIT ' + (b.max - b.hp) + '/3  +' + fmt(g1), '#ffd23f', true);
+    b.ph = 'hold'; b.pt = 1.8 + Math.random(); b.y = P.y - b.h - 80;
+  }
+}
+function bossDown() {
+  var b = boss; boss = null;
+  explode(b.x, b.y, 1.4, true);
+  var g2 = cashGain(3000); cash += g2; run.bosses = (run.bosses || 0) + 1;
+  pop(W / 2, H * 0.36, 'BOSS DOWN! +' + fmt(g2), '#3ddc97', true); confetti(50); Aud.sfx('bust');
+  // its cargo spills out: a shower of crates ahead of you
+  for (var i = 0; i < 8; i++) { var l = i % LANES; items.push({ type: 'crate', lane: l, x: laneX(l) + (Math.random() - .5) * 16, y: b.y - 40 - i * 46, w: 30, h: 30 }); }
+  if (EV && EV.k === 'boss') { EV.done = true; EV.t = Math.min(EV.t, 1.4); }
+}
+function drawBoss() {
+  var b = boss, g = ctx, blink = Math.floor(clock * 6) % 2 === 0;
+  bendPush(b.x, b.y);
+  drawSpec(g, b.spec, b.x, b.y, { brake: b.ph === 'warn' ? blink : b.ph === 'charge', clock: clock, lq: lq() });
+  g.restore();
+  // a red glow, its name and the hits left
+  var top = b.y - b.h / 2 - 26;
+  g.fillStyle = 'rgba(11,14,28,0.8)'; rr(g, b.x - 34, top - 4, 68, 22, 8); g.fill();
+  g.fillStyle = '#ff5d5d'; g.font = '800 11px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('BOSS', b.x, top + 4);
+  for (var i = 0; i < b.max; i++) { g.fillStyle = i < b.hp ? '#ff5d5d' : 'rgba(255,255,255,0.2)'; rr(g, b.x - 27 + i * 19, top + 11, 16, 5, 2); g.fill(); }
+}
 function startEvent() {
-  var k = ['rush', 'works', 'combo'][Math.floor(Math.random() * 3)], len = { rush: 8, works: 11, combo: 12 }[k];
+  // (boss trucks are the rare one, except in Boss week)
+  var bw = isWeek('boss') ? 3 : 1, r = Math.random() * (9 + bw), k = r < 3 ? 'rush' : r < 6 ? 'works' : r < 9 ? 'combo' : 'boss';
+  var len = { rush: 8, works: 11, combo: 12, boss: 24 }[k];
   // (roadworks only close an edge lane, never a middle one, so you can't get trapped on one side of the cones)
   EV = { k: k, t: len, max: len, n: 0, warn: k === 'works' ? 1.6 : 0, lane: Math.random() < 0.5 ? 0 : LANES - 1, coneT: 0 };
+  if (k === 'boss') bossStart();
   Aud.sfx('power'); vibe(30);
 }
 function updateEvents(dt) {
   if (chase || state !== 'play') return;
+  if (run.race) { raceTick(dt); return; }   // (no surprise events in a race: it has to be fair)
   if (run.daily) checkDaily();
-  if (!EV) { evT -= dt; if (evT <= 0 && t > 12) startEvent(); return; }
+  updateBoss(dt);
+  if (!EV) { evT -= dt; if (evT <= 0 && t > 12 && !focusOn()) startEvent(); return; }
   EV.t -= dt;
   if (EV.k === 'works' && EV.t < EV.max - EV.warn && EV.t > 1) { EV.coneT -= dt; if (EV.coneT <= 0) { EV.coneT = 0.16; items.push({ type: 'cone', lane: EV.lane, x: laneX(EV.lane) + (EV.n++ % 2 ? -1 : 1) * LANE_W * .16, y: -30, w: 20, h: 20 }); } }
   // crate rush: a steady stream of crates in lanes with no car at the top of the road
@@ -3738,6 +4074,7 @@ function updateEvents(dt) {
     if (ok.length) { var rl = ok[Math.floor(Math.random() * ok.length)]; items.push({ type: 'crate', lane: rl, x: laneX(rl), y: -30, w: 30, h: 30 }); } } }
   if (EV.t <= 0) {
     if (EV.k === 'combo' && !EV.done) pop(P.x, P.y - 80, 'Challenge missed', '#ff9a9a');
+    if (EV.k === 'boss' && boss) { pop(W / 2, H * 0.36, 'The boss got away', '#ff9a9a', true); boss = null; }
     EV = null; evT = 22 + Math.random() * 14;
   }
 }
@@ -3748,6 +4085,7 @@ function eventNearMiss() {
 }
 function drawEvents() {
   var g = ctx, y = compactHud() ? 92 : 128, w = Math.min(250, W - 40), x = W / 2 - w / 2, txt = null, col = '#ffd23f', fr = 0;
+  if (run && run.race && state === 'play') { drawRaceHud(); return; }
   // the daily challenge goal sits under the HUD, and any event banner goes below it
   if (run && run.daily && state === 'play') {
     var D = run.daily, v = jobVal(D.goal), dn = run.dailyWon, dw = Math.min(300, W - 30), dl = 'DAILY: ' + (dn ? 'DONE ✓' : JOB_SHORT[D.goal.k] + ' ' + jobFmt(D.goal, v));
@@ -3759,6 +4097,7 @@ function drawEvents() {
     fr = clamp(EV.t / EV.max, 0, 1);
     if (EV.k === 'rush') { txt = 'CRATE RUSH!'; col = '#3ddc97'; }
     else if (EV.k === 'works') { txt = EV.t > EV.max - EV.warn ? 'ROADWORKS AHEAD!' : 'ROADWORKS: lane closed'; col = '#ff9a3d'; }
+    else if (EV.k === 'boss') { txt = EV.done ? 'BOSS DOWN!' : boss && boss.ph !== 'hold' ? 'IT’S BRAKING: GET IN ITS LANE!' : 'BOSS: RAM THE TRUCK ' + (boss ? boss.max - boss.hp : 0) + '/3'; col = EV.done ? '#3ddc97' : '#ff5d5d'; }
     else { txt = EV.done ? 'DOUBLE CASH!' : 'NEAR MISSES ' + EV.n + '/5'; col = EV.done ? '#ffd23f' : '#9be7ff'; }
   }
   if (txt) {
@@ -3807,6 +4146,16 @@ function checkDaily() {
   var r = dailyReward(); save.wallet += r; save.dchal.won = dayKey(); save.dchal.wins = (save.dchal.wins || 0) + 1; run.dailyPay = r; persist();
   pop(P.x, P.y - 90, 'DAILY DONE +' + fmt(r), '#ffd23f', true); Aud.sfx('buy'); vibe([40, 40, 80]); confetti(50);
 }
+// sound off? ask once (people often don't realise the game has music)
+function soundAskHtml() {
+  if (save.soundAsked || (SET().sfx && SET().music)) return '';
+  return '<div class="sndask"><span>🔇 Sound is off. Turn it on?</span><button class="btn sm" data-act="sndon">Turn on</button><button class="btn ghost sm" data-act="sndno">No thanks</button></div>';
+}
+// after a few runs, offer Focus mode once (not on top of the sound question)
+function focusAskHtml() {
+  if (save.focusAsked || focusOn() || (save.stats.runs || 0) < 2 || soundAskHtml()) return '';
+  return '<div class="sndask"><span>🧘 Too much going on? Try <b>Focus mode</b>: a calmer screen with only the road and the cars.</span><button class="btn sm" data-act="focuson">Try it</button><button class="btn ghost sm" data-act="focusno">No thanks</button></div>';
+}
 function dailyCardHtml() {
   var D = dailyToday(), won = dailyWonToday();
   return '<button class="gift dch' + (won ? ' done' : '') + '" data-act="go" data-to="daily">' + ICON.daily + '<div><b>' + (won ? 'Daily challenge done!' : 'Daily challenge: ' + fmt(dailyReward())) + '</b><span>' + esc(dailyTitle(D)) + (won ? ' · new one tomorrow' : '') + '</span></div></button>';
@@ -3853,9 +4202,12 @@ var ACH = [
   ['pres10', 'Legend', 'Reach prestige 10', function () { return save.prestige || 0; }, 10, 3],   // (PRESTIGE_MAX isn't set yet up here)
   ['daily1', 'Challenger', 'Win a daily challenge', function () { return (save.dchal || {}).wins || 0; }, 1, 1],
   ['daily7', 'Daily driver', 'Win 7 daily challenges', function () { return (save.dchal || {}).wins || 0; }, 7, 2],
-  ['pupg', 'Tuned cop', 'Fully upgrade a police car', function () { return maxedPolice(); }, 1, 2]
+  ['pupg', 'Tuned cop', 'Fully upgrade a police car', function () { return maxedPolice(); }, 1, 2],
+  ['boss1', 'Boss buster', 'Take down a boss truck', function () { return save.stats.bosses || 0; }, 1, 2],
+  ['race1', 'Racer', 'Win a race against friends', function () { return save.stats.raceWins || 0; }, 1, 2],
+  ['boss10', 'Truck stopper', 'Take down 10 boss trucks', function () { return save.stats.bosses || 0; }, 10, 3]
 ];
-var ACH_PAY = [0, 15000, 50000, 150000];
+var ACH_PAY = [0, 4000, 12000, 30000];   // (about 1 / 2 / 4 minutes of driving on your best map)
 function achReward(a) { return niceAmt(ACH_PAY[a[5]] * econScale() * bestMapCash()); }
 function checkAch() {
   if (!save.ach) save.ach = {};
@@ -3968,9 +4320,9 @@ function nextMilestone() { var n = collectionCount(); for (var i = 0; i < COL_MI
 function nextCarGoal() { for (var i = 0; i < CARS_BY_PRICE.length; i++) { var c = CARS_BY_PRICE[i]; if (c.price > 0 && !save.owned[c.id] && !carLocked(c)) return c; } return null; }
 
 /* ================= particles + text ================= */
-function pop(x, y, text, color, big) { pops.push({ x: x, y: y, text: text, color: color || '#3ddc97', life: big ? 1.3 : 0.95, big: !!big }); }
+function pop(x, y, text, color, big) { if (big !== true && focusOn()) return; pops.push({ x: x, y: y, text: text, color: color || '#3ddc97', life: big ? 1.3 : 0.95, big: !!big }); }
 function burst(x, y, n, col, spd, life, size, grav) {
-  if (lq()) n = Math.ceil(n / 3);
+  if (lq() || focusOn()) n = Math.ceil(n / 3);
   for (var i = 0; i < n && parts.length < 420; i++) {
     var a = Math.random() * TAU, v = spd * (0.3 + Math.random() * 0.7);
     parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: life * (0.6 + Math.random() * 0.4), max: life, col: col, r: size * (0.5 + Math.random() * 0.8), g: grav || 0, kind: 'dot' });
@@ -4104,7 +4456,7 @@ function spawnTick(iv) {
     }
     if (type) { lane = takeLane(free); items.push({ type: type, lane: lane, x: laneX(lane), y: -30, w: 30, h: 30 }); if (type === 'fuel') run.fuelGap = 0; }
   }
-  if (free.length && Math.random() < Math.min(0.85, 0.5 * S.crateRate)) { lane = takeLane(free); items.push({ type: 'crate', lane: lane, x: laneX(lane), y: -30, w: 30, h: 30 }); }
+  if (free.length && Math.random() < Math.min(0.92, 0.5 * S.crateRate * (!chase && isWeek('crates') ? 1.5 : 1))) { lane = takeLane(free); items.push({ type: 'crate', lane: lane, x: laneX(lane), y: -30, w: 30, h: 30 }); }
 }
 
 function spawnWarned(w) {
@@ -4117,7 +4469,7 @@ function spawnWarned(w) {
 
 /* ================= helpers ================= */
 function hit(a, b, pad) { pad = pad == null ? 4 : pad; return Math.abs(a.x - b.x) < (a.w + b.w) / 2 - pad && Math.abs(a.y - b.y) < (a.h + b.h) / 2 - pad - 2; }
-function cashGain(base) { return Math.max(5, Math.round(base * S.pay * M.cash * prestigeMult() * (dbl > 0 ? 2 : 1) / 5) * 5); }
+function cashGain(base) { return Math.max(5, Math.round(base * S.pay * M.cash * prestigeMult() * (dbl > 0 ? 2 : 1) * (!chase && isWeek('cash') ? 1.25 : 1) / 5) * 5); }
 function wreckCar(c, boomPower, safe) {
   if (c.wreck) return;
   c.wreck = true; c.f = 1; c.eff = 1; c.beh = 'wreck'; c.burn = 6 + Math.random() * 4;
@@ -4215,7 +4567,15 @@ var CRATE_KINDS = [
   { k: 'gem', p: 0.07, mult: 6, col: '#37e4f0', hi: '#a8f6ff', dark: '#06404a', label: 'DIAMOND x6' },
   { k: 'mystery', p: 0.05, mult: 0, col: '#b57bff', hi: '#dcc2ff', dark: '#2a1050' }
 ];
-function crateOf(it) { if (it.ck) return it.ck; var r = Math.random(), a = 0; for (var i = 0; i < CRATE_KINDS.length; i++) { a += CRATE_KINDS[i].p; if (r < a) return (it.ck = CRATE_KINDS[i]); } return (it.ck = CRATE_KINDS[0]); }
+function crateOf(it) {
+  if (it.ck) return it.ck;
+  // (in Gold rush week every special crate is twice as likely)
+  var wt = function (i) { return CRATE_KINDS[i].p * (i > 0 && !chase && isWeek('gold') ? 2 : 1); }, tot = 0, i;
+  for (i = 0; i < CRATE_KINDS.length; i++) tot += wt(i);
+  var r = Math.random() * tot, a = 0;
+  for (i = 0; i < CRATE_KINDS.length; i++) { a += wt(i); if (r < a) return (it.ck = CRATE_KINDS[i]); }
+  return (it.ck = CRATE_KINDS[0]);
+}
 function crateIcon(g, ck, s) {
   g.save(); g.scale(s, s); g.fillStyle = ck.dark; g.strokeStyle = ck.dark; g.lineJoin = 'round';
   if (ck.k === 'gold') { g.beginPath(); g.moveTo(-10, 6); g.lineTo(10, 6); g.lineTo(6, -5); g.lineTo(-6, -5); g.closePath(); g.fillStyle = '#fff1b0'; g.fill(); g.lineWidth = 2.2; g.stroke(); g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect(-4, -3, 7, 1.6); }
@@ -4263,7 +4623,7 @@ function collect(it) {
       pop(it.x, it.y, '+' + fmt(g), ck.k === 'cash' ? null : ck.hi); Aud.sfx('pick');
       burst(it.x, it.y, ck.k === 'cash' ? 10 : 22, ck.col, ck.k === 'cash' ? 110 : 170, 0.45, 2.4, 0);
       burst(it.x, it.y, 6, '#ffffff', 60, 0.3, 1.6, 0);
-      flyers.push({ x: it.x, y: it.y, ck: ck, t: 0 });
+      if (!focusOn()) flyers.push({ x: it.x, y: it.y, ck: ck, t: 0 });
       break;
     case 'fuel': fuel = Math.min(100, fuel + S.can); run.fuel++; pop(it.x, it.y, '+Fuel', '#ff8a3d'); Aud.sfx('fuel'); break;
     case 'shield':
@@ -4640,7 +5000,7 @@ function update(dt) {
   if (fuel < 20 && Math.floor(t * 2) !== Math.floor((t - dt) * 2) && Math.floor(t * 2) % 4 === 0) Aud.sfx('warn');
 
   // lightning
-  if (M.lightning) { nextBolt -= dt; if (nextBolt <= 0) { flash = 0.8; nextBolt = 5 + Math.random() * 8; Aud.sfx('boom'); } }
+  if (M.lightning && !focusOn()) { nextBolt -= dt; if (nextBolt <= 0) { flash = 0.8; nextBolt = 5 + Math.random() * 8; Aud.sfx('boom'); } }
 
   // spawning
   var iv = Math.max(0.62, 1.35 - t * 0.008) / (M.traffic || 1);
@@ -4735,7 +5095,7 @@ function update(dt) {
       var ax = Math.abs(c.x - P.x);
       if (crossed && ax < LANE_W * 1.3 && ax > (c.w + P.w) / 2 - 2 && inv <= 0) {
         c.near = true; run.near++; eventNearMiss();
-        var ng = Math.round(cashGain(25) * S.salv / 5) * 5; cash += ng;
+        var ng = Math.round(cashGain(25) * S.salv * (!chase && isWeek('near') ? 3 : 1) / 5) * 5; cash += ng;
         pop((c.x + P.x) / 2, P.y - 40, 'Near miss +' + fmt(ng), '#9be7ff'); Aud.sfx('near');
       }
     }
@@ -4927,6 +5287,10 @@ function drawItem(it) {
 }
 
 function drawTraffic(c) {
+  // Focus mode: cars ahead of you in your lane get a bright outline
+  if (focusOn() && !c.wreck && state === 'play' && c.lane === P.lane && c.y < P.y && P.y - c.y < 560) {
+    ctx.strokeStyle = 'rgba(255,93,93,' + (0.55 + 0.35 * Math.sin(clock * 6)) + ')'; ctx.lineWidth = 3; rr(ctx, c.x - c.w / 2 - 5, c.y - c.h / 2 - 5, c.w + 10, c.h + 10, 10); ctx.stroke();
+  }
   if (c.wreck && c.crashed) {
     ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.rot || 0);
     drawSpec(ctx, c.spec, 0, 0, { flip: c.flip, brake: true, clock: clock, lq: lq(), sig: 2 });
@@ -4947,6 +5311,8 @@ function drawPlayer() {
     hg.addColorStop(0, 'rgba(255,240,200,0.16)'); hg.addColorStop(1, 'rgba(255,240,200,0)');
     g.fillStyle = hg; g.beginPath(); g.moveTo(x - 12, top); g.lineTo(x + 12, top); g.lineTo(x + 70, top - 260); g.lineTo(x - 70, top - 260); g.closePath(); g.fill();
   }
+  // Focus mode: a soft glow under your car so your eyes always find it
+  if (focusOn()) { g.fillStyle = 'rgba(255,210,63,0.2)'; g.beginPath(); g.ellipse(x, y, P.w * 0.95, P.h * 0.68, 0, 0, TAU); g.fill(); g.strokeStyle = 'rgba(255,210,63,0.7)'; g.lineWidth = 2; g.stroke(); }
   g.save(); g.translate(x, y); g.rotate(P.tilt + bendAng(P.y));
   if (crashT > 0) {
     // spin-out: a big swing one way, a smaller kick back, settling as the car recovers; the body jolts as it hits
@@ -5248,7 +5614,7 @@ function draw() {
   var g = ctx;
   g.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   g.save();
-  if (shakeT > 0 && SET().shake && !reduceMotion) g.translate((Math.random() - 0.5) * 12 * shakeT, (Math.random() - 0.5) * 12 * shakeT);
+  if (shakeT > 0 && SET().shake && !reduceMotion && !focusOn()) g.translate((Math.random() - 0.5) * 12 * shakeT, (Math.random() - 0.5) * 12 * shakeT);
   bendFrame();
   drawRoadBent();
   var i, o;
@@ -5258,6 +5624,8 @@ function draw() {
   for (i = 0; i < traffic.length; i++) { o = traffic[i]; if (o.wreck) { bendPush(o.x, o.y); drawTraffic(o); g.restore(); } }
   for (i = 0; i < traffic.length; i++) { o = traffic[i]; if (!o.wreck) { bendPush(o.x, o.y); drawTraffic(o); g.restore(); } }
   if (chase) drawChase();
+  if (boss) drawBoss();
+  drawGhosts();
   drawPlayer();
   drawParts();
   // nitro: speed streaks rushing past
@@ -5348,6 +5716,7 @@ function frame(ts) {
   if (dt > 0) fpsA = lerp(fpsA, 1 / dt, 0.05);
   try { pollPad(); } catch (e) { reportErr(e, 'controller'); }
   try { update(dt); } catch (e) { reportErr(e, 'update'); }
+  try { autoQuality(dt); } catch (e) {}
   try { draw(); } catch (e) { reportErr(e, 'draw'); try { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; } catch (e2) {} }
 }
 // the last problem the game hit, kept in Settings so it can be screenshotted later
@@ -5356,6 +5725,16 @@ function lastErrHtml() {
   if (!e || e.v !== APP_VERSION) return '';   // (problems from an older version were fixed by updating)
   return '<h4>Problem report</h4><p class="fine">The game recovered from this problem on ' + esc(new Date(e.at).toLocaleString()) + '. Send a screenshot of this to the developer.</p>' +
     '<code class="errcode">' + esc(e.v + ' · ' + e.where + ': ' + e.msg + (e.st ? ' · ' + e.st : '')) + '</code>';
+}
+// auto graphics: if a run keeps stuttering (under ~38 frames a second for 4 seconds), drop one graphics level
+var slowT = 0;
+function autoQuality(dt) {
+  if (!SET().autoq || state !== 'play' || document.visibilityState !== 'visible' || dt <= 0) { slowT = 0; return; }
+  slowT = fpsA < 38 ? slowT + dt : Math.max(0, slowT - dt * 2);
+  if (slowT < 4) return;
+  slowT = -6;
+  var Q = ['low', 'medium', 'high', 'ultra'], i = Q.indexOf(SET().quality);
+  if (i > 0) { SET().quality = Q[i - 1]; persist(); toast('Graphics set to ' + Q[i - 1] + ' to keep the game smooth', 2600); }
 }
 // if something goes wrong, show what it was (once per problem) so a screenshot tells the developer exactly what to fix
 var errSeen = {};
@@ -5373,7 +5752,7 @@ window.addEventListener('unhandledrejection', function (ev) { var r = ev.reason;
 
 /* ================= UI ================= */
 var OV = {};
-['name', 'menu', 'garage', 'maps', 'jobs', 'codes', 'board', 'police', 'settings', 'pause', 'over', 'help', 'prestige', 'daily', 'achieve'].forEach(function (n) {
+['name', 'menu', 'garage', 'maps', 'jobs', 'codes', 'board', 'police', 'settings', 'pause', 'over', 'help', 'prestige', 'daily', 'achieve', 'race'].forEach(function (n) {
   var d = document.createElement('div'); d.className = 'ov'; d.id = 'sc-' + n; d.hidden = true; appEl.appendChild(d); OV[n] = d;
 });
 var pauseBtn = document.getElementById('pauseBtn'), toastEl = document.getElementById('toast');
@@ -5400,10 +5779,12 @@ var ICON = {
   trophy: '<svg viewBox="0 0 24 24"><g' + OL + '><path d="M7 3h10v5.2a5 5 0 0 1-10 0z" fill="#ffc21a"/><path d="M7 4.8H4.1v1.7a3.3 3.3 0 0 0 3.3 3.3M17 4.8h2.9v1.7a3.3 3.3 0 0 1-3.3 3.3" fill="none"/><path d="M10.6 13.2h2.8v3.2h-2.8z" fill="#f0a500"/><path d="M6.5 21v-2.2c0-.6.5-1.1 1.1-1.1h8.8c.6 0 1.1.5 1.1 1.1V21z" fill="#8f5cff"/></g><path d="M9 4.4v3.4" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".7"/></svg>',
   daily: '<svg viewBox="0 0 40 40"><rect x="5" y="8" width="30" height="28" rx="4" fill="#fff" stroke="#2a1100" stroke-width="2.5"/><path d="M5 12a4 4 0 0 1 4-4h22a4 4 0 0 1 4 4v5H5z" fill="#ff4f9a" stroke="#2a1100" stroke-width="2.5"/><path d="M13 4v8M27 4v8" stroke="#2a1100" stroke-width="3" stroke-linecap="round"/><path d="M20 20.5l2 4.1 4.5.6-3.3 3.1.8 4.4-4-2.1-4 2.1.8-4.4-3.3-3.1 4.5-.6z" fill="#ffc21a" stroke="#2a1100" stroke-width="1.6" stroke-linejoin="round"/></svg>',
   google: '<svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>',
+  flag: '<svg viewBox="0 0 24 24"><path d="M5 21V3" stroke="#070912" stroke-width="2.6" stroke-linecap="round"/><path d="M5 21V3" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/><g stroke="#070912" stroke-width="1.4" stroke-linejoin="round"><path d="M5.6 4h13.6l-2.6 4.4 2.6 4.4H5.6z" fill="#fff"/></g><path d="M5.6 4h3.4v2.2H5.6zM12.4 4h3.4v2.2h-3.4zM9 6.2h3.4v2.2H9zM15.8 6.2h2.1l-.6 1.1.3.5V8.4h-1.8zM5.6 8.4h3.4v2.2H5.6zM12.4 8.4h3.4v2.2h-3.4zM9 10.6h3.4v2.2H9zM15.8 10.6h2.3l-.7-1.2v-.9h-1.6z" fill="#15171c"/></svg>',
   share: '<svg viewBox="0 0 24 24"><g' + OL + '><circle cx="18" cy="5.5" r="3" fill="#fff"/><circle cx="6" cy="12" r="3" fill="#fff"/><circle cx="18" cy="18.5" r="3" fill="#fff"/></g><path d="M8.6 10.6l6.8-3.7M8.6 13.4l6.8 3.7" stroke="#fff" stroke-width="2"/></svg>',
   gift: '<svg viewBox="0 0 40 40"><rect x="5" y="15" width="30" height="21" rx="3" fill="#fff" stroke="#2a1100" stroke-width="2.5"/><rect x="3" y="10" width="34" height="8" rx="2.5" fill="#ff4f9a" stroke="#2a1100" stroke-width="2.5"/><rect x="17" y="10" width="6" height="26" fill="#ff4f9a" stroke="#2a1100" stroke-width="2.5"/><path d="M20 10c-3-6-10-6-9-1 1 3 6 2 9 1zM20 10c3-6 10-6 9-1-1 3-6 2-9 1z" fill="#ffc21a" stroke="#2a1100" stroke-width="2.5"/></svg>'
 };
 function confetti(n) {
+  if (focusOn()) return;
   var cols = ['#ffc21a', '#ff4f9a', '#3d7bff', '#22c46f', '#ff7a2f', '#8f5cff', '#fff'];
   for (var i = 0; i < (n || 60); i++) {
     var d = document.createElement('i'); d.className = 'confetti';
@@ -5420,14 +5801,14 @@ function show(n) {
   cur = n;
   for (var k in OV) OV[k].hidden = k !== n;
   pauseBtn.hidden = true;
-  if (n === 'menu' || n === 'garage' || n === 'maps' || n === 'jobs' || n === 'codes' || n === 'board' || n === 'police' || n === 'name' || n === 'help' || n === 'prestige' || n === 'daily' || n === 'achieve') { if (state !== 'menu') { state = 'menu'; Aud.engine(false, 0); } prepare(); Aud.setStyle('menu'); checkAch(); }
+  if (n === 'menu' || n === 'garage' || n === 'maps' || n === 'jobs' || n === 'codes' || n === 'board' || n === 'police' || n === 'name' || n === 'help' || n === 'prestige' || n === 'daily' || n === 'achieve' || n === 'race') { if (state !== 'menu') { state = 'menu'; Aud.engine(false, 0); } prepare(); Aud.setStyle('menu'); checkAch(); }
   render(n);
   var f = OV[n].querySelector('[autofocus]'); if (f && window.matchMedia('(pointer:fine)').matches) f.focus();
 }
 function hideAll() { cur = null; for (var k in OV) OV[k].hidden = true; }
 function render(n) {
   if (n === 'name') rName(); else if (n === 'menu') rMenu(); else if (n === 'garage') rGarage(); else if (n === 'maps') rMaps();
-  else if (n === 'prestige') rPrestige(); else if (n === 'daily') rDaily(); else if (n === 'achieve') rAchieve();
+  else if (n === 'prestige') rPrestige(); else if (n === 'daily') rDaily(); else if (n === 'achieve') rAchieve(); else if (n === 'race') rRace();
   else if (n === 'codes') rCodes(); else if (n === 'board') rBoard(); else if (n === 'police') rPolice(); else if (n === 'jobs') rJobs(); else if (n === 'settings') rSettings(); else if (n === 'pause') rPause(); else if (n === 'help') rHelp();
 }
 function head(title, back) {
@@ -5509,11 +5890,11 @@ function rMenu() {
       '<div class="ride"><canvas id="menuCar" width="880" height="300"></canvas>' +
         '<div class="rideTx"><div><small>' + esc(car.brand) + ' · ' + esc(car.cls) + '</small><b>' + esc(car.model) + '</b></div><em>' + fmt(save.wallet) + '</em></div>' +
         '<div class="rideTags"><span>' + esc(map.name) + '</span><span class="g">x' + fmtMult(map.cash) + ' map</span><span>' + Math.round(topSpeed(car) * 3.6) + ' km/h</span>' + ((save.prestige || 0) ? '<span class="p">★ ' + save.prestige + ' · x' + bigNum(prestigeMult()) + '</span>' : '') + '</div></div>' +
-      giftHtml() + dailyCardHtml() +
+      giftHtml() + dailyCardHtml() + weekHtml() + soundAskHtml() + focusAskHtml() +
       '<button class="btn big ibtn" data-act="play">' + ICON.play + 'PLAY</button>' +
       prestigeBtn() +
       '<div class="grid2">' +
-        '<button class="btn c-navy mbtn" data-act="go" data-to="police">' + ICON.police + 'Police<span class="badge">NEW</span></button>' +
+        '<button class="btn c-navy mbtn" data-act="go" data-to="police">' + ICON.police + 'Police</button>' +
         '<button class="btn c-blue mbtn" data-act="go" data-to="garage">' + ICON.garage + 'Garage</button>' +
         '<button class="btn c-green mbtn" data-act="go" data-to="maps">' + ICON.maps + 'Maps</button>' +
         '<button class="btn c-orange mbtn" data-act="go" data-to="jobs">' + ICON.jobs + 'Jobs<span class="badge">' + save.jobs.active.length + '/3</span></button>' +
@@ -5521,6 +5902,7 @@ function rMenu() {
         '<button class="btn c-teal mbtn" data-act="go" data-to="board">' + ICON.board + 'Leaderboard</button>' +
         '<button class="btn c-grey mbtn" data-act="settings" data-back="menu">' + ICON.settings + 'Settings</button>' +
         '<button class="btn c-pink mbtn" data-act="go" data-to="help">' + ICON.help + 'How to play</button>' +
+        '<button class="btn c-green mbtn wide2" data-act="go" data-to="race">' + ICON.flag + 'Race friends<span class="badge">LIVE</span></button>' +
         '<button class="btn c-orange mbtn wide2" data-act="go" data-to="achieve">' + ICON.trophy + 'Achievements<span class="badge">' + achCount() + '/' + ACH.length + '</span></button>' +
       '</div>' +
       '<div class="mini">' +
@@ -5529,7 +5911,7 @@ function rMenu() {
         '<div><b>' + Math.round(st.km) + '</b><span>km</span></div>' +
         '<div><b>' + (st.jobs || 0) + '</b><span>Jobs</span></div>' +
       '</div>' +
-      '<div class="row2"><span class="fine">' + st.booms + ' explosions and counting</span><button class="link" data-act="rename" data-back="menu">Change name</button></div>' +
+      '<div class="row2"><span class="fine">' + st.booms + ' explosions and counting</span>' + (canInstall() ? '<button class="link" data-act="install">📲 Install app</button>' : '') + '<button class="link" data-act="rename" data-back="menu">Change name</button></div>' +
     '</div>';
   var c = document.getElementById('menuCar'); topPreview(c, car, lookOf(car.id));
 }
@@ -5649,6 +6031,7 @@ function rDetail() {
     [['upg', 'Upgrades'], ['perf', 'Mods'], ['style', 'Style'], ['paint', 'Paint']].forEach(function (tb) { h += '<button class="tab' + (gTab === tb[0] ? ' on' : '') + '" data-act="gtab" data-v="' + tb[0] + '">' + ICON[tb[0]] + tb[1] + '</button>'; });
     h += '</div><div class="tabBody">';
     if (gTab === 'upg') {
+      if (save.owned[gView]) h += tuneHtml(g);
       UPG.forEach(function (u) {
         var lv = g[u.id] || 0, mx = lv >= u.max, cost = upgCost(u, lv, gView), pp = '';
         for (var i = 0; i < u.max; i++) pp += '<i class="' + (i < lv ? 'f' : '') + '"></i>';
@@ -5812,7 +6195,7 @@ function rJobs() {
     h += '<div class="job"><div class="jtx"><small>' + esc(j.client) + ' · ' + ['Easy', 'Normal', 'Hard', 'Expert', 'Legend'][j.tier] + '</small><b>' + esc(jobTitle(j)) + '</b></div>' +
       '<div class="jr"><em>' + fmt(jobReward(j)) + '</em><button class="btn sm" data-act="jtake" data-id="' + j.id + '"' + (J.active.length >= 3 ? ' disabled' : '') + '>Take job</button></div></div>';
   });
-  h += '<button class="btn ghost wide" data-act="jnew"' + (save.wallet < 250 ? ' disabled' : '') + '>New jobs on the board ($250)</button></div>';
+  h += '<button class="btn ghost wide" data-act="jnew"' + (save.wallet < jobRefreshCost() ? ' disabled' : '') + '>New jobs on the board (' + fmt(jobRefreshCost()) + ')</button></div>';
   OV.jobs.innerHTML = h;
 }
 
@@ -6016,8 +6399,8 @@ function doRedeem() {
 /* ---------- top runs (online leaderboard) ---------- */
 var boardTok = 0, boardTab = 'runs';
 function rBoard() {
-  var tok = ++boardTok, cops = boardTab === 'cops', week = boardTab === 'week', P2 = save.police, h = head(cops ? 'Top cops' : week ? 'This week' : 'Top runs') + '<div class="card wide flat">';
-  h += '<div class="chips"><button class="chip' + (week ? ' on' : '') + '" data-act="btab" data-v="week">This week</button><button class="chip' + (!cops && !week ? ' on' : '') + '" data-act="btab" data-v="runs">All time</button><button class="chip' + (cops ? ' on' : '') + '" data-act="btab" data-v="cops">Top cops</button></div>';
+  var tok = ++boardTok, cops = boardTab === 'cops', week = boardTab === 'week', fr = boardTab === 'friends', P2 = save.police, h = head(cops ? 'Top cops' : week ? 'This week' : fr ? 'Friends' : 'Top runs') + '<div class="card wide flat">';
+  h += '<div class="chips"><button class="chip' + (week ? ' on' : '') + '" data-act="btab" data-v="week">This week</button><button class="chip' + (!cops && !week && !fr ? ' on' : '') + '" data-act="btab" data-v="runs">All time</button><button class="chip' + (fr ? ' on' : '') + '" data-act="btab" data-v="friends">Friends</button><button class="chip' + (cops ? ' on' : '') + '" data-act="btab" data-v="cops">Top cops</button></div>';
   if (cops) {
     h += '<div class="lbMe"><span>Criminals busted by <b style="color:#fff">' + esc(save.name) + '</b></span><b>' + P2.busts + '</b></div>' +
       (P2.bq ? '<p class="fine">Your total of ' + P2.bq + ' hasn’t been sent yet. It will go up as soon as you’re online.</p>' : '');
@@ -6026,21 +6409,22 @@ function rBoard() {
       (week ? '<p class="fine">Everyone starts again every Monday. Resets in ' + weekLeft() + '.</p>' : '') +
       (save.lbQueue ? '<p class="fine">Your best run ' + fmt(save.lbQueue.score) + ' hasn’t been sent yet. It will go up as soon as you’re online.</p>' : '');
   }
+  if (fr) h += friendsEditHtml();
   OV.board.innerHTML = h + '<p id="bSrc" class="fine">Loading the leaderboard…</p><ol id="bList" class="board"></ol>' +
     '<button class="btn ghost ibtn wide" data-act="refresh">' + ICON.restart + 'Refresh</button></div>';
-  var load = cops ? (P2.bq ? bustFlush() : Promise.resolve()).then(copsTop) : (save.lbQueue ? lbFlush() : Promise.resolve()).then(week ? lbWeek : lbTop);
+  var load = cops ? (P2.bq ? bustFlush() : Promise.resolve()).then(copsTop) : (save.lbQueue ? lbFlush() : Promise.resolve()).then(fr ? lbFriends : week ? lbWeek : lbTop);
   load.then(function (rows) {
     if (tok !== boardTok || cur !== 'board') return;
     var src = document.getElementById('bSrc'), list = document.getElementById('bList'), me = String(save.name || '').toLowerCase();
     rows = Array.isArray(rows) ? rows : [];
-    src.textContent = rows.length ? (cops ? 'Most criminals busted in Police mode, from everyone who plays Cargo Run.' : week ? 'The best run of every driver this week.' : 'The best run of every driver, from everyone who plays Cargo Run.')
-                                  : (cops ? 'Nobody has busted a criminal yet. Catch one in Police mode to take first place!' : week ? 'No runs yet this week. Finish a run to take first place!' : 'No scores yet. Finish a run to take first place!');
+    src.textContent = rows.length ? (cops ? 'Most criminals busted in Police mode, from everyone who plays Cargo Run.' : fr ? 'Best runs ever by you and your friends.' : week ? 'The best run of every driver this week.' : 'The best run of every driver, from everyone who plays Cargo Run.')
+                                  : (cops ? 'Nobody has busted a criminal yet. Catch one in Police mode to take first place!' : fr ? 'Add a friend’s driver name above to compare your best runs.' : week ? 'No runs yet this week. Finish a run to take first place!' : 'No scores yet. Finish a run to take first place!');
     rows.forEach(function (row, i) {
       var li = document.createElement('li');
       li.className = (String(row.name).toLowerCase() === me ? 'me' : '') + (i < 3 ? ' top' : '');
       li.innerHTML = '<span class="rk"></span><span class="nm"></span><span class="sc"></span><span class="mt"></span>';
       li.children[0].textContent = i < 3 ? ['🥇', '🥈', '🥉'][i] : '#' + (i + 1);
-      li.children[1].textContent = row.name;
+      li.children[1].textContent = row.name + (row.badge ? '  ' + row.badge : '');
       if (cops) { li.children[2].textContent = row.busts + ' busted'; }
       else { li.children[2].textContent = fmt(row.score); li.children[3].textContent = [row.car, row.map].filter(Boolean).join(' · '); }
       list.appendChild(li);
@@ -6062,7 +6446,7 @@ function rSettings() {
     '<h4>Sound</h4>' + tog('sfx', 'Sound effects') + slider('sfxVol', 'Effects volume') + tog('music', 'Music') + slider('musicVol', 'Music volume') +
     '<h4>Controls</h4>' + segs('ctrl', 'Steering', [['tap', 'Tap sides'], ['swipe', 'Swipe'], ['buttons', 'Buttons']]) +
     '<p class="fine">Keyboard: ← → or A D to steer, Esc or P to pause. Game controllers work too.</p>' +
-    '<h4>Display</h4>' + segs('quality', 'Graphics', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['ultra', 'Ultra']]) + tog('shake', 'Screen shake') + tog('vibe', 'Vibration') + tog('fps', 'Show FPS') +
+    '<h4>Display</h4>' + tog('focus', 'Focus mode (calmer screen: plain roadside, fewer effects)') + segs('quality', 'Graphics', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['ultra', 'Ultra']]) + tog('autoq', 'Auto graphics (lowers detail if the game stutters)') + tog('shake', 'Screen shake') + tog('vibe', 'Vibration') + tog('fps', 'Show FPS') +
     '<h4>Driver</h4><div class="it"><div class="itx"><b>' + esc(save.name) + '</b><span>' + (auth ? 'Saved on this device and online' : 'Saved in this browser · ' + syncLabel()) + '</span></div>' +
       (setBack === 'pause' ? '' : '<button class="btn ghost sm" data-act="rename" data-back="settings">Change name</button>') + '</div>' +
     (setBack === 'pause' ? '' : accountHtml()) +
@@ -6087,6 +6471,15 @@ function nextCarHtml() {
 }
 function rOver(res) {
   var r = res.run; lastRes = res;
+  if (res.race) {
+    OV.over.innerHTML = '<div class="card narrow center"><h1 class="ttl">' + esc(res.reason) + '</h1>' +
+      '<p class="sub" id="raceNote">Waiting for the others to finish…</p>' + raceResultsHtml() +
+      '<div class="big2"><div><b>' + R.myPts + '</b><span>Race points</span></div><div><b>' + fmt(res.earned) + '</b><span>Cash earned</span></div></div>' +
+      '<p class="fine">Wallet: ' + fmt(save.wallet) + '</p>' +
+      '<button class="btn big ibtn" data-act="go" data-to="race" autofocus>' + ICON.flag + 'BACK TO THE ROOM</button><div class="grid2"><button class="btn c-teal ibtn" data-act="share">' + ICON.share + 'Share</button><button class="btn c-grey ibtn" data-act="go" data-to="menu">' + ICON.home + 'Menu</button></div></div>';
+    setTimeout(raceWatch, 300);
+    return;
+  }
   if (res.police) {
     var pz = res.police;
     OV.over.innerHTML = '<div class="card narrow center"><h1 class="ttl">' + esc(res.reason) + '</h1>' +
@@ -6255,14 +6648,35 @@ function act(a, el) {
       if (!save.police.cars[c.id] && spend(pcPrice(c))) { save.police.cars[c.id] = 1; save.police.car = c.id; persist(); Aud.sfx('buy'); toast(c.name + ' is yours!'); } else Aud.sfx('deny');
       rPolice(); return;
     case 'btab': boardTab = d('v'); Aud.sfx('click'); rBoard(); return;
+    case 'fradd':
+      var fi = document.getElementById('frIn'), fm = document.getElementById('frMsg'), fn = fi ? fi.value.trim() : '';
+      save.friends = save.friends || [];
+      if (!/^[A-Za-z0-9 ]{1,12}$/.test(fn)) { if (fm) fm.textContent = 'Type their driver name (letters and numbers).'; Aud.sfx('deny'); return; }
+      if (save.friends.concat([save.name || '']).some(function (x) { return x.toLowerCase() === fn.toLowerCase(); })) { if (fm) fm.textContent = 'Already on your list.'; return; }
+      if (save.friends.length >= 30) { if (fm) fm.textContent = 'You can follow up to 30 friends.'; return; }
+      save.friends.push(fn); persist(); Aud.sfx('buy'); rBoard(); return;
+    case 'frdel': save.friends = (save.friends || []).filter(function (x) { return x !== d('v'); }); persist(); Aud.sfx('click'); rBoard(); return;
     case 'chase': if (!wantedOpen(+d('v'))) return; Aud.sfx('click'); mode = 'police'; chaseLvl = +d('v'); hideAll(); startRun(); return;
     case 'settings': setBack = d('back') || 'menu'; Aud.sfx('click'); cur = 'settings'; for (var k in OV) OV[k].hidden = k !== 'settings'; rSettings(); return;
     case 'resume': hideAll(); resumeGame(); return;
-    case 'restart': hideAll(); startRun(); return;   // (keeps the mode: a daily restarts the daily)
+    case 'restart': if (mode === 'race') { state = 'menu'; Aud.engine(false, 0); show('race'); return; } hideAll(); startRun(); return;   // (keeps the mode: a daily restarts the daily)
     case 'quit': state = 'menu'; Aud.engine(false, 0); show('menu'); return;
     case 'gclass': gClass = d('v'); rChips(); rCars(); return;
     case 'signin': Aud.sfx('click'); signIn(); return;
+    case 'emaillink': Aud.sfx('click'); emailSignIn(); return;
     case 'signout': Aud.sfx('click'); signOut(); rSettings(); return;
+    case 'sndon': save.soundAsked = true; SET().sfx = true; SET().music = true; persist(); Aud.init(); Aud.apply(); Aud.sfx('buy'); rMenu(); return;
+    case 'sndno': save.soundAsked = true; persist(); rMenu(); return;
+    case 'focuson': save.focusAsked = true; SET().focus = true; persist(); prepare(); Aud.sfx('buy'); toast('Focus mode is on. Switch it off any time in Settings.', 3000); rMenu(); return;
+    case 'focusno': save.focusAsked = true; persist(); rMenu(); return;
+    case 'install': installApp(); return;
+    case 'racenew': Aud.sfx('click'); raceJoin(newRaceCode(), true); return;
+    case 'racejoin':
+      var rc = (document.getElementById('rcIn') || {}).value || ''; rc = rc.toUpperCase().replace(/[^A-Z]/g, '');
+      if (rc.length !== 4) { R.msg = 'Room codes are 4 letters.'; rRace(); Aud.sfx('deny'); return; }
+      Aud.sfx('click'); raceJoin(rc, false); return;
+    case 'racestart': Aud.sfx('buy'); raceStart(); return;
+    case 'raceleave': Aud.sfx('click'); raceLeave(); R.msg = ''; rRace(); return;
     case 'dplay': Aud.sfx('click'); mode = 'daily'; hideAll(); startRun(); return;
     case 'share': Aud.sfx('click'); shareRun(); return;
     case 'pupg':
@@ -6315,7 +6729,7 @@ function act(a, el) {
     case 'hpage': helpPage = parseInt(d('v'), 10) || 0; Aud.sfx('click'); rHelp(); return;
     case 'jtake': if (save.jobs.active.length < 3 && save.jobs.active.indexOf(d('id')) < 0) { save.jobs.active.push(d('id')); persist(); Aud.sfx('buy'); } rJobs(); return;
     case 'jdrop': save.jobs.active = save.jobs.active.filter(function (x) { return x !== d('id'); }); persist(); Aud.sfx('click'); rJobs(); return;
-    case 'jnew': if (spend(250)) { save.jobs.board = save.jobs.board.filter(function (b) { return save.jobs.active.indexOf(b.id) >= 0; }); fillBoard(); persist(); Aud.sfx('buy'); } else Aud.sfx('deny'); rJobs(); return;
+    case 'jnew': if (spend(jobRefreshCost())) { save.jobs.board = save.jobs.board.filter(function (b) { return save.jobs.active.indexOf(b.id) >= 0; }); fillBoard(); persist(); Aud.sfx('buy'); } else Aud.sfx('deny'); rJobs(); return;
     case 'mgroup': mGroup = d('v'); rMaps(); OV.maps.scrollTop = 0; return;
     case 'selmap': if (save.maps[d('id')]) { save.map = d('id'); persist(); prepare(); Aud.sfx('click'); rMaps(); } return;
     case 'buymap':
@@ -6334,10 +6748,11 @@ appEl.addEventListener('click', function (e) {
 });
 appEl.addEventListener('input', function (e) {
   if (e.target.classList && e.target.classList.contains('rng')) { SET()[e.target.getAttribute('data-k')] = parseInt(e.target.value, 10); Aud.init(); Aud.apply(); }
+  if (e.target.classList && e.target.classList.contains('tune')) { var tv = parseInt(e.target.value, 10); Gw(gView).tune = tv; var tx = document.getElementById('tuneTx'); if (tx) tx.textContent = tuneText(tv); }
   if (e.target.id === 'gFind') { gFind = e.target.value; clearTimeout(rCars.t); rCars.t = setTimeout(function () { rCars(); rDetail(); }, 120); }
 });
 appEl.addEventListener('change', function (e) {
-  if (e.target.classList && e.target.classList.contains('rng')) persist();
+  if (e.target.classList && (e.target.classList.contains('rng') || e.target.classList.contains('tune'))) persist();
   if (e.target.id === 'gSort') { gSort = e.target.value; rCars(); rDetail(); }
 });
 // PC: the mouse wheel scrolls sideways rows (filter chips, the car strip) that have no visible scrollbar
@@ -6401,6 +6816,7 @@ function boot() {
   }
   lbFlush(); bustFlush();
   if (auth) setTimeout(cloudSync, 400);
+  registerSW();
   checkForUpdate();
 }
 boot();
@@ -6440,7 +6856,7 @@ if (window.__CR_TEST || /[?&]crtest\b/.test(location.search)) window.__CR = {
   clear: function () { traffic.length = 0; items.length = 0; },
   freeze: function () { state = 'paused'; },
   god: function () { lives = 99; maxLives = 3; fuel = 100; },
-  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, frameAt: function (ts) { var raf = window.requestAnimationFrame; window.requestAnimationFrame = function () { return 0; }; try { frame(ts); } finally { window.requestAnimationFrame = raf; } }, cloud: { fromHash: authFromHash, sync: cloudSync, merge: mergeSaves, put: cloudPut, info: function () { var l = null; try { l = localStorage.getItem(LINK_KEY); } catch (e) {} return { auth: auth, state: cloud.state, missing: cloud.missing, linked: l, timer: !!cloud.timer }; } }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
+  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; if (k === 'boss' && !boss) bossStart(); if (k !== 'boss') boss = null; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, boss: function () { return boss && { hp: boss.hp, ph: boss.ph, lane: boss.lane, y: Math.round(boss.y), x: Math.round(boss.x) }; }, frameAt: function (ts) { var raf = window.requestAnimationFrame; window.requestAnimationFrame = function () { return 0; }; try { frame(ts); } finally { window.requestAnimationFrame = raf; } }, cloud: { fromHash: authFromHash, sync: cloudSync, merge: mergeSaves, put: cloudPut, info: function () { var l = null; try { l = localStorage.getItem(LINK_KEY); } catch (e) {} return { auth: auth, state: cloud.state, missing: cloud.missing, linked: l, timer: !!cloud.timer }; } }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
 };
 
 })();
