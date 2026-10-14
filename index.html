@@ -3383,7 +3383,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.1', updBusy = false;
+var APP_VERSION = '2026-10-14.2', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3501,7 +3501,8 @@ var COACH = [[2, 'Tap the left or right side to change lanes'], [7.5, 'Grab crat
 function resetEvents() { EV = null; evT = save.stats.runs === 0 ? 34 : 16 + Math.random() * 10; coachI = 0; }
 function startEvent() {
   var k = ['rush', 'works', 'combo'][Math.floor(Math.random() * 3)], len = { rush: 8, works: 11, combo: 12 }[k];
-  EV = { k: k, t: len, max: len, n: 0, warn: k === 'works' ? 1.6 : 0, lane: Math.floor(Math.random() * LANES), coneT: 0 };
+  // (roadworks only close an edge lane, never a middle one, so you can't get trapped on one side of the cones)
+  EV = { k: k, t: len, max: len, n: 0, warn: k === 'works' ? 1.6 : 0, lane: Math.random() < 0.5 ? 0 : LANES - 1, coneT: 0 };
   Aud.sfx('power'); vibe(30);
 }
 function updateEvents(dt) {
@@ -3779,6 +3780,7 @@ function explode(x, y, power, safe) {
 }
 
 /* ================= spawning ================= */
+function fuelGoal() { return !chase && ((run.daily && run.daily.goal.k === 'fuel' && !run.dailyWon) || activeJobs().some(function (j) { return j.k === 'fuel'; })); }
 function laneBusy(l, top) {
   // (traffic keeps big gaps: a lane counts as busy until the last car in it is well down the screen)
   var lim = top == null ? 380 : top, i;
@@ -3821,6 +3823,8 @@ function spawnTick(iv) {
   for (i = 0; i < LANES; i++) all.push(i);
   traffic.forEach(function (c) { if (c.y < 420 && c.y > -200 && !near[c.lane]) { near[c.lane] = 1; nearCount++; } });
   items.forEach(function (c) { if ((c.type === 'rock' || c.type === 'barrel') && c.y < 250 && !near[c.lane]) { near[c.lane] = 1; nearCount++; } });
+  // a lane closed by roadworks counts as blocked, so traffic always leaves you a way through
+  if (EV && EV.k === 'works' && !near[EV.lane]) { near[EV.lane] = 1; nearCount++; }
   var free = all.filter(function (l) { return !laneBusy(l) && !(EV && EV.k === 'works' && l === EV.lane); });
   if (!free.length) return;
   // the lane leading to an exit stays quieter, so you can get into it
@@ -3846,7 +3850,7 @@ function spawnTick(iv) {
   }
   // wrong-way drivers and overtakers on tougher maps
   var lead = S.radar ? 1.7 : 0.9;
-  if (ag >= 1.15 && t > 12 && Math.random() < 0.05 * (ag - 0.75) && free.length) {
+  if (ag >= 1.15 && t > 12 && Math.random() < 0.05 * (ag - 0.75) && free.length && nearCount < limit) {   // (never into the last open lane)
     lane = takeLane(free); warns.push({ lane: lane, side: 'top', t: lead, max: lead });
   } else if (false) {   // overtakers from behind are gone: they would have to cut lanes
     var cand = all.filter(function (l) { return !traffic.some(function (c) { return c.lane === l && c.y > H - 260; }); });
@@ -3856,6 +3860,8 @@ function spawnTick(iv) {
   var hz = Object.keys(M.hz || {});
   if (hz.length && free.length && nearCount < limit + 1) {
     var hk = pick(hz, Math.random()), rate = M.hz[hk] * iv * (1 + Math.min(1, t / 90));
+    // (oil and potholes can be driven over; rocks and barrels can't, so they never close the last open lane)
+    if ((hk === 'rock' || hk === 'barrel') && nearCount >= limit) rate = 0;
     if (Math.random() < rate) {
       lane = takeLane(free);
       items.push({ type: hk, lane: lane, x: laneX(lane) + (hk === 'oil' || hk === 'pothole' ? (Math.random() - .5) * 20 : 0), y: -40, w: hk === 'oil' ? 38 : 32, h: hk === 'oil' ? 30 : 28, rot: Math.random() * TAU });
@@ -3864,14 +3870,18 @@ function spawnTick(iv) {
   }
   // pickups
   var type = null, fr = (fuel < 35 ? 0.42 : (fuel < 60 ? 0.13 : 0.035)) * S.fuelRate, luck = S.luck;
+  // a daily challenge or job that wants fuel cans makes them common, and a can always turns up
+  // before long (every ~5 s with a fuel goal, otherwise after ~14 s once the tank is under half)
+  var wantFuel = fuelGoal(); run.fuelGap = (run.fuelGap || 0) + iv;
+  if (wantFuel) fr = Math.max(fr, 0.22);
   if (free.length) {
     var r2 = Math.random();
-    if (r2 < fr * iv) type = 'fuel';
+    if (r2 < fr * iv || (run.fuelGap > (wantFuel ? 5 : 14) && (wantFuel || fuel < 55))) type = 'fuel';
     else if (Math.random() < 0.13 * iv * luck) {
       var p = Math.random();
       type = p < 0.25 ? 'shield' : p < 0.47 ? 'magnet' : p < 0.62 ? 'dbl' : p < 0.78 ? 'nos' : p < 0.9 ? 'bag' : (lives < maxLives ? 'repair' : 'bag');
     }
-    if (type) { lane = takeLane(free); items.push({ type: type, lane: lane, x: laneX(lane), y: -30, w: 30, h: 30 }); }
+    if (type) { lane = takeLane(free); items.push({ type: type, lane: lane, x: laneX(lane), y: -30, w: 30, h: 30 }); if (type === 'fuel') run.fuelGap = 0; }
   }
   if (free.length && Math.random() < Math.min(0.85, 0.5 * S.crateRate)) { lane = takeLane(free); items.push({ type: 'crate', lane: lane, x: laneX(lane), y: -30, w: 30, h: 30 }); }
 }
