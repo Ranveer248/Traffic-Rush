@@ -3388,7 +3388,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.6', updBusy = false;
+var APP_VERSION = '2026-10-14.7', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3491,7 +3491,7 @@ function signIn() {
   location.href = SB + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(location.origin + location.pathname);
 }
 function signOut() {
-  var a = auth; storeAuth(null); cloud.state = 'off'; try { localStorage.removeItem(LINK_KEY); } catch (e) {}
+  var a = auth; storeAuth(null); cloud.state = 'off'; try { localStorage.removeItem(LINK_KEY); localStorage.removeItem(BASE_KEY); } catch (e) {}
   if (a) fetch(SB + '/auth/v1/logout', { method: 'POST', headers: { apikey: LB.key, Authorization: 'Bearer ' + a.access } }).catch(function () {});
   toast('Signed out. Your progress stays on this device.', 2600);
 }
@@ -3521,52 +3521,88 @@ function cloudErr(e) {
   return false;
 }
 function hasProgress(s) { return !!s && ((s.stats && s.stats.runs > 0) || (s.wallet || 0) > 0 || Object.keys(s.owned || {}).length > 1); }
+// the last save this device and the account agreed on: comparing against it tells us what changed on each side
+var BASE_KEY = 'cr-base';
+function loadBase() { try { var x = JSON.parse(localStorage.getItem(BASE_KEY) || 'null'); return x && auth && x.uid === auth.id ? x.save : null; } catch (e) { return null; } }
+function storeBase(s) { try { localStorage.setItem(BASE_KEY, JSON.stringify({ uid: auth.id, save: s })); } catch (e) {} }
+// (the database stores keys in its own order, so compare saves with sorted keys, ignoring timestamps and settings)
+function canon(v) {
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().filter(function (k) { return v[k] !== undefined; }).map(function (k) { return JSON.stringify(k) + ':' + canon(v[k]); }).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
+}
+function sameSave(x, y) {
+  var strip = function (s) { var c = {}, k; for (k in s) if (k !== 'ts' && k !== 'rev' && k !== 'settings' && k !== 'lbQueue') c[k] = s[k]; return c; };
+  return canon(strip(x)) === canon(strip(y));
+}
 function adoptCloud(cd) {
-  save = normalize(cd);
+  var keep = save.settings;
+  save = normalize(JSON.parse(JSON.stringify(cd))); save.settings = keep;   // (each device keeps its own settings)
   try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {}
   grantCodeCars(); fixDrivenCar(); gView = save.car;
-  if (!inRun()) { prepare(); show(save.name ? 'menu' : 'name'); }
+  if (!inRun()) { prepare(); if (cur === 'name' && save.name) show('menu'); else if (cur && cur !== 'over' && cur !== 'pause') render(cur); }
 }
-// after signing in, and whenever the game opens: line up this device and the online save
+// Lines up this device and the online save. It runs when the game opens, when you come back to it, every minute,
+// a few seconds after anything changes, after every run, and from Sync now; you never have to press anything.
+//  - only this device changed since the last sync: send it up
+//  - only the account changed (you played on another device): load it
+//  - both changed (say, the phone played offline while the laptop played too): keep BOTH sets of changes; money and
+//    totals get each side's gains (and spending) since the last sync, so nothing is lost and nothing counts twice
 function cloudSync() {
   if (!auth || cloud.busy) return Promise.resolve(false);
-  if (inRun()) { setTimeout(cloudSync, 5000); return Promise.resolve(false); }
+  if (inRun()) { cloudLater(); return Promise.resolve(false); }
   cloud.busy = true; cloud.state = 'sync'; updSyncTag();
   var linked = null; try { linked = localStorage.getItem(LINK_KEY); } catch (e) {}
   return cloudGet().then(function (cd) {
-    var done = function () { try { localStorage.setItem(LINK_KEY, auth.id); } catch (e) {} cloud.state = 'ok'; cloud.missing = false; cloud.at = Date.now(); updSyncTag(); };
-    if (!cd) return cloudPut().then(done);
-    if (linked === auth.id) {
-      // this device has synced with this account before: the newer save wins
-      if ((cd.ts || 0) > (save.ts || 0)) { adoptCloud(cd); done(); toast('Loaded your newest progress from your account', 2600); return; }
-      if ((save.ts || 0) > (cd.ts || 0)) return cloudPut().then(done);
-      return done();
+    var done = function (msg) {
+      try { localStorage.setItem(LINK_KEY, auth.id); } catch (e) {}
+      storeBase(JSON.parse(JSON.stringify(save)));
+      cloud.state = 'ok'; cloud.missing = false; cloud.at = Date.now(); updSyncTag();
+      if (msg) toast(msg, 3400);
+    };
+    var push = function (msg) { return cloudPut().then(function () { done(msg); }); };
+    if (!cd) return push();
+    var mine = linked === auth.id || (cd.sids || [cd.sid]).indexOf(save.sid) >= 0;
+    if (mine) {
+      var base = loadBase();
+      if (base) {
+        var here = !sameSave(save, base), there = !sameSave(cd, base);
+        if (!here && !there) return done();
+        if (here && !there) return push();
+        if (!here && there) { adoptCloud(cd); return done('Loaded your newest progress from your other device'); }
+        adoptCloud(mergeSaves(save, cd, base)); persist();
+        return push('Progress from both devices combined: ' + fmt(save.wallet));
+      }
+      // no record of the last sync (an older version, or you signed out and back in): keep the best of both, adding nothing twice
+      if (sameSave(save, cd)) return done();
+      adoptCloud(mergeSaves(save, cd, null, true)); persist();
+      return push();
     }
-    // this device's save is already inside the account (say, you signed out and back in): just keep the newest
-    if ((cd.sids || [cd.sid]).indexOf(save.sid) >= 0) {
-      if ((cd.ts || 0) > (save.ts || 0)) adoptCloud(cd); else return cloudPut().then(done);
-      return done();
-    }
-    // first time on this device: take the online save; if both have progress, merge them so nothing is lost
-    if (!hasProgress(save)) { adoptCloud(cd); done(); toast('Welcome back! Your progress is loaded.', 2600); return; }
-    if (!hasProgress(cd)) return cloudPut().then(done);
-    adoptCloud(mergeSaves(save, cd)); persist();
-    return cloudPut().then(function () { done(); toast('Saves merged! Money added together: ' + fmt(save.wallet) + ', ' + Object.keys(save.owned).length + ' cars.', 3800); });
+    // a different save meeting this account for the first time: take the online one, or add the two together
+    if (!hasProgress(save)) { adoptCloud(cd); return done('Welcome back! Your progress is loaded.'); }
+    if (!hasProgress(cd)) return push();
+    adoptCloud(mergeSaves(save, cd, null)); persist();
+    return push('Saves merged! Money added together: ' + fmt(save.wallet) + ', ' + Object.keys(save.owned).length + ' cars.');
   }).catch(cloudErr).then(function (r) { cloud.busy = false; return r; });
 }
-// every change is sent at most every few seconds, and straight away when the game goes into the background
+function cloudLater() { if (!cloud.later) cloud.later = setTimeout(function () { cloud.later = null; cloudSync(); }, 5000); }
+// a change is synced a few seconds later (bunched up, so a busy menu doesn't send dozens of requests)
 function cloudQueue() {
   if (!auth || cloud.state === 'off' || cloud.timer) return;
   var linked = null; try { linked = localStorage.getItem(LINK_KEY); } catch (e) {}
   if (linked !== auth.id) return;
-  cloud.timer = setTimeout(function () { cloud.timer = null; cloudPut().then(function () { cloud.state = 'ok'; cloud.at = Date.now(); updSyncTag(); }, cloudErr); }, 6000);
+  cloud.timer = setTimeout(function () { cloud.timer = null; cloudSync(); }, 6000);
 }
-function cloudFlushNow() { if (cloud.timer) { clearTimeout(cloud.timer); cloud.timer = null; cloudPut().catch(function () {}); } }
-document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloudFlushNow(); });
-// Two separate saves meeting for the first time (say, a phone and a computer both played before signing in) are
-// combined so nobody loses anything: every car, map, mod, code, achievement and police car from both; money and play
-// totals added together; the higher of every level (prestige, upgrades, bests). The most recently played save decides the rest
-// (which car you drive, your name, the job board, today's challenge), and this device keeps its own settings.
+function cloudFlushNow() { if (cloud.timer) { clearTimeout(cloud.timer); cloud.timer = null; } if (auth) cloudSync(); }
+document.addEventListener('visibilitychange', function () { if (auth && !inRun()) cloudSync(); });
+setInterval(function () { if (auth && document.visibilityState === 'visible' && !inRun()) cloudSync(); }, 60000);
+// Merging two saves. Unions for things you collect (cars, maps, mods, codes, achievements, police cars), the higher of
+// every level (prestige, upgrades, bests). Money and play totals:
+//  - two separate saves (base = null): added together, 6M + 3M = 9M
+//  - the same save changed on two devices (base = the last synced save): each side's change is added to the base, so
+//    6M that became 8M here and 7M there ends at 6 + 2 + 1 = 9M (spending and prestige resets count too)
+//  - maxOnly: the higher of each, for when we can't tell what changed (never adds anything twice)
+// The most recently played save decides the rest (car, name, job board, today's challenge).
 function mergeVal(p, o) {
   if (o === undefined || o === null) return p;
   if (p === undefined || p === null) return o;
@@ -3583,23 +3619,26 @@ function mergeVal(p, o) {
   }
   return p;
 }
-function mergeSaves(local, other) {
-  var a = JSON.parse(JSON.stringify(local)), b = JSON.parse(JSON.stringify(other));
+function mergeSaves(local, other, base, maxOnly) {
+  var a = JSON.parse(JSON.stringify(local)), b = JSON.parse(JSON.stringify(other)), z = base ? JSON.parse(JSON.stringify(base)) : {};
   var p = (a.ts || 0) >= (b.ts || 0) ? a : b, o = p === a ? b : a, m = mergeVal(p, o);
   m.jobs = p.jobs; m.lbQueue = p.lbQueue; m.daily = p.daily; m.name = p.name || o.name; m.car = p.car; m.map = p.map;
-  m.dchal = p.dchal ? JSON.parse(JSON.stringify(p.dchal)) : o.dchal; if (m.dchal) m.dchal.wins = Math.max((a.dchal || {}).wins || 0, (b.dchal || {}).wins || 0);
+  m.dchal = p.dchal ? JSON.parse(JSON.stringify(p.dchal)) : o.dchal;
   m.settings = a.settings;
-  // money adds up (6M here + 3M there = 9M), and so do the play totals; levels, prestige and bests keep the higher
-  var add = function (x, y) { return (+x || 0) + (+y || 0); };
-  m.wallet = add(a.wallet, b.wallet);
-  m.stats = m.stats || {}; var sk = {}, k; for (k in a.stats || {}) sk[k] = 1; for (k in b.stats || {}) sk[k] = 1;
-  for (k in sk) if (typeof (a.stats || {})[k] === 'number' || typeof (b.stats || {})[k] === 'number') m.stats[k] = add((a.stats || {})[k], (b.stats || {})[k]);
-  if (m.police) {
-    m.police.busts = add((a.police || {}).busts, (b.police || {}).busts);
-    var ca = (a.police || {}).caught || [], cb = (b.police || {}).caught || [];
-    m.police.caught = []; for (var i = 0; i < Math.max(ca.length, cb.length); i++) m.police.caught.push(add(ca[i], cb[i]));
+  if (!maxOnly) {
+    var add = function (x, y, w) { return Math.max(0, (+x || 0) + (+y || 0) - (+w || 0)); };
+    m.wallet = add(a.wallet, b.wallet, z.wallet);
+    var as = a.stats || {}, bs = b.stats || {}, zs = z.stats || {}, sk = {}, k;
+    m.stats = m.stats || {}; for (k in as) sk[k] = 1; for (k in bs) sk[k] = 1;
+    for (k in sk) if (typeof as[k] === 'number' || typeof bs[k] === 'number') m.stats[k] = add(as[k], bs[k], zs[k]);
+    if (m.police) {
+      var ap = a.police || {}, bp = b.police || {}, zp = z.police || {};
+      m.police.busts = add(ap.busts, bp.busts, zp.busts);
+      var ca = ap.caught || [], cb = bp.caught || [], cz = zp.caught || [];
+      m.police.caught = []; for (var i = 0; i < Math.max(ca.length, cb.length); i++) m.police.caught.push(add(ca[i], cb[i], cz[i]));
+    }
+    if (m.dchal) m.dchal.wins = add((a.dchal || {}).wins, (b.dchal || {}).wins, (z.dchal || {}).wins);
   }
-  if (m.dchal) m.dchal.wins = add((a.dchal || {}).wins, (b.dchal || {}).wins);
   // remember every save that's now inside this one, so none of them can ever be added again
   var ids = {}; [a.sid].concat(a.sids || [], [b.sid], b.sids || []).forEach(function (x) { if (x) ids[x] = 1; });
   m.sid = p.sid || o.sid; m.sids = Object.keys(ids);
