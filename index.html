@@ -364,36 +364,10 @@ ol.board li.top { background: linear-gradient(90deg, #2a2440, var(--panel) 60%);
   .ride { padding: 4px 10px 8px; } .ride canvas { height: 70px; width: 100%; } .rideTx b { font-size: 24px; } .rideTx em { font-size: 20px; }
   .gift { padding: 6px 12px; } .gift svg { width: 30px; height: 30px; } .gift .streak { display: none; }
 }
-/* wide screens (laptops, iPads held sideways): the main menu fills the whole screen in three columns instead of a
-   narrow column in the middle that has to be scrolled. Left: the showroom with your car and stats. Middle: PLAY and the
-   daily things. Right: every menu button. */
+/* laptops and iPads held sideways: the same menu as on phones, just a little wider so it doesn't look lost */
 @media (min-width: 900px) and (min-height: 600px) {
-  #sc-menu { padding: 8px 20px; }
-  #sc-menu > .menuCard { max-width: 1500px; width: 100%; min-height: calc(100% - 4px); margin: auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.2fr);
-    grid-template-rows: auto repeat(5, auto) minmax(0, 1fr) auto auto; column-gap: 22px; row-gap: 9px; align-content: center; padding: 10px 22px; }
-  .menuCard > .topline { grid-column: 1 / -1; grid-row: 1; }
-  .menuCard > .logo { grid-column: 1; grid-row: 2; margin: 2px 0 0; font-size: clamp(36px, 3.4vw, 56px); }
-  .menuCard > .ride { grid-column: 1; grid-row: 3 / span 6; align-self: stretch; justify-content: center; }
-  .menuCard > .ride canvas { height: clamp(110px, 24vh, 300px); }
-  .menuCard > .mini { grid-column: 1; grid-row: 9; }
-  .menuCard > .btn.big { grid-column: 2; grid-row: 2; min-height: 68px; font-size: 32px; align-self: center; }
-  .menuCard > .pbtn { grid-column: 2; grid-row: 3; }
-  .menuCard > .gift:not(.dch) { grid-column: 2; grid-row: 4; }
-  .menuCard > .gift.dch { grid-column: 2; grid-row: 5; }
-  .menuCard > .wkbar { grid-column: 2; grid-row: 6; }
-  .menuCard > .sndask { grid-column: 2; grid-row: 8; align-self: start; }
-  .menuCard > .grid2 { grid-column: 3; grid-row: 2 / span 7; align-self: stretch; align-content: stretch; gap: 10px; }
-  .menuCard > .mnext { display: flex; grid-column: 2; grid-row: 7; align-self: stretch; flex-direction: column; align-items: stretch; justify-content: center; gap: 8px; padding: 12px 14px; }
-  .menuCard > .mnext canvas { width: 100%; height: clamp(44px, 11vh, 150px); flex: 0 0 auto; }
-  .menuCard > .mnext span { flex: 0; }
-  .menuCard .mdesc { display: block; font: 700 12px/1.25 var(--body, system-ui), sans-serif; opacity: .88; margin-top: 3px; white-space: normal; text-shadow: none; }
-  .menuCard > .grid2 { grid-auto-rows: 1fr; }
-  .menuCard > .grid2 .mbtn { justify-content: flex-start; }
-  .menuCard > .grid2 .mbtn.wide2 { justify-content: flex-start; }
-  .menuCard > .grid2 .mbtn .badge { align-self: center; }
-  .menuCard > .grid2 .mbtn { min-height: 56px; font-size: clamp(13px, 1.3vw, 19px); gap: 6px; padding: 10px 8px; }
-  .menuCard > .grid2 .mbtn svg { width: 24px; height: 24px; flex-shrink: 0; }
-  .menuCard > .row2 { grid-column: 2 / -1; grid-row: 9; align-self: center; }
+  #sc-menu > .menuCard { max-width: 540px; }
+  .menuCard > .ride canvas { height: 150px; }
 }
 </style>
 </head>
@@ -2819,6 +2793,127 @@ var PLOTS = {
     if (hsh(n, 140) < .3) { rect(g, A.X(140, 18), P0.y + 60, 18, 18, '#e8402a'); rect(g, A.X(143, 12), P0.y + 63, 12, 12, '#f4f4f2'); }
   }
 };
+
+/* ---------- landmarks: one recognisable sight per map, now and then by the roadside ----------
+   Every map shares its roadside styles with one or two others, so each also gets its own landmark (seen from above,
+   like the rest of the scenery): a lighthouse on Big Sur, a torii gate in Japan, a castle in Scotland and so on. */
+function lmDisc(g, x, y, r, c) { g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); }
+function lmShadow(g, x, y, w, h) { g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(x + 5, y + 6, w, h); }
+var LANDMARKS = {
+  atacama: function (g, sc, P0, A) {   // an adobe chapel with a bell tower, and llamas grazing
+    var x = A.X(30, 70), y = P0.y + 30; lmShadow(g, x, y, 70, 96); sceneRoof(g, x, y, 70, 96, '#a8643a', false, false);
+    rect(g, x + 22, y - 22, 26, 26, '#d9b48a'); rect(g, x + 29, y - 15, 12, 12, '#5a3a22'); rect(g, x + 34, y - 30, 2, 10, '#5a3a22'); rect(g, x + 30, y - 26, 10, 2, '#5a3a22');
+    for (var i = 0; i < 3; i++) { var lx = A.X(120 + i * 18), ly = P0.y + 60 + i * 30; g.fillStyle = ['#f1e6d0', '#8a6a4a', '#e8dcc4'][i]; g.beginPath(); g.ellipse(lx, ly, 6, 10, 0, 0, TAU); g.fill(); lmDisc(g, lx, ly - 12, 3.5, g.fillStyle); }
+  },
+  mexico: function (g, sc, P0, A) {    // a hacienda round a courtyard with a fountain, and rows of agave
+    var x = A.X(20, 110), y = P0.y + 20; lmShadow(g, x, y, 110, 110);
+    sceneRoof(g, x, y, 110, 30, '#c0643a', false, false); sceneRoof(g, x, y + 30, 30, 80, '#c0643a', false, false); sceneRoof(g, x + 80, y + 30, 30, 80, '#c0643a', false, false);
+    rect(g, x + 30, y + 30, 50, 80, '#e8d8b0'); lmDisc(g, x + 55, y + 70, 11, '#cfc8b8'); lmDisc(g, x + 55, y + 70, 8, '#3fb8e6');
+    g.strokeStyle = '#5f8f6a'; g.lineWidth = 2;
+    for (var i = 0; i < 6; i++) { var ax = A.X(150 + (i % 2) * 22), ay = P0.y + 25 + i * 24; for (var k = 0; k < 6; k++) { var a = k / 6 * TAU; g.beginPath(); g.moveTo(ax, ay); g.lineTo(ax + Math.cos(a) * 8, ay + Math.sin(a) * 8); g.stroke(); } }
+  },
+  pch: function (g, sc, P0, A) {       // a lighthouse on the rocks, with the keeper's cottage
+    var cx = A.X(70), cy = P0.y + 70;
+    for (var i = 0; i < 7; i++) lmDisc(g, cx + Math.cos(i) * 34, cy + Math.sin(i * 1.7) * 30, 12 + (i % 3) * 4, i % 2 ? '#7a756e' : '#8e8880');
+    lmDisc(g, cx + 5, cy + 6, 22, 'rgba(0,0,0,0.25)'); lmDisc(g, cx, cy, 22, '#f4f2ec'); lmDisc(g, cx, cy, 16, '#c8322a'); lmDisc(g, cx, cy, 11, '#2a2c33'); lmDisc(g, cx, cy, 7, '#ffe27a');
+    g.fillStyle = 'rgba(255,240,170,0.18)'; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, 90, -0.5, 0.2); g.closePath(); g.fill();
+    var hx = A.X(120, 46); sceneRoof(g, hx, P0.y + 110, 46, 36, '#5a6470', false, false);
+  },
+  route66: function (g, sc, P0, A) {   // a red sandstone butte, and a roadside diner
+    var cx = A.X(110), cy = P0.y + 85; g.fillStyle = 'rgba(0,0,0,0.22)'; g.beginPath(); g.ellipse(cx + 10, cy + 12, 62, 50, 0.2, 0, TAU); g.fill();
+    g.fillStyle = '#b8582e'; g.beginPath(); g.moveTo(cx - 55, cy - 10); g.lineTo(cx - 35, cy - 45); g.lineTo(cx + 20, cy - 52); g.lineTo(cx + 58, cy - 20); g.lineTo(cx + 50, cy + 30); g.lineTo(cx - 10, cy + 48); g.lineTo(cx - 50, cy + 25); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(90,30,10,0.35)'; g.lineWidth = 3; for (var i = 0; i < 4; i++) { g.beginPath(); g.ellipse(cx, cy, 44 - i * 10, 36 - i * 8, 0.2, 0, TAU); g.stroke(); }
+    var dx = A.X(16, 46); rect(g, dx, P0.y + 10, 46, 30, '#e8e2d2'); rect(g, dx, P0.y + 10, 46, 8, '#c8322a'); rect(g, dx + 6, P0.y + 44, 34, 10, '#2a2c33'); g.fillStyle = '#ffd23f'; g.font = '800 8px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('DINER', dx + 23, P0.y + 49);
+  },
+  outback: function (g, sc, P0, A) {   // a windmill water pump and its tank, and a great red rock
+    var cx = A.X(50), cy = P0.y + 50; g.strokeStyle = '#8a8f96'; g.lineWidth = 3; for (var i = 0; i < 12; i++) { var a = i / 12 * TAU; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * 22, cy + Math.sin(a) * 22); g.stroke(); }
+    lmDisc(g, cx, cy, 5, '#5a5f66'); rect(g, cx - 2, cy, 4, 26, '#5a5f66'); lmDisc(g, cx + 30, cy + 40, 16, '#9aa0a6'); lmDisc(g, cx + 30, cy + 40, 12, '#5fa8c8');
+    var rx = A.X(130), ry = P0.y + 115; g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.ellipse(rx + 8, ry + 8, 55, 34, 0, 0, TAU); g.fill();
+    g.fillStyle = '#b04a2a'; g.beginPath(); g.ellipse(rx, ry, 55, 34, 0, 0, TAU); g.fill(); g.fillStyle = '#c8603a'; g.beginPath(); g.ellipse(rx - 10, ry - 8, 34, 18, 0, 0, TAU); g.fill();
+  },
+  liguria: function (g, sc, P0, A) {   // pastel houses stacked up the hillside
+    var cols = ['#f2c27a', '#e88a6a', '#f4d9a0', '#e8a8a0', '#f0b860', '#d8826a'];
+    for (var i = 0; i < 6; i++) { var w = 34, x = A.X(16 + (i % 3) * 38, w), y = P0.y + 18 + Math.floor(i / 3) * 70; lmShadow(g, x, y, w, 58); sceneRoof(g, x, y, w, 58, cols[i], false, false); rect(g, x + 4, y + 50, w - 8, 4, 'rgba(255,255,255,0.4)'); }
+  },
+  cotedazur: function (g, sc, P0, A) { // a little marina with yachts
+    var x = A.X(10, 180); rect(g, x, P0.y + 10, 180, 150, '#2a8fc0'); rect(g, x, P0.y + 10, 180, 6, '#e8e2d2');
+    for (var i = 0; i < 3; i++) rect(g, x + 20 + i * 58, P0.y + 16, 6, 120, '#a8865a');
+    for (var k = 0; k < 6; k++) { var bx = x + 34 + (k % 3) * 58, by = P0.y + 40 + Math.floor(k / 3) * 60; g.fillStyle = '#fff'; g.beginPath(); g.moveTo(bx, by - 18); g.quadraticCurveTo(bx + 10, by, bx, by + 18); g.lineTo(bx - 6, by + 18); g.quadraticCurveTo(bx - 10, by, bx, by - 18); g.fill(); rect(g, bx - 4, by - 2, 6, 10, '#cfe0ea'); }
+  },
+  japan: function (g, sc, P0, A) {     // a red torii gate on the path to a small pagoda
+    var gx = A.X(30, 70), gy = P0.y + 30; rect(g, gx + 32, gy, 6, 120, '#cfc8b8');
+    rect(g, gx + 3, gy + 50, 64, 8, '#2a2c33'); rect(g, gx + 6, gy + 60, 58, 5, '#d8322a'); lmDisc(g, gx + 14, gy + 62, 4, '#d8322a'); lmDisc(g, gx + 56, gy + 62, 4, '#d8322a');
+    var px = A.X(118, 60), py = P0.y + 40; lmShadow(g, px, py, 60, 60);
+    for (var i = 0; i < 4; i++) { var s = 60 - i * 13; rect(g, px + (60 - s) / 2, py + (60 - s) / 2, s, s, i % 2 ? '#3a4048' : '#2a2f36'); rect(g, px + (60 - s) / 2, py + (60 - s) / 2, s, 2, '#c8322a'); }
+    lmDisc(g, px + 30, py + 30, 3, '#d8b23a');
+  },
+  brazil: function (g, sc, P0, A) {    // a beach football pitch
+    var x = A.X(14, 110), y = P0.y + 14; rect(g, x - 4, y - 4, 118, 148, '#e2cc96'); rect(g, x, y, 110, 140, '#3f9a4a');
+    for (var i = 0; i < 7; i++) rect(g, x, y + i * 20, 110, 10, 'rgba(255,255,255,0.05)');
+    g.strokeStyle = '#fff'; g.lineWidth = 2; g.strokeRect(x + 4, y + 4, 102, 132); g.beginPath(); g.moveTo(x + 4, y + 70); g.lineTo(x + 106, y + 70); g.stroke();
+    g.beginPath(); g.arc(x + 55, y + 70, 16, 0, TAU); g.stroke(); g.strokeRect(x + 35, y + 4, 40, 16); g.strokeRect(x + 35, y + 116, 40, 16);
+    sceneTree(g, A.X(150), P0.y + 40, 14, 'palm', P0.n); sceneTree(g, A.X(160), P0.y + 120, 14, 'palm', P0.n + 1);
+  },
+  greece: function (g, sc, P0, A) {    // a white chapel with a blue dome, and a windmill
+    var x = A.X(26, 60), y = P0.y + 30; lmShadow(g, x, y, 60, 80); rect(g, x, y, 60, 80, '#f8f6f0'); lmDisc(g, x + 30, y + 30, 20, '#2f6fd0'); lmDisc(g, x + 26, y + 26, 6, 'rgba(255,255,255,0.35)'); rect(g, x + 28, y + 60, 4, 14, '#2f6fd0');
+    var wx = A.X(130), wy = P0.y + 110; lmDisc(g, wx + 3, wy + 4, 20, 'rgba(0,0,0,0.18)'); lmDisc(g, wx, wy, 18, '#f8f6f0'); lmDisc(g, wx, wy, 8, '#8a6a4a');
+    g.strokeStyle = '#6b5a44'; g.lineWidth = 2; for (var i = 0; i < 6; i++) { var a = i / 6 * TAU + 0.3; g.beginPath(); g.moveTo(wx, wy); g.lineTo(wx + Math.cos(a) * 34, wy + Math.sin(a) * 34); g.stroke(); }
+  },
+  dubai: function (g, sc, P0, A) {     // a sail-shaped tower and a domed mosque with minarets
+    var x = A.X(30, 70), y = P0.y + 14; g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.moveTo(x + 10, y + 150); g.quadraticCurveTo(x + 80, y + 80, x + 30, y + 10); g.lineTo(x + 20, y + 150); g.fill();
+    g.fillStyle = '#e8f2f8'; g.beginPath(); g.moveTo(x, y + 140); g.quadraticCurveTo(x + 72, y + 70, x + 22, y); g.lineTo(x + 12, y + 140); g.fill(); g.fillStyle = '#7fb8d8'; g.beginPath(); g.moveTo(x + 6, y + 130); g.quadraticCurveTo(x + 52, y + 70, x + 20, y + 20); g.lineTo(x + 14, y + 130); g.fill();
+    var mx = A.X(140), my = P0.y + 95; lmDisc(g, mx + 4, my + 5, 26, 'rgba(0,0,0,0.2)'); lmDisc(g, mx, my, 26, '#f4f2ec'); lmDisc(g, mx, my, 18, '#e8e2d2'); lmDisc(g, mx, my, 4, '#d8b23a');
+    [[-38, -38], [38, -38], [-38, 38], [38, 38]].forEach(function (o) { lmDisc(g, mx + o[0], my + o[1], 6, '#f4f2ec'); lmDisc(g, mx + o[0], my + o[1], 2.5, '#d8b23a'); });
+  },
+  scotland: function (g, sc, P0, A) {  // a ruined stone castle
+    var x = A.X(30, 120), y = P0.y + 25; rect(g, x, y, 120, 110, '#6f8a5a'); g.strokeStyle = '#8a857a'; g.lineWidth = 10; g.strokeRect(x, y, 120, 110);
+    g.strokeStyle = '#6a665e'; g.lineWidth = 2; g.strokeRect(x - 5, y - 5, 130, 120); rect(g, x + 50, y + 104, 20, 12, '#4a5a3a');
+    [[0, 0], [120, 0], [0, 110], [120, 110]].forEach(function (o) { lmDisc(g, x + o[0] + 3, y + o[1] + 4, 15, 'rgba(0,0,0,0.25)'); lmDisc(g, x + o[0], y + o[1], 15, '#9a958a'); lmDisc(g, x + o[0], y + o[1], 9, '#4a4e56'); });
+    rect(g, x + 30, y + 30, 40, 34, '#8a857a'); rect(g, x + 36, y + 36, 28, 22, '#5a6a4a');
+  },
+  safrica: function (g, sc, P0, A) {   // round thatched huts and a flat-topped acacia
+    for (var i = 0; i < 3; i++) { var hx = A.X(40 + (i % 2) * 44), hy = P0.y + 35 + i * 42; lmDisc(g, hx + 4, hy + 5, 18, 'rgba(0,0,0,0.2)'); lmDisc(g, hx, hy, 18, '#b8904a'); g.strokeStyle = 'rgba(90,60,20,0.45)'; g.lineWidth = 1.5; for (var k = 0; k < 10; k++) { var a = k / 10 * TAU; g.beginPath(); g.moveTo(hx, hy); g.lineTo(hx + Math.cos(a) * 18, hy + Math.sin(a) * 18); g.stroke(); } lmDisc(g, hx, hy, 3, '#6a4a22'); }
+    var tx = A.X(140), ty = P0.y + 90; g.fillStyle = 'rgba(0,0,0,0.2)'; g.beginPath(); g.ellipse(tx + 8, ty + 8, 44, 18, 0, 0, TAU); g.fill(); g.fillStyle = '#5a7a3a'; g.beginPath(); g.ellipse(tx, ty, 44, 18, 0, 0, TAU); g.fill(); g.fillStyle = '#6f8f48'; g.beginPath(); g.ellipse(tx - 6, ty - 4, 30, 10, 0, 0, TAU); g.fill();
+  },
+  thailand: function (g, sc, P0, A) {  // a temple with layered orange-and-green roofs and a golden stupa
+    var x = A.X(26, 80), y = P0.y + 26; lmShadow(g, x, y, 80, 110);
+    for (var i = 0; i < 3; i++) { rect(g, x + i * 8, y + i * 8, 80 - i * 16, 110 - i * 16, i % 2 ? '#3f8a4a' : '#e0742a'); rect(g, x + i * 8, y + i * 8, 80 - i * 16, 3, '#d8b23a'); }
+    rect(g, x + 38, y, 4, 110, '#d8b23a');
+    var sx = A.X(150), sy = P0.y + 80; lmDisc(g, sx + 4, sy + 5, 20, 'rgba(0,0,0,0.2)'); lmDisc(g, sx, sy, 20, '#d8b23a'); lmDisc(g, sx, sy, 13, '#f0cc4a'); lmDisc(g, sx, sy, 5, '#fff2a0');
+  },
+  mauritius: function (g, sc, P0, A) { // a red-roofed chapel by the sugar cane
+    var x = A.X(24, 54), y = P0.y + 40; lmShadow(g, x, y, 54, 80); sceneRoof(g, x, y, 54, 80, '#c8322a', false, false); rect(g, x + 22, y - 16, 10, 16, '#f4f2ec'); rect(g, x + 26, y - 24, 2, 10, '#5a3a22');
+    for (var i = 0; i < 9; i++) rect(g, A.X(100 + i * 10, 6), P0.y + 8, 6, 154, i % 2 ? '#8ccf5a' : '#9adb64');
+  },
+  nyc: function (g, sc, P0, A) {       // a flat roof with a wooden water tower and air-con units
+    var x = A.X(14, 170), y = P0.y + 8; rect(g, x, y, 170, 154, '#6a6f78'); rect(g, x, y, 170, 6, '#4a4e56'); g.strokeStyle = 'rgba(0,0,0,0.2)'; g.lineWidth = 1; for (var i = 1; i < 6; i++) { g.beginPath(); g.moveTo(x, y + i * 26); g.lineTo(x + 170, y + i * 26); g.stroke(); }
+    var wx = x + 60, wy = y + 60; lmDisc(g, wx + 8, wy + 10, 26, 'rgba(0,0,0,0.3)'); lmDisc(g, wx, wy, 26, '#8a6a4a'); g.strokeStyle = '#6a4a2a'; g.lineWidth = 2; for (var k = 0; k < 4; k++) { g.beginPath(); g.arc(wx, wy, 8 + k * 5, 0, TAU); g.stroke(); } lmDisc(g, wx, wy, 4, '#4a3a2a');
+    for (var u = 0; u < 3; u++) { rect(g, x + 110 + (u % 2) * 26, y + 20 + u * 40, 22, 22, '#b8bcc4'); lmDisc(g, x + 121 + (u % 2) * 26, y + 31 + u * 40, 7, '#5a5f66'); }
+  },
+  london: function (g, sc, P0, A) {    // a clock tower and a red telephone box
+    var x = A.X(30, 46), y = P0.y + 30; lmShadow(g, x, y, 46, 46); rect(g, x, y, 46, 46, '#c8b48a'); rect(g, x + 4, y + 4, 38, 38, '#a8946a');
+    lmDisc(g, x + 23, y + 23, 15, '#f4f2ec'); g.strokeStyle = '#2a2c33'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 23, y + 23); g.lineTo(x + 23, y + 13); g.moveTo(x + 23, y + 23); g.lineTo(x + 31, y + 25); g.stroke();
+    rect(g, x - 6, y + 52, 58, 70, '#b8a47a'); sceneRoof(g, x - 6, y + 52, 58, 70, '#6a6450', false, false);
+    var px = A.X(130, 14); lmShadow(g, px, P0.y + 90, 14, 14); rect(g, px, P0.y + 90, 14, 14, '#c8202f'); rect(g, px + 2, P0.y + 92, 10, 10, '#a8101f');
+  },
+  norway: function (g, sc, P0, A) {    // a row of red boathouses
+    for (var i = 0; i < 4; i++) { var x = A.X(20 + (i % 2) * 70, 50), y = P0.y + 12 + Math.floor(i / 2) * 76; lmShadow(g, x, y, 50, 60); sceneRoof(g, x, y, 50, 60, '#9a2a22', false, false); rect(g, x + 18, y + 54, 14, 8, '#f4f2ec'); }
+  },
+  iceland: function (g, sc, P0, A) {   // turf houses with grass roofs and white gables
+    for (var i = 0; i < 3; i++) { var x = A.X(30 + i * 40, 34), y = P0.y + 40; lmShadow(g, x, y, 34, 70); rect(g, x, y, 34, 70, '#5f8f4a'); rect(g, x, y, 34, 70, 'rgba(255,255,255,0.08)'); rect(g, x + 16, y, 2, 70, '#4a7a3a'); rect(g, x + 2, y + 66, 30, 8, '#f4f2ec'); rect(g, x + 13, y + 66, 8, 8, '#2a2c33'); }
+  },
+  alps: function (g, sc, P0, A) {      // a church with an onion dome, and a cable car line overhead
+    var x = A.X(30, 56), y = P0.y + 40; lmShadow(g, x, y, 56, 90); sceneRoof(g, x, y, 56, 90, '#6b4a2a', true, false);
+    lmDisc(g, x + 28, y - 8, 15, '#3a3f46'); lmDisc(g, x + 24, y - 12, 5, 'rgba(255,255,255,0.3)'); rect(g, x + 27, y - 30, 2, 10, '#d8b23a');
+    g.strokeStyle = '#2a2c33'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(P0.x0, P0.y + 20); g.lineTo(P0.x1, P0.y + 150); g.stroke();
+    var cx = (P0.x0 + P0.x1) / 2, cy = P0.y + 85; rect(g, cx - 9, cy - 6, 18, 12, '#c8322a'); rect(g, cx - 6, cy - 3, 12, 6, '#cfe0ea');
+  }
+};
+PLOTS.landmark = function (g, sc, P0) {
+  var A = plotAxes(P0), f = LANDMARKS[M.id];
+  rect(g, P0.x0, P0.y, P0.x1 - P0.x0, P0.h, sc.snow ? '#eef2f6' : shade(M.verge, .08));
+  if (f) f(g, sc, P0, A); else PLOTS.trees(g, sc, P0);
+};
 // each plot is drawn once into a small image and then just pasted as it scrolls past (cheap on weak phones)
 var PLOT_CACHE = {}, PLOT_KEYS = [], plotBudget = 1;
 function plotSprite(kind, sc, P0) {
@@ -2850,6 +2945,8 @@ function drawScene(g, sc) {
           var a = hsh(id, 11) * tot; for (i = 0, acc = 0; i < keys.length; i++) { acc += kinds[keys[i]]; if (a < acc) { kind = keys[i]; break; } }
           if (ci > 0 && (kind === 'gas' || kind === 'store' || kind === 'billboard')) kind = zone === 'city' ? 'tower' : 'trees';
           if (kind === 'house' && sc.snow) kind = 'chalet';
+          // now and then, the map's own landmark (only in the column next to the road, so it's always seen)
+          if (ci === 0 && LANDMARKS[M.id] && hsh(id, 23) < 0.07) kind = 'landmark';
         }
         var inner = s < 0 ? ROAD_X - 22 - ci * COLW : W - ROAD_X + 22 + ci * COLW;
         // (plots just behind the start of the road have negative numbers; plot art picks colours with n % k, so keep n positive)
@@ -3482,7 +3579,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.20', updBusy = false;
+var APP_VERSION = '2026-10-14.21', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -7039,7 +7136,7 @@ if (window.__CR_TEST || /[?&]crtest\b/.test(location.search)) window.__CR = {
   clear: function () { traffic.length = 0; items.length = 0; },
   freeze: function () { state = 'paused'; },
   god: function () { lives = 99; maxLives = 3; fuel = 100; },
-  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; if (k === 'boss' && !boss) bossStart(); if (k !== 'boss') boss = null; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, race: function () { return R; }, ghostDraw: function () { drawGhosts(); }, boss: function () { return boss && { hp: boss.hp, ph: boss.ph, lane: boss.lane, y: Math.round(boss.y), x: Math.round(boss.x) }; }, frameAt: function (ts) { var raf = window.requestAnimationFrame; window.requestAnimationFrame = function () { return 0; }; try { frame(ts); } finally { window.requestAnimationFrame = raf; } }, cloud: { fromHash: authFromHash, sync: cloudSync, merge: mergeSaves, put: cloudPut, info: function () { var l = null; try { l = localStorage.getItem(LINK_KEY); } catch (e) {} return { auth: auth, state: cloud.state, missing: cloud.missing, linked: l, timer: !!cloud.timer }; } }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
+  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; if (k === 'boss' && !boss) bossStart(); if (k !== 'boss') boss = null; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, landmark: function (cv, id) { applyMap(mapById(id)); var g = cv.getContext('2d'), sc = SCENES[M.env]; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); PLOTS.landmark(g, sc, { x0: 0, x1: 200, y: 0, h: 170, s: 1, n: 5, zone: 'village', back: false, roof: sc.roof[0] }); }, race: function () { return R; }, ghostDraw: function () { drawGhosts(); }, boss: function () { return boss && { hp: boss.hp, ph: boss.ph, lane: boss.lane, y: Math.round(boss.y), x: Math.round(boss.x) }; }, frameAt: function (ts) { var raf = window.requestAnimationFrame; window.requestAnimationFrame = function () { return 0; }; try { frame(ts); } finally { window.requestAnimationFrame = raf; } }, cloud: { fromHash: authFromHash, sync: cloudSync, merge: mergeSaves, put: cloudPut, info: function () { var l = null; try { l = localStorage.getItem(LINK_KEY); } catch (e) {} return { auth: auth, state: cloud.state, missing: cloud.missing, linked: l, timer: !!cloud.timer }; } }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
 };
 
 })();
