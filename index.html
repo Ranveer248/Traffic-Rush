@@ -197,6 +197,7 @@ input { -webkit-user-select: text; user-select: text; }
 .dgoal small { font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: #ff8ac0; } .dgoal b { font-family: var(--disp); font-weight: 400; font-size: 24px; color: #fff; } .dgoal em { font-style: normal; font-weight: 800; color: var(--good); }
 .mbtn.wide2 { grid-column: 1 / -1; justify-content: center; }
 .errbox { position: fixed; left: 10px; right: 10px; bottom: 10px; z-index: 99999; background: #2a0f16; border: 3px solid #ff5d5d; border-radius: 14px; padding: 10px 12px; color: #fff; display: flex; flex-direction: column; gap: 4px; font: 13px/1.35 system-ui, sans-serif; cursor: pointer; }
+.errcode { display: block; background: #2a0f16; border: 2px solid #ff5d5d; border-radius: 10px; padding: 8px 10px; font-size: 11px; color: #ffd6d6; word-break: break-word; white-space: pre-wrap; }
 .errbox b { font-size: 15px; color: #ff9a9a; } .errbox code { font-size: 11px; color: #ffd6d6; word-break: break-word; white-space: pre-wrap; }
 .sync.link { background: none; border: 0; padding: 0; font: inherit; color: var(--good); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; } .sync.link.bad { color: #ffb020; }
 .btn.gbtn { background: #fff; color: #1f1f1f; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; text-shadow: none; } .btn.gbtn svg { width: 22px; height: 22px; }
@@ -3390,7 +3391,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.9', updBusy = false;
+var APP_VERSION = '2026-10-14.10', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -5346,6 +5347,13 @@ function frame(ts) {
   try { update(dt); } catch (e) { reportErr(e, 'update'); }
   try { draw(); } catch (e) { reportErr(e, 'draw'); try { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; } catch (e2) {} }
 }
+// the last problem the game hit, kept in Settings so it can be screenshotted later
+function lastErrHtml() {
+  var e = null; try { e = JSON.parse(localStorage.getItem('cr-lasterr') || 'null'); } catch (x) {}
+  if (!e) return '';
+  return '<h4>Problem report</h4><p class="fine">The game recovered from this problem on ' + esc(new Date(e.at).toLocaleString()) + '. Send a screenshot of this to the developer.</p>' +
+    '<code class="errcode">' + esc(e.v + ' · ' + e.where + ': ' + e.msg + (e.st ? ' · ' + e.st : '')) + '</code>';
+}
 // if something goes wrong, show what it was (once per problem) so a screenshot tells the developer exactly what to fix
 var errSeen = {};
 function reportErr(e, where) {
@@ -6055,6 +6063,7 @@ function rSettings() {
     '<h4>Driver</h4><div class="it"><div class="itx"><b>' + esc(save.name) + '</b><span>' + (auth ? 'Saved on this device and online' : 'Saved in this browser · ' + syncLabel()) + '</span></div>' +
       (setBack === 'pause' ? '' : '<button class="btn ghost sm" data-act="rename" data-back="settings">Change name</button>') + '</div>' +
     (setBack === 'pause' ? '' : accountHtml()) +
+    lastErrHtml() +
     '<p class="fine"><a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></p>' +
     '</div>';
   OV.settings.innerHTML = h;
