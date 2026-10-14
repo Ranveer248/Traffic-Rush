@@ -58,8 +58,8 @@ input { -webkit-user-select: text; user-select: text; }
 }
 .ov[hidden] { display: none; }
 /* centre these cards with auto margins, not justify-content, so a card taller than the screen can still scroll to its top */
-#sc-name > *, #sc-menu > *, #sc-pause > *, #sc-over > *, #sc-help > * { margin-top: auto; margin-bottom: auto; }
-#sc-garage, #sc-maps, #sc-jobs, #sc-codes, #sc-board, #sc-settings { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0 14px, rgba(0,0,0,0) 14px 28px), #0e1224; }
+#sc-name > *, #sc-menu > *, #sc-pause > *, #sc-over > *, #sc-help > *, #sc-daily > .card { margin-top: auto; margin-bottom: auto; }
+#sc-garage, #sc-maps, #sc-jobs, #sc-codes, #sc-board, #sc-settings, #sc-police, #sc-achieve { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0 14px, rgba(0,0,0,0) 14px 28px), #0e1224; }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop { 0% { transform: translateY(14px) scale(.96); opacity: 0; } 70% { transform: translateY(-2px) scale(1.01); opacity: 1; } 100% { transform: none; } }
 @keyframes wob { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(-2deg) scale(1.03); } }
@@ -192,6 +192,12 @@ input { -webkit-user-select: text; user-select: text; }
 .cc.on { border-color: var(--accent); background: #2d2a2a; box-shadow: 0 4px 0 var(--accent-dk); }
 .gright { background: var(--panel); border: 3px solid var(--edge); border-radius: 20px; padding: 14px; box-shadow: 0 6px 0 var(--edge); }
 .det { display: flex; gap: 14px; align-items: center; }
+.gift.dch { background: linear-gradient(90deg, #ff4f9a, #8f5cff); color: #fff; animation: none; } .gift.dch b { font-size: 19px; } .gift.dch.done { background: #10142a; color: var(--dim); cursor: pointer; }
+.dgoal { background: #10142a; border: 3px solid var(--edge); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.dgoal small { font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: #ff8ac0; } .dgoal b { font-family: var(--disp); font-weight: 400; font-size: 24px; color: #fff; } .dgoal em { font-style: normal; font-weight: 800; color: var(--good); }
+.mbtn.wide2 { grid-column: 1 / -1; justify-content: center; }
+.ach .atr { width: 44px; height: 44px; flex-shrink: 0; filter: grayscale(1) opacity(.45); } .ach.on .atr { filter: none; } .ach .atr svg { width: 100%; height: 100%; }
+.pips { display: flex; gap: 4px; margin-top: 4px; } .pips i { width: 18px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.14); } .pips i.f { background: var(--accent); }
 .colbar { font-size: 13px; font-weight: 800; color: var(--dim); margin: 2px 2px 6px; } .colbar b { color: var(--accent); }
 .nextcar { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: #10142a; border: 3px solid var(--edge); border-radius: 16px; padding: 8px 12px; color: inherit; cursor: pointer; }
 .nextcar.can { border-color: var(--good); box-shadow: 0 0 0 2px rgba(61,220,151,0.25); }
@@ -317,10 +323,12 @@ ol.board li.top { background: linear-gradient(90deg, #2a2440, var(--panel) 60%);
   .menuCard > .logo { grid-column: 1; grid-row: 2; font-size: 36px; margin: 0; }
   .menuCard > .ride { grid-column: 1; grid-row: 3; }
   .menuCard > .gift { grid-column: 1; grid-row: 4; }
+  .menuCard > .gift.dch { grid-column: 2; grid-row: 5; }
   .menuCard > .mini { grid-column: 1; grid-row: 5; }
+  .menuCard > .pbtn { grid-column: 1; grid-row: 6; }
   .menuCard > .btn.big { grid-column: 2; grid-row: 2; }
   .menuCard > .grid2 { grid-column: 2; grid-row: 3 / span 2; gap: 8px; }
-  .menuCard > .row2 { grid-column: 2; grid-row: 5; }
+  .menuCard > .row2 { grid-column: 2; grid-row: 6; }
   .ov { padding: 10px 14px 14px; }
   .menuCard { padding: 10px 14px 12px; }
   .menuCard .mbtn { min-height: 44px; }
@@ -359,7 +367,10 @@ var BIG_SUFFIX = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'D
 function bigNum(n) {
   n = Math.round(n); if (!isFinite(n)) return '∞'; if (Math.abs(n) < 1e6) return n.toLocaleString('en-US');
   var k = Math.min(BIG_SUFFIX.length - 1, Math.floor(Math.log10(Math.abs(n)) / 3)), v = n / Math.pow(1000, k);
-  return (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2)) + BIG_SUFFIX[k];
+  // rounding can tip a number into the next size (999.96B would print "1000B"), so step up a suffix
+  if (Math.abs(v) >= 999.5 && k < BIG_SUFFIX.length - 1) { k++; v /= 1000; }
+  var a = Math.abs(v);
+  return (a >= 99.95 ? v.toFixed(0) : a >= 9.995 ? v.toFixed(1) : v.toFixed(2)) + BIG_SUFFIX[k];
 }
 function fmt(n) { return '$' + bigNum(n); }
 function keyOf(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20) || 'player'; }
@@ -3078,7 +3089,8 @@ function statsFor(id) {
 }
 
 /* ================= jobs board ================= */
-function jobTier() { return clamp(Math.floor(Math.log(save.best / 300 + 1) / Math.LN2), 0, 4); }
+// job sizes grow with how much you've played (money amounts are useless here: they scale by trillions)
+function jobTier() { var r = save.stats.runs || 0; return r < 3 ? 0 : r < 8 ? 1 : r < 20 ? 2 : r < 50 ? 3 : 4; }
 function genJob() {
   var owned = Object.keys(save.maps), ownedCls = {}, pool = JOB_TYPES.filter(function (t) { return !(t.needMap && owned.length < 2); });
   Object.keys(save.owned).forEach(function (id) { ownedCls[carById(id).cls] = 1; });
@@ -3091,7 +3103,8 @@ function genJob() {
   var sc = econScale() * bestMapCash(), cashJob = t.k === 'earn' || t.k === 'mapearn';
   if (cashJob) j.n = niceAmt(n * sc);
   var base = n * t.pay;
-  j.reward = niceAmt(Math.max(600, base * 4 * (1 + tier * 0.3)) * sc);
+  // a job pays about a minute or two of normal driving on top of what the run earns
+  j.base = Math.max(600, base * 12 * (1 + tier * 0.3)); j.reward = niceAmt(j.base * sc);
   return j;
 }
 function fillBoard() {
@@ -3103,9 +3116,10 @@ function fillBoard() {
 function jobById(id) { var b = save.jobs.board; for (var i = 0; i < b.length; i++) if (b[i].id === id) return b[i]; return null; }
 function activeJobs() { return save.jobs.active.map(jobById).filter(Boolean); }
 function jobTitle(j) { return jobTypeOf(j.k).title(j.n, j); }
-function jobReward(j) { return niceAmt(j.reward * statsFor(save.car).cargo); }
+// the payout follows your progress: a job taken before you bought a better car or map pays at today's rate
+function jobReward(j) { var r = j.base ? Math.max(j.reward, j.base * econScale() * bestMapCash()) : j.reward * 3; return niceAmt(r * statsFor(save.car).cargo); }
 // rewards scale with how far you've got: about what a crate pays in your best car, times your prestige multiplier
-function econScale() { var best = 1; Object.keys(save.owned).forEach(function (id) { var c = carById(id); if (c && c.pay > best) best = c.pay; }); return best * prestigeMult(); }
+function econScale() { var best = 1; Object.keys(save.owned).forEach(function (id) { var c = carById(id); if (c && c.pay > best && !carLocked(c)) best = c.pay; }); return best * prestigeMult(); }   // (only cars you're allowed to drive count)
 function bestMapCash() { var b = 1; Object.keys(save.maps).forEach(function (id) { var m = mapById(id); if (m && m.id === id && m.cash > b) b = m.cash; }); return b; }
 function niceAmt(x) { if (x < 1000) return Math.round(x / 10) * 10; var st = Math.pow(10, Math.floor(Math.log10(x)) - 2); return Math.round(x / st) * st; }
 
@@ -3199,21 +3213,37 @@ var Aud = {
     var self = this; this.nextT = this.ctx.currentTime + 0.1; this.step = 0;
     this.timer = setInterval(function () {
       if (!self.ctx) return;
-      while (self.nextT < self.ctx.currentTime + 0.2) { self.play(self.step, self.nextT); self.nextT += 60 / 116 / 4; self.step = (self.step + 1) % 64; }
+      while (self.nextT < self.ctx.currentTime + 0.2) { self.play(self.step, self.nextT); self.nextT += 60 / (self.style || MUSIC.menu).bpm / 4; self.step = (self.step + 1) % 64; }
     }, 40);
   },
   musicOff: function () { if (this.timer) { clearInterval(this.timer); this.timer = null; } },
+  // every region has its own little loop (see MUSIC); the menu keeps the original tune
+  style: null,
+  setStyle: function (k) { var s = MUSIC[k] || MUSIC.menu; if (this.style === s) return; this.style = s; this.step = 0; },
   play: function (st, t) {
-    var roots = [110, 87.31, 130.81, 98], ch = Math.floor(st / 16) % 4, r = roots[ch], s16 = st % 16, d = this.musG;
-    var third = ch === 0 ? 1.189 : 1.26;
-    if (s16 % 4 === 0) { this.osc('sine', 150, 45, 0.16, 0.9, t, d); }
-    if (s16 % 8 === 4) { this.noise(0.12, 0.35, 5000, t, d, 'highpass'); }
-    if (s16 % 2 === 1) { this.noise(0.04, 0.12, 9000, t, d, 'highpass'); }
-    if (s16 % 2 === 0) { this.osc('sawtooth', r * (s16 % 8 === 6 ? 2 : 1), r * (s16 % 8 === 6 ? 2 : 1) * 0.98, 0.16, 0.28, t, d); }
-    var tones = [1, third, 1.498, 2, 1.498, third], f = r * 4 * tones[(s16 * 5 + ch) % 6];
-    this.osc('triangle', f, f, 0.1, 0.13, t, d);
+    var S = this.style || MUSIC.menu, ch = Math.floor(st / 16) % 4, r = S.roots[ch], s = st % 16, d = this.musG, th = S.thirds[ch];
+    if (S.kick[s] === 'x') this.osc('sine', 150, 45, 0.16, 0.9, t, d);
+    if (S.snare[s] === 'x') this.noise(0.12, 0.35, 5000, t, d, 'highpass');
+    if (S.hat[s] === 'x') this.noise(0.04, 0.12, 9000, t, d, 'highpass');
+    var b = S.bass[s]; if (b !== '.') { var bf = r * (b === 'o' ? 2 : 1); this.osc(S.bassW, bf, bf * 0.98, 0.16, S.bassV || 0.28, t, d); }
+    if (S.lead[s] === 'x') { var v = S.seq[(s * S.mul + ch) % S.seq.length]; if (v === 't') v = th; var f = r * S.oct * v; this.osc(S.leadW, f, f, S.leadD, S.leadV, t, d); }
   }
 };
+// patterns are 16 steps: x = hit, o = bass an octave up, . = rest. seq is the melody ('t' = the chord's third)
+var MUSIC = {
+  menu:     { bpm: 116, roots: [110, 87.31, 130.81, 98], thirds: [1.189, 1.26, 1.26, 1.26], kick: 'x...x...x...x...', snare: '....x.......x...', hat: '.x.x.x.x.x.x.x.x', bass: 'x.x.x.o.x.x.x.o.', bassW: 'sawtooth', lead: 'xxxxxxxxxxxxxxxx', leadW: 'triangle', leadV: 0.13, leadD: 0.1, oct: 4, mul: 5, seq: [1, 't', 1.498, 2, 1.498, 't'] },
+  tropic:   { bpm: 108, roots: [130.81, 98, 110, 87.31], thirds: [1.26, 1.26, 1.189, 1.26], kick: 'x.....x...x.....', snare: '....x.......x...', hat: '..x...x...x...x.', bass: 'x..x..x.x..x..x.', bassW: 'triangle', bassV: 0.34, lead: 'x.xx.x.xx.x.x.x.', leadW: 'sine', leadV: 0.2, leadD: 0.16, oct: 4, mul: 3, seq: [1, 't', 1.498, 2, 2.52, 1.498] },
+  riviera:  { bpm: 112, roots: [146.83, 110, 123.47, 98], thirds: [1.26, 1.26, 1.189, 1.26], kick: 'x.......x.......', snare: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.', bass: 'x..x...xx..x...x', bassW: 'triangle', bassV: 0.34, lead: 'x..x..x.x..x..x.', leadW: 'sine', leadV: 0.18, leadD: 0.26, oct: 2, mul: 5, seq: [1, 't', 1.498, 1.888, 2, 1.498] },
+  mountain: { bpm: 98, roots: [98, 87.31, 116.54, 130.81], thirds: [1.189, 1.26, 1.26, 1.26], kick: 'x.......x.......', snare: '........x.......', hat: '..x...x...x...x.', bass: 'x.......x...x...', bassW: 'triangle', bassV: 0.36, lead: 'x...x.x...x...x.', leadW: 'triangle', leadV: 0.16, leadD: 0.34, oct: 4, mul: 3, seq: [1, 't', 1.498, 2, 1.682, 1.498] },
+  desert:   { bpm: 96, roots: [82.41, 87.31, 82.41, 73.42], thirds: [1.26, 1.26, 1.26, 1.189], kick: 'x..x....x..x....', snare: '....x.......x...', hat: '.x.x.x.x.x.x.x.x', bass: 'x..x..x.x..x..x.', bassW: 'square', bassV: 0.16, lead: 'x.x...x.x...x.x.', leadW: 'sawtooth', leadV: 0.06, leadD: 0.2, oct: 4, mul: 5, seq: [1, 1.059, 't', 1.498, 1.587, 2] },
+  coast:    { bpm: 110, roots: [98, 130.81, 110, 87.31], thirds: [1.26, 1.26, 1.189, 1.26], kick: 'x...x...x...x...', snare: '....x.......x...', hat: '.x.x.x.x.x.x.x.x', bass: 'x.x.x.o.x.x.x.o.', bassW: 'triangle', bassV: 0.34, lead: 'x.x.x.x.x.x.xxx.', leadW: 'triangle', leadV: 0.14, leadD: 0.16, oct: 4, mul: 5, seq: [1, 't', 1.498, 2, 1.682, 1.498] },
+  japan:    { bpm: 118, roots: [110, 87.31, 98, 82.41], thirds: [1.189, 1.26, 1.26, 1.26], kick: 'x...x...x...x...', snare: '....x.......x...', hat: '.x.x.x.x.x.x.x.x', bass: 'x.x.x.x.x.x.x.x.', bassW: 'sawtooth', lead: 'xx.xx.x.xx.xx.x.', leadW: 'triangle', leadV: 0.14, leadD: 0.14, oct: 4, mul: 3, seq: [1, 1.122, 1.335, 1.498, 1.682, 2] },
+  city:     { bpm: 126, roots: [110, 87.31, 98, 82.41], thirds: [1.189, 1.26, 1.26, 1.26], kick: 'x...x...x...x...', snare: '....x.......x...', hat: 'xxxxxxxxxxxxxxxx', bass: 'x.xxx.xxx.xxx.xx', bassW: 'sawtooth', bassV: 0.22, lead: 'x..x..x..x..x.x.', leadW: 'square', leadV: 0.07, leadD: 0.12, oct: 4, mul: 7, seq: [1, 't', 1.498, 2, 1.498, 2.997, 't'] },
+  suburb:   { bpm: 120, roots: [130.81, 110, 87.31, 98], thirds: [1.26, 1.189, 1.26, 1.26], kick: 'x...x...x...x...', snare: '....x.......x...', hat: '.x.x.x.x.x.x.x.x', bass: 'x.x.x.o.x.x.x.o.', bassW: 'sawtooth', lead: 'x.x.x.xxx.x.x.x.', leadW: 'triangle', leadV: 0.14, leadD: 0.12, oct: 4, mul: 5, seq: [1, 't', 1.498, 2, 1.498, 't'] },
+  chase:    { bpm: 142, roots: [110, 110, 87.31, 98], thirds: [1.189, 1.189, 1.26, 1.26], kick: 'x...x...x...x...', snare: '....x.......x...', hat: 'xxxxxxxxxxxxxxxx', bass: 'xxxxxxxxxxxxxxxx', bassW: 'sawtooth', bassV: 0.2, lead: 'x.x.x.x.x.x.x.x.', leadW: 'square', leadV: 0.06, leadD: 0.1, oct: 4, mul: 5, seq: [1, 't', 1.498, 2, 1.498, 't'] }
+};
+var ENV_MUSIC = { andes: 'mountain', alps: 'mountain', highlands: 'mountain', fjord: 'mountain', glacier: 'mountain', beach: 'tropic', tropical: 'tropic', lagoon: 'tropic',
+  islands: 'riviera', riviera: 'riviera', canyon: 'desert', outback: 'desert', cliffs: 'coast', japan: 'japan', skyline: 'city', citynight: 'city', suburb: 'suburb' };
 function vibe(ms) { if (SET().vibe && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
 
 
@@ -3337,8 +3367,10 @@ function startRun() {
   prepare();
   // police bounties are driven in your police car; everything else is a free run in your own car
   if (mode === 'police') { S = policeStats(pcById(save.police.car)); reset(); chase = newChase(); newSuspect(); }
+  // the daily challenge: today's map and car, whatever you normally drive
+  if (mode === 'daily') { var D = dailyToday(); applyMap(mapById(D.map)); S = statsFor(D.car); reset(); run.daily = D; }
   state = 'count'; countT = 3.2; lastCount = -1;
-  Aud.init(); Aud.engine(true, 0.1);
+  Aud.init(); Aud.setStyle(mode === 'police' ? 'chase' : (ENV_MUSIC[M.env] || 'menu')); Aud.engine(true, 0.1);
   UIH.play();
 }
 function pauseGame() { if (state === 'play' || state === 'count') { state = 'paused'; Aud.engine(false, 0); UIH.pause(); } }
@@ -3351,7 +3383,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-13.2', updBusy = false;
+var APP_VERSION = '2026-10-14.1', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3388,8 +3420,9 @@ function lbFetch(path, opts) {
 }
 // only personal bests go online; a send that fails is kept and retried after the next run or on the next visit
 function lbSubmit(earned) {
-  if (earned > (save.lbBest || 0) && save.name && (!save.lbQueue || earned > save.lbQueue.score)) {
-    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(LB_MAX, Math.round(earned)), car: carById(save.car).name.slice(0, 24), map: mapById(save.map).name.slice(0, 24) };
+  // (a weekly best goes up too, even when it isn't an all-time best, so the weekly board stays fair)
+  if ((earned > (save.lbBest || 0) || earned > weekBest()) && save.name && (!save.lbQueue || earned > save.lbQueue.score || save.lbQueue.wk !== weekStart())) {
+    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(LB_MAX, Math.round(earned)), car: (S && S.car ? S.car.name : carById(save.car).name).slice(0, 24), map: M.name.slice(0, 24), wk: weekStart() };
     persist();
   }
   return lbFlush();
@@ -3397,8 +3430,12 @@ function lbSubmit(earned) {
 function lbFlush() {
   var q = save.lbQueue;
   if (!q || !q.name) return Promise.resolve(false);
-  function post(row) { return lbFetch('/scores', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) }); }
-  function sent(score) { save.lbBest = Math.max(save.lbBest || 0, score); if (save.lbQueue === q) save.lbQueue = null; persist(); return true; }
+  function post(row) { return lbFetch('/scores', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ name: row.name, score: row.score, car: row.car, map: row.map }) }); }
+  function sent(score) {
+    save.lbBest = Math.max(save.lbBest || 0, score);
+    if (q.wk === weekStart()) save.lbWeek = { wk: q.wk, best: Math.max(weekBest(), score) };
+    if (save.lbQueue === q) save.lbQueue = null; persist(); return true;
+  }
   return post(q).then(function () { return sent(q.score); }, function (e) {
     if (!(q.score > LB_OLD_MAX && /HTTP 4/.test(e && e.message))) return false;
     var capped = { name: q.name, score: LB_OLD_MAX, car: q.car, map: q.map };
@@ -3406,6 +3443,15 @@ function lbFlush() {
   });
 }
 function lbTop() { return lbFetch('/top_runs?select=name,score,car,map&order=score.desc&limit=50'); }
+// the weekly board starts again every Monday at midnight (UTC): the best run each driver has sent this week
+function weekStart() { var d = new Date(), day = (d.getUTCDay() + 6) % 7; return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day); }
+function weekBest() { var w = save.lbWeek; return w && w.wk === weekStart() ? w.best : 0; }
+function lbWeek() {
+  return lbFetch('/scores?select=name,score,car,map&created_at=gte.' + encodeURIComponent(new Date(weekStart()).toISOString()) + '&order=score.desc&limit=400').then(function (rows) {
+    var seen = {}, out = []; (rows || []).forEach(function (r) { var k = String(r.name).toLowerCase(); if (!seen[k] && out.length < 50) { seen[k] = 1; out.push(r); } }); return out;
+  });
+}
+function weekLeft() { var ms = weekStart() + 7 * 864e5 - Date.now(), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5); return (d ? d + 'd ' : '') + h + 'h'; }
 // Top cops: every driver's lifetime criminals busted. Sent whenever the total goes up; a failed send is retried later.
 function bustSubmit() {
   var p = save.police;
@@ -3439,8 +3485,9 @@ function finish(reason) {
   } else {
     var newBest = earned > save.best; if (newBest) save.best = earned;
     persist();
-    res = { reason: reason, earned: earned, best: save.best, newBest: newBest, km: dist / 1000, run: run, sub: lbSubmit(earned), starter: starter };
+    res = { reason: reason, earned: earned, best: save.best, newBest: newBest, km: dist / 1000, run: run, sub: lbSubmit(earned), starter: starter, carId: S.id, daily: run.daily ? { won: !!run.dailyWon, pay: run.dailyPay || 0, title: dailyTitle(run.daily), val: jobVal(run.daily.goal), goal: run.daily.goal } : null };
   }
+  checkAch();
   setTimeout(function () { if (state === 'over') UIH.over(res); }, 800);
 }
 
@@ -3459,6 +3506,7 @@ function startEvent() {
 }
 function updateEvents(dt) {
   if (chase || state !== 'play') return;
+  if (run.daily) checkDaily();
   if (!EV) { evT -= dt; if (evT <= 0 && t > 12) startEvent(); return; }
   EV.t -= dt;
   if (EV.k === 'works' && EV.t < EV.max - EV.warn && EV.t > 1) { EV.coneT -= dt; if (EV.coneT <= 0) { EV.coneT = 0.16; items.push({ type: 'cone', lane: EV.lane, x: laneX(EV.lane) + (EV.n++ % 2 ? -1 : 1) * LANE_W * .16, y: -30, w: 20, h: 20 }); } }
@@ -3478,6 +3526,13 @@ function eventNearMiss() {
 }
 function drawEvents() {
   var g = ctx, y = compactHud() ? 92 : 128, w = Math.min(250, W - 40), x = W / 2 - w / 2, txt = null, col = '#ffd23f', fr = 0;
+  // the daily challenge goal sits under the HUD, and any event banner goes below it
+  if (run && run.daily && state === 'play') {
+    var D = run.daily, v = jobVal(D.goal), dn = run.dailyWon, dw = Math.min(300, W - 30), dl = 'DAILY: ' + (dn ? 'DONE ✓' : JOB_SHORT[D.goal.k] + ' ' + jobFmt(D.goal, v));
+    g.fillStyle = 'rgba(11,14,28,0.82)'; rr(g, W / 2 - dw / 2, y, dw, 28, 10); g.fill(); g.strokeStyle = dn ? '#4ce38f' : '#ff4f9a'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = dn ? '#4ce38f' : '#fff'; g.font = '800 14px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(dl, W / 2, y + 14);
+    y += 36;
+  }
   if (EV) {
     fr = clamp(EV.t / EV.max, 0, 1);
     if (EV.k === 'rush') { txt = 'CRATE RUSH!'; col = '#3ddc97'; }
@@ -3501,6 +3556,171 @@ function drawEvents() {
       g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(c[1], W / 2, cy + 1); g.globalAlpha = 1;
     }
   }
+}
+
+/* ================= daily challenge =================
+   One special run a day: a map and a car picked for today from the ones you own, and one goal to hit in a single run.
+   The first win of the day pays a big reward; you can try as often as you like. */
+var DCH_GOALS = [['crates', 20, 12], ['near', 8, 7], ['km', 2.5, 2], ['clean', 1, 1.2], ['fuel', 3, 3]];
+function dayHash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function dailyToday() {
+  var day = dayKey(), C = save.dchal || (save.dchal = { wins: 0 });
+  if (C.day === day && C.map && C.car && carById(C.car).id === C.car) return C;
+  var h = dayHash('cargorun' + day), rnd = function () { h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; h = Math.imul(h ^ (h >>> 13), 3266489909) >>> 0; return ((h ^= h >>> 16) >>> 0) / 4294967296; };
+  var maps = MAPS.filter(function (m) { return save.maps[m.id]; }).map(function (m) { return m.id; });
+  var cars = CARS_BY_PRICE.filter(function (c) { return save.owned[c.id] && !carLocked(c); }).map(function (c) { return c.id; });
+  if (!maps.length) maps = [START_MAP]; if (!cars.length) cars = ['hauler'];
+  var g = DCH_GOALS[Math.floor(rnd() * DCH_GOALS.length)], n = g[1] + rnd() * g[2];
+  n = jobTypeOf(g[0]).dec ? Math.round(n * 2) / 2 : Math.round(n);
+  C.day = day; C.map = maps[Math.floor(rnd() * maps.length)]; C.car = cars[Math.floor(rnd() * cars.length)]; C.goal = { k: g[0], n: n }; C.won = C.won === day ? day : '';
+  persist(); return C;
+}
+function dailyReward() { return niceAmt(100000 * econScale() * bestMapCash()); }
+function dailyWonToday() { var C = save.dchal; return !!(C && C.won === dayKey()); }
+function dailyTitle(D) { return jobTypeOf(D.goal.k).title(D.goal.n, D.goal); }
+function checkDaily() {
+  var D = run.daily; if (!D || run.dailyWon || jobVal(D.goal) < D.goal.n) return;
+  run.dailyWon = true;
+  if (dailyWonToday()) { pop(P.x, P.y - 90, 'DAILY CHALLENGE DONE!', '#ffd23f', true); return; }
+  var r = dailyReward(); save.wallet += r; save.dchal.won = dayKey(); save.dchal.wins = (save.dchal.wins || 0) + 1; run.dailyPay = r; persist();
+  pop(P.x, P.y - 90, 'DAILY DONE +' + fmt(r), '#ffd23f', true); Aud.sfx('buy'); vibe([40, 40, 80]); confetti(50);
+}
+function dailyCardHtml() {
+  var D = dailyToday(), won = dailyWonToday();
+  return '<button class="gift dch' + (won ? ' done' : '') + '" data-act="go" data-to="daily">' + ICON.daily + '<div><b>' + (won ? 'Daily challenge done!' : 'Daily challenge: ' + fmt(dailyReward())) + '</b><span>' + esc(dailyTitle(D)) + (won ? ' · new one tomorrow' : '') + '</span></div></button>';
+}
+function rDaily() {
+  var D = dailyToday(), car = carById(D.car), map = mapById(D.map), won = dailyWonToday();
+  OV.daily.innerHTML = head('Daily challenge') + '<div class="card narrow center">' +
+    '<p class="sub">' + (won ? 'You won today’s challenge! Play it again for fun, or come back tomorrow for a new one.' : 'One special run every day. Hit the goal in a single run to win the reward.') + '</p>' +
+    '<div class="dgoal"><small>Today’s goal</small><b>' + esc(dailyTitle(D)) + '</b><em>' + (won ? 'Won ✓' : 'Reward ' + fmt(dailyReward())) + '</em></div>' +
+    '<div class="ride"><canvas id="dCar" width="880" height="300"></canvas><div class="rideTx"><div><small>Today’s car</small><b>' + esc(car.name) + '</b></div></div>' +
+    '<div class="rideTags"><span>' + esc(map.name) + '</span><span class="g">x' + fmtMult(map.cash) + ' map</span></div></div>' +
+    '<button class="btn big ibtn" data-act="dplay" autofocus>' + ICON.play + (won ? 'PLAY AGAIN' : 'START CHALLENGE') + '</button>' +
+    '<p class="fine">' + (save.dchal.wins || 0) + ' daily challenges won so far. A new challenge starts at midnight.</p></div>';
+  topPreview(document.getElementById('dCar'), car, lookOf(car.id));
+}
+
+/* ================= achievements =================
+   Badges for milestones. Each pays once, the moment you earn it, and grows with your progress. */
+var ACH = [
+  ['runs1', 'First drive', 'Finish your first run', function () { return save.stats.runs; }, 1, 1],
+  ['runs50', 'Regular', 'Finish 50 runs', function () { return save.stats.runs; }, 50, 2],
+  ['runs250', 'Road warrior', 'Finish 250 runs', function () { return save.stats.runs; }, 250, 3],
+  ['km100', 'Long haul', 'Drive 100 km in total', function () { return save.stats.km; }, 100, 1],
+  ['km1000', 'Thousand clubs', 'Drive 1,000 km in total', function () { return save.stats.km; }, 1000, 3],
+  ['crate1k', 'Crate collector', 'Collect 1,000 crates', function () { return save.stats.crates; }, 1000, 2],
+  ['crate10k', 'Crate hoarder', 'Collect 10,000 crates', function () { return save.stats.crates; }, 10000, 3],
+  ['near100', 'Close call', 'Get 100 near misses', function () { return save.stats.near; }, 100, 1],
+  ['near1k', 'Fearless', 'Get 1,000 near misses', function () { return save.stats.near; }, 1000, 3],
+  ['boom100', 'Fireworks', 'See 100 explosions', function () { return save.stats.booms; }, 100, 2],
+  ['jobs10', 'Hired hand', 'Finish 10 jobs', function () { return save.stats.jobs || 0; }, 10, 1],
+  ['jobs50', 'Contractor', 'Finish 50 jobs', function () { return save.stats.jobs || 0; }, 50, 2],
+  ['bust10', 'Rookie cop', 'Bust 10 criminals', function () { return save.police.busts; }, 10, 1],
+  ['bust100', 'Top cop', 'Bust 100 criminals', function () { return save.police.busts; }, 100, 3],
+  ['kingpin', 'Kingpin down', 'Bust the Kingpin Hypercar', function () { return save.police.caught[WANTED.length - 1] || 0; }, 1, 3],
+  ['cars10', 'Car fan', 'Own 10 cars', function () { return collectionCount(); }, 10, 1],
+  ['cars50', 'Collector', 'Own 50 cars', function () { return collectionCount(); }, 50, 2],
+  ['cars100', 'Showroom', 'Own 100 cars', function () { return collectionCount(); }, 100, 3],
+  ['cars250', 'Car museum', 'Own 250 cars', function () { return collectionCount(); }, 250, 3],
+  ['cars500', 'The full garage', 'Own all ' + CARS.length + ' cars', function () { return collectionCount(); }, CARS.length, 3],
+  ['maps5', 'Explorer', 'Unlock 5 maps', function () { return Object.keys(save.maps).length; }, 5, 1],
+  ['maps20', 'World tour', 'Unlock all ' + MAPS.length + ' maps', function () { return Object.keys(save.maps).length; }, MAPS.length, 3],
+  ['pres1', 'Reborn', 'Reach prestige 1', function () { return save.prestige || 0; }, 1, 2],
+  ['pres5', 'Rising star', 'Reach prestige 5', function () { return save.prestige || 0; }, 5, 3],
+  ['pres10', 'Legend', 'Reach prestige 10', function () { return save.prestige || 0; }, 10, 3],   // (PRESTIGE_MAX isn't set yet up here)
+  ['daily1', 'Challenger', 'Win a daily challenge', function () { return (save.dchal || {}).wins || 0; }, 1, 1],
+  ['daily7', 'Daily driver', 'Win 7 daily challenges', function () { return (save.dchal || {}).wins || 0; }, 7, 2],
+  ['pupg', 'Tuned cop', 'Fully upgrade a police car', function () { return maxedPolice(); }, 1, 2]
+];
+var ACH_PAY = [0, 15000, 50000, 150000];
+function achReward(a) { return niceAmt(ACH_PAY[a[5]] * econScale() * bestMapCash()); }
+function checkAch() {
+  if (!save.ach) save.ach = {};
+  var got = [], sum = 0;
+  ACH.forEach(function (a) { if (!save.ach[a[0]] && a[3]() >= a[4]) { var r = achReward(a); save.ach[a[0]] = Date.now(); save.wallet += r; sum += r; got.push(a[1]); } });
+  if (!got.length) return;
+  persist();
+  setTimeout(function () { toast((got.length === 1 ? 'Achievement: ' + got[0] : got.length + ' achievements unlocked') + '! +' + fmt(sum), 3400); Aud.sfx('buy'); }, 1700);
+}
+function achCount() { return ACH.filter(function (a) { return save.ach && save.ach[a[0]]; }).length; }
+function rAchieve() {
+  var h = head('Achievements') + '<div class="card wide flat"><p class="fine">' + achCount() + ' of ' + ACH.length + ' unlocked. Each one pays the moment you earn it, and pays more as you progress.</p>';
+  ACH.forEach(function (a) {
+    var done = save.ach && save.ach[a[0]], v = a[3](), fr = clamp(v / a[4], 0, 1);
+    h += '<div class="job ach' + (done ? ' on' : '') + '"><div class="atr">' + ICON.trophy + '</div><div class="jtx"><b>' + esc(a[1]) + '</b><span class="fine">' + esc(a[2]) + '</span>' +
+      (done ? '' : '<i class="pbarn"><u style="width:' + Math.round(fr * 100) + '%"></u></i><span class="fine">' + (a[4] >= 100 ? Math.floor(v).toLocaleString('en-US') : Math.floor(v)) + ' / ' + a[4].toLocaleString('en-US') + '</span>') + '</div>' +
+      '<div class="jr"><em>' + (done ? 'Done ✓' : fmt(achReward(a))) + '</em></div></div>';
+  });
+  OV.achieve.innerHTML = h + '</div>';
+}
+
+/* ================= police car upgrades =================
+   Each police car has its own upgrades. Prices grow with your progress, like everything else. */
+var PUPG = [
+  { k: 'spd', name: 'Pursuit engine', info: 'Close in on suspects faster', max: 5, base: 3000 },
+  { k: 'str', name: 'Sharp steering', info: 'Switch lanes quicker', max: 5, base: 2000 },
+  { k: 'arm', name: 'Armour', info: '+1 life per level', max: 3, base: 6000 },
+  { k: 'bnt', name: 'Bounty hunter', info: '+10% on every bounty per level', max: 5, base: 8000 }
+];
+// police cars cost more as you progress (bounties grow the same way), so they're never pocket change
+function pcPrice(c) { return c.price ? niceAmt(c.price * econScale()) : 0; }
+function pUpg(id) { var u = save.police.upg || (save.police.upg = {}); return u[id] || (u[id] = { spd: 0, str: 0, arm: 0, bnt: 0 }); }
+function pUpgCost(p, lvl) { return niceAmt(p.base * Math.pow(2.2, lvl) * econScale() * bestMapCash()); }
+function pBountyMult() { return 1 + 0.1 * pUpg(save.police.car).bnt; }
+function maxedPolice() { return Object.keys(save.police.cars).some(function (id) { var u = pUpg(id); return PUPG.every(function (p) { return u[p.k] >= p.max; }); }) ? 1 : 0; }
+function pUpgHtml() {
+  var pc = pcById(save.police.car), u = pUpg(pc.id), h = '<h4 class="sec">Upgrades for your ' + esc(pc.name) + '</h4>';
+  PUPG.forEach(function (p) {
+    var lv = u[p.k], full = lv >= p.max, cost = full ? 0 : pUpgCost(p, lv), pips = '';
+    for (var i = 0; i < p.max; i++) pips += '<i class="' + (i < lv ? 'f' : '') + '"></i>';
+    h += '<div class="job"><div class="jtx"><b>' + p.name + '</b><span class="fine">' + p.info + '</span><div class="pips">' + pips + '</div></div>' +
+      '<div class="jr">' + (full ? '<em>Maxed</em>' : '<em>' + fmt(cost) + '</em><button class="btn sm" data-act="pupg" data-k="' + p.k + '"' + (save.wallet < cost ? ' disabled' : '') + '>Upgrade</button>') + '</div></div>';
+  });
+  return h;
+}
+
+/* ================= share card =================
+   A picture of your run (your car, what you earned, the map) to share or save. */
+var lastRes = null;
+function shareImage(res) {
+  var cv = document.createElement('canvas'), Wd = 1080, Hd = 1350, g = cv.getContext('2d'); cv.width = Wd; cv.height = Hd;
+  var bg = g.createLinearGradient(0, 0, 0, Hd); bg.addColorStop(0, '#1d2552'); bg.addColorStop(1, '#070912'); g.fillStyle = bg; g.fillRect(0, 0, Wd, Hd);
+  // a road down the middle behind everything
+  g.fillStyle = 'rgba(255,255,255,0.05)'; g.fillRect(Wd / 2 - 230, 0, 460, Hd);
+  g.fillStyle = 'rgba(255,255,255,0.12)'; for (var y = -40; y < Hd; y += 120) { g.fillRect(Wd / 2 - 80, y, 10, 60); g.fillRect(Wd / 2 + 70, y, 10, 60); }
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = '120px ' + FONT; g.fillStyle = '#fff'; g.fillText('CARGO', Wd / 2 - 130, 140); g.fillStyle = '#ffc21a'; g.fillText('RUN', Wd / 2 + 230, 140);
+  g.font = '44px ' + FONT; g.fillStyle = '#b8b2c9'; g.fillText(res.police ? 'Police shift · ' + M.name : M.name, Wd / 2, 240);
+  // the car
+  var off = document.createElement('canvas'); off.width = 900; off.height = 380;
+  if (res.police) { var pc = pcById(save.police.car), og = off.getContext('2d'), k = Math.min(780 / pc.spec.h, 300 / pc.spec.w); og.setTransform(0, k, -k, 0, 450, 190); drawSpec(og, pc.spec, 0, 0, { clock: 0.1 }); }
+  else { var car = carById(res.carId || save.car); topPreview(off, car, lookOf(car.id)); }
+  g.drawImage(off, Wd / 2 - 450, 300);
+  g.font = '56px ' + FONT; g.fillStyle = '#fff'; g.fillText(res.police ? pcById(save.police.car).name : carById(res.carId || save.car).name, Wd / 2, 730);
+  g.font = '170px ' + FONT; g.fillStyle = '#4ce38f'; g.fillText(fmt(res.earned), Wd / 2, 880);
+  g.font = '48px ' + FONT; g.fillStyle = '#ffc21a'; g.fillText(res.newBest && res.earned > 0 ? (res.police ? 'NEW BEST SHIFT!' : 'NEW PERSONAL BEST!') : 'EARNED IN ONE ' + (res.police ? 'SHIFT' : 'RUN'), Wd / 2, 990);
+  var r = res.run, stats = res.police ? [[res.police.busts, 'Busted'], [r.crates, 'Crates'], [res.km.toFixed(1), 'km']] : [[r.crates, 'Crates'], [r.near, 'Near misses'], [res.km.toFixed(1), 'km']];
+  stats.forEach(function (s, i) {
+    var x = 120 + i * 300;
+    g.fillStyle = 'rgba(255,255,255,0.08)'; rr(g, x, 1060, 240, 130, 26); g.fill();
+    g.font = '64px ' + FONT; g.fillStyle = '#fff'; g.fillText(String(s[0]), x + 120, 1110); g.font = '30px ' + FONT; g.fillStyle = '#b8b2c9'; g.fillText(s[1], x + 120, 1162);
+  });
+  g.font = '40px ' + FONT; g.fillStyle = '#fff'; g.fillText((save.name || 'Driver') + ' · Can you beat it?', Wd / 2, 1260);
+  g.font = '30px ' + FONT; g.fillStyle = '#b8b2c9'; g.fillText('ranveerrrr248.github.io/cargo-run', Wd / 2, 1310);
+  return cv;
+}
+function shareRun() {
+  if (!lastRes) return;
+  var cv = shareImage(lastRes), txt = 'I earned ' + fmt(lastRes.earned) + ' in Cargo Run! Can you beat it? https://ranveerrrr248.github.io/cargo-run/';
+  cv.toBlob(function (b) {
+    if (!b) { toast('Couldn’t make the picture', 2000); return; }
+    var file = null; try { file = new File([b], 'cargo-run.png', { type: 'image/png' }); } catch (e) {}
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Cargo Run', text: txt }).catch(function () {}); return; }
+    // no share sheet (most computers): save the picture instead
+    var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'cargo-run.png'; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('Picture saved! Share it anywhere.', 2400);
+  }, 'image/png');
 }
 
 /* ================= the car collection =================
@@ -3839,14 +4059,15 @@ function move(d) {
    chase.gap is how far ahead of you the suspect is, in pixels: it shrinks while you are faster than them.
    Staying in their lane (drafting) closes it fastest; crashes and their tricks open it up again. */
 var WANTED = [
-  { name: 'Speeding Sedan',   short: 'Sedan',   stars: 1, kind: 'sedan',  color: '#c8202f', bounty: 2000,   hp: 3,  run: 0,  boost: 0,   dodge: 0.15, weave: false, drop: null,             brake: false, plow: false, time: 60,  info: 'Slow, and mostly stays in one lane.' },
-  { name: 'Stolen Taxi',      short: 'Taxi',    stars: 1, kind: 'taxi',   color: '#f2c230', bounty: 5000,   hp: 3,  run: 20, boost: 0,   dodge: 0.45, weave: false, drop: null,             brake: false, plow: false, time: 70,  info: 'Swerves out of the way when you get close.' },
-  { name: 'Street Racer',     short: 'Racer',   stars: 2, kind: 'sports', color: '#ff7a2f', bounty: 10000,  hp: 4,  run: 40, boost: 60,  dodge: 0.5,  weave: true,  drop: null,             brake: false, plow: false, time: 75,  info: 'Weaves between lanes and bursts ahead with speed boosts.' },
-  { name: 'Getaway Van',      short: 'Van',     stars: 2, kind: 'van',    color: '#5d2a86', bounty: 25000,  hp: 5,  run: 55, boost: 0,   dodge: 0.35, weave: false, drop: ['oil'],          brake: false, plow: false, time: 90,  info: 'Throws oil out of the back doors.' },
-  { name: 'Bank Robbers',     short: 'Robbers', stars: 3, kind: 'muscle', color: '#2d2f36', bounty: 50000,  hp: 6,  run: 60, boost: 70,  dodge: 0.5,  weave: true,  drop: ['bag', 'oil'],   brake: false, plow: false, time: 90,  info: 'Throws cash bags and oil out of the window. Grab the cash!' },
-  { name: 'Armoured Truck',   short: 'Truck',   stars: 3, kind: 'truck',  color: '#4a5a44', bounty: 75000,  hp: 8,  run: 60, boost: 0,   dodge: 0.2,  weave: false, drop: ['barrel'],       brake: true,  plow: true,  time: 100, info: 'Smashes through traffic, drops barrels and slams the brakes to ram you.' },
-  { name: 'Smuggler Semi',    short: 'Semi',    stars: 4, kind: 'semi',   color: '#1e4fa8', bounty: 150000, hp: 10, run: 68, boost: 0,   dodge: 0.15, weave: false, drop: ['rock', 'barrel'], brake: true, plow: true,  time: 110, info: 'Huge. Smashes everything, spills its cargo and brake-checks you.' },
-  { name: 'Kingpin Hypercar', short: 'Kingpin', stars: 5, kind: 'super',  color: '#15171c', bounty: 250000, hp: 7,  run: 95, boost: 110, dodge: 0.7,  weave: true,  drop: ['spike', 'oil'], brake: false, plow: false, time: 120, info: 'Very fast, boosts, dodges and drops spike strips. Bring a fast police car!' }
+  // bounties rise gently: harder suspects take longer to catch, so each tier pays a bit more per minute than the last
+  { name: 'Speeding Sedan',   short: 'Sedan',   stars: 1, kind: 'sedan',  color: '#c8202f', bounty: 4000,   hp: 3,  run: 0,  boost: 0,   dodge: 0.15, weave: false, drop: null,             brake: false, plow: false, time: 60,  info: 'Slow, and mostly stays in one lane.' },
+  { name: 'Stolen Taxi',      short: 'Taxi',    stars: 1, kind: 'taxi',   color: '#f2c230', bounty: 5500,   hp: 3,  run: 20, boost: 0,   dodge: 0.45, weave: false, drop: null,             brake: false, plow: false, time: 70,  info: 'Swerves out of the way when you get close.' },
+  { name: 'Street Racer',     short: 'Racer',   stars: 2, kind: 'sports', color: '#ff7a2f', bounty: 7500,   hp: 4,  run: 40, boost: 60,  dodge: 0.5,  weave: true,  drop: null,             brake: false, plow: false, time: 75,  info: 'Weaves between lanes and bursts ahead with speed boosts.' },
+  { name: 'Getaway Van',      short: 'Van',     stars: 2, kind: 'van',    color: '#5d2a86', bounty: 10000,  hp: 5,  run: 55, boost: 0,   dodge: 0.35, weave: false, drop: ['oil'],          brake: false, plow: false, time: 90,  info: 'Throws oil out of the back doors.' },
+  { name: 'Bank Robbers',     short: 'Robbers', stars: 3, kind: 'muscle', color: '#2d2f36', bounty: 13000,  hp: 6,  run: 60, boost: 70,  dodge: 0.5,  weave: true,  drop: ['bag', 'oil'],   brake: false, plow: false, time: 90,  info: 'Throws cash bags and oil out of the window. Grab the cash!' },
+  { name: 'Armoured Truck',   short: 'Truck',   stars: 3, kind: 'truck',  color: '#4a5a44', bounty: 16000,  hp: 8,  run: 60, boost: 0,   dodge: 0.2,  weave: false, drop: ['barrel'],       brake: true,  plow: true,  time: 100, info: 'Smashes through traffic, drops barrels and slams the brakes to ram you.' },
+  { name: 'Smuggler Semi',    short: 'Semi',    stars: 4, kind: 'semi',   color: '#1e4fa8', bounty: 20000,  hp: 10, run: 68, boost: 0,   dodge: 0.15, weave: false, drop: ['rock', 'barrel'], brake: true, plow: true,  time: 110, info: 'Huge. Smashes everything, spills its cargo and brake-checks you.' },
+  { name: 'Kingpin Hypercar', short: 'Kingpin', stars: 5, kind: 'super',  color: '#15171c', bounty: 25000,  hp: 7,  run: 95, boost: 110, dodge: 0.7,  weave: true,  drop: ['spike', 'oil'], brake: false, plow: false, time: 120, info: 'Very fast, boosts, dodges and drops spike strips. Bring a fast police car!' }
 ];
 var STARS = '★★★★★';
 /* police cars: a separate garage, only usable on police bounties. `pace` is how quickly the car closes on suspects (0 to 1). */
@@ -3867,7 +4088,8 @@ function pcById(id) { for (var i = 0; i < POLICE_CARS.length; i++) if (POLICE_CA
 // driving stats for a police car: the starter car's stats with no upgrades, then the police car's own body and handling
 function policeStats(pc) {
   var s = statsFor('__police__');
-  s.car = pc; s.id = pc.id; s.w = pc.w; s.h = pc.h; s.lives = pc.lives; s.agility = pc.agility; s.drain = 0.85; s.pay = econScale() / prestigeMult(); s.pace = pc.pace;
+  var u = pUpg(pc.id);
+  s.car = pc; s.id = pc.id; s.w = pc.w; s.h = pc.h; s.lives = pc.lives + u.arm; s.agility = pc.agility + 3 * u.str; s.drain = 0.85; s.pay = econScale() / prestigeMult(); s.pace = pc.pace + 0.06 * u.spd;
   s.startShield = false; s.ice = false; s.offroad = false;
   s.look = { paint: null, finish: 'gloss' };
   return s;
@@ -3878,7 +4100,7 @@ var TEST_UNLOCK = false;
 function wantedOpen(i) { return TEST_UNLOCK || i === 0 || save.police.caught[i - 1] > 0; }
 function newChase() {
   return { w: WANTED[chaseLvl], lvl: chaseLvl, pace: chasePace(), streak: 0, busts: 0, total: 0, sus: null, next: 0, pulled: null,
-           gap: 0, kv: 0, time: 0, max: 0, hits: 0, spikes: 1, bounty: 0, bumpCd: 0, slowT: 0, flat: 0, sirenT: 0.5, warnT: 0 };
+           gap: 0, kv: 0, time: 0, max: 0, hits: 0, spikes: 1, bounty: 0, bumpCd: 0, slowT: 0, flat: 0, sirenT: 0.5, warnT: 0, esc: 0 };
 }
 function wantedSpec(w) {
   var k = TK[w.kind];
@@ -3892,7 +4114,7 @@ function newSuspect() {
   ch.sus = { spec: spec, lane: lane, x: laneX(lane), y: -300, w: spec.w, h: spec.h, hp: hp, max: hp, turn: w.kind === 'semi' ? 1.6 : w.kind === 'truck' ? 2.2 : 4.5,
              wt: 1, weaveT: 2.5, dropT: 3, boostT: 4, boostOn: 0, brakeT: 0, brakeCd: 4 };
   ch.gap = 520 + Math.min(240, 40 * ch.streak); ch.kv = 0; ch.time = ch.max = w.time; ch.hits = 0; ch.spikes = 1; ch.slowT = 0; ch.flat = 0; ch.bumpCd = 0;
-  ch.bounty = niceAmt(w.bounty * 2 * (1 + 0.1 * ch.streak) * M.cash * econScale());   // (bounties grow with your progress)
+  ch.bounty = niceAmt(w.bounty * 2 * (1 + 0.1 * ch.streak) * M.cash * econScale() * pBountyMult());   // (bounties grow with your progress)
 }
 // a lane the suspect can swerve into: nothing coming at it for the next `look` pixels, and not into the side of your car
 function susLaneOk(s, l, look) {
@@ -3945,8 +4167,15 @@ function escaped(why) {
   // a little pay for the damage you did
   var c = Math.round(ch.bounty * 0.1 * (1 - s.hp / s.max) / 10) * 10;
   if (c > 0) cash += c;
-  finish(why);
+  // a shift only ends after ESC_MAX suspects get away; until then the next one turns up
+  ch.esc++;
+  if (ch.esc >= ESC_MAX) { finish(why + ' Shift over.'); return; }
+  var left = ESC_MAX - ch.esc;
+  pop(W / 2, H * 0.36, why, '#ff8a8a', true); pop(W / 2, H * 0.36 + 30, left + (left === 1 ? ' chance' : ' chances') + ' left this shift', '#ffd23f');
+  Aud.sfx('deny'); vibe(60);
+  ch.sus = null; ch.next = 2.6; ch.streak = 0;
 }
+var ESC_MAX = 3;
 function updateChase(dt, speed) {
   var ch = chase, i, c, it;
   if (ch.pulled) { var pu = ch.pulled; pu.y += speed * 0.8 * dt; pu.x += (pu.tx - pu.x) * Math.min(1, dt * 2.5); if (pu.y > H + 140) ch.pulled = null; }
@@ -4102,7 +4331,7 @@ function jobVal(j) {
     case 'crates': return run.crates; case 'km': return dist / 1000; case 'near': return run.near; case 'smash': return run.smash;
     case 'clean': return cleanNow(); case 'fuel': return run.fuel; case 'booms': return run.booms; case 'earn': return cash;
     case 'tcrate': return (j.prog || 0) + run.crates; case 'tkm': return (j.prog || 0) + dist / 1000;
-    case 'mapearn': return save.map === j.map ? cash : 0; case 'classkm': return S.car.cls === j.cls ? dist / 1000 : 0;
+    case 'mapearn': return M.id === j.map ? cash : 0; case 'classkm': return S.car.cls === j.cls ? dist / 1000 : 0;
   }
   return 0;
 }
@@ -4625,7 +4854,7 @@ function drawChaseStrip(y) {
   var sw = g.measureText(st).width; g.fillStyle = '#f1ecd9'; g.fillText(w.short + (ch.streak ? ' #' + (ch.streak + 1) : ''), x + 16 + sw, y + 12);
   if (!s) {
     g.textAlign = 'right'; g.fillStyle = '#3ddc97'; g.fillText(ch.busts + ' busted · ' + fmt(ch.total), x + wd - 10, y + 12);
-    g.textAlign = 'left'; g.font = '700 11px ' + FONT; g.fillStyle = '#c9c5b3'; g.fillText('Next suspect coming…', x + 10, y + 30);
+    g.textAlign = 'left'; g.font = '700 11px ' + FONT; g.fillStyle = '#c9c5b3'; g.fillText('Next suspect coming…' + (ch.esc ? ' ' + (ESC_MAX - ch.esc) + ' chances left' : ''), x + 10, y + 30);
     return y + 42;
   }
   var tl = Math.max(0, Math.ceil(ch.time)), tt = Math.floor(tl / 60) + ':' + (tl % 60 < 10 ? '0' : '') + (tl % 60);
@@ -4649,7 +4878,7 @@ function drawChaseHud(cpt, y) {
   g.fillStyle = '#f1ecd9'; g.fillText(w.short + (ch.streak ? '  #' + (ch.streak + 1) : ''), L + 16 + g.measureText(st).width, y + 8);
   if (!s) {
     g.fillStyle = '#3ddc97'; g.font = '800 17px ' + FONT; g.fillText(ch.busts + ' busted · ' + fmt(ch.total), L + 10, y + 32);
-    g.font = '700 13px ' + FONT; g.fillStyle = '#c9c5b3'; g.fillText('Next suspect coming…', L + 10, y + 58);
+    g.font = '700 13px ' + FONT; g.fillStyle = '#c9c5b3'; g.fillText('Next suspect coming…' + (ch.esc ? ' ' + (ESC_MAX - ch.esc) + ' left' : ''), L + 10, y + 58);
     return endY;
   }
   g.font = '800 17px ' + FONT; g.fillStyle = '#3ddc97'; g.fillText(fmt(ch.bounty), L + 10, y + 27);
@@ -4892,7 +5121,7 @@ function frame(ts) {
 
 /* ================= UI ================= */
 var OV = {};
-['name', 'menu', 'garage', 'maps', 'jobs', 'codes', 'board', 'police', 'settings', 'pause', 'over', 'help', 'prestige'].forEach(function (n) {
+['name', 'menu', 'garage', 'maps', 'jobs', 'codes', 'board', 'police', 'settings', 'pause', 'over', 'help', 'prestige', 'daily', 'achieve'].forEach(function (n) {
   var d = document.createElement('div'); d.className = 'ov'; d.id = 'sc-' + n; d.hidden = true; appEl.appendChild(d); OV[n] = d;
 });
 var pauseBtn = document.getElementById('pauseBtn'), toastEl = document.getElementById('toast');
@@ -4916,6 +5145,9 @@ var ICON = {
   perf: '<svg viewBox="0 0 24 24"><path d="M14.5 3a5.2 5.2 0 0 0-4.9 6.9L3.4 16.1a2.1 2.1 0 0 0 3 3l6.2-6.2a5.2 5.2 0 0 0 6.9-4.9l-3 3-2.8-.7-.7-2.8z" fill="currentColor"/></svg>',
   style: '<svg viewBox="0 0 24 24"><path d="M11 2l2.2 6.8L20 11l-6.8 2.2L11 20l-2.2-6.8L2 11l6.8-2.2zM19 15l1 2.2 2.2.8-2.2.9L19 21l-.9-2.1L16 18l2.1-.8z" fill="currentColor"/></svg>',
   paint: '<svg viewBox="0 0 24 24"><path d="M12 2.5s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 9.7 12 2.5 12 2.5z" fill="currentColor"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24"><g' + OL + '><path d="M7 3h10v5.2a5 5 0 0 1-10 0z" fill="#ffc21a"/><path d="M7 4.8H4.1v1.7a3.3 3.3 0 0 0 3.3 3.3M17 4.8h2.9v1.7a3.3 3.3 0 0 1-3.3 3.3" fill="none"/><path d="M10.6 13.2h2.8v3.2h-2.8z" fill="#f0a500"/><path d="M6.5 21v-2.2c0-.6.5-1.1 1.1-1.1h8.8c.6 0 1.1.5 1.1 1.1V21z" fill="#8f5cff"/></g><path d="M9 4.4v3.4" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".7"/></svg>',
+  daily: '<svg viewBox="0 0 40 40"><rect x="5" y="8" width="30" height="28" rx="4" fill="#fff" stroke="#2a1100" stroke-width="2.5"/><path d="M5 12a4 4 0 0 1 4-4h22a4 4 0 0 1 4 4v5H5z" fill="#ff4f9a" stroke="#2a1100" stroke-width="2.5"/><path d="M13 4v8M27 4v8" stroke="#2a1100" stroke-width="3" stroke-linecap="round"/><path d="M20 20.5l2 4.1 4.5.6-3.3 3.1.8 4.4-4-2.1-4 2.1.8-4.4-3.3-3.1 4.5-.6z" fill="#ffc21a" stroke="#2a1100" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><g' + OL + '><circle cx="18" cy="5.5" r="3" fill="#fff"/><circle cx="6" cy="12" r="3" fill="#fff"/><circle cx="18" cy="18.5" r="3" fill="#fff"/></g><path d="M8.6 10.6l6.8-3.7M8.6 13.4l6.8 3.7" stroke="#fff" stroke-width="2"/></svg>',
   gift: '<svg viewBox="0 0 40 40"><rect x="5" y="15" width="30" height="21" rx="3" fill="#fff" stroke="#2a1100" stroke-width="2.5"/><rect x="3" y="10" width="34" height="8" rx="2.5" fill="#ff4f9a" stroke="#2a1100" stroke-width="2.5"/><rect x="17" y="10" width="6" height="26" fill="#ff4f9a" stroke="#2a1100" stroke-width="2.5"/><path d="M20 10c-3-6-10-6-9-1 1 3 6 2 9 1zM20 10c3-6 10-6 9-1-1 3-6 2-9 1z" fill="#ffc21a" stroke="#2a1100" stroke-width="2.5"/></svg>'
 };
 function confetti(n) {
@@ -4935,14 +5167,14 @@ function show(n) {
   cur = n;
   for (var k in OV) OV[k].hidden = k !== n;
   pauseBtn.hidden = true;
-  if (n === 'menu' || n === 'garage' || n === 'maps' || n === 'jobs' || n === 'codes' || n === 'board' || n === 'police' || n === 'name' || n === 'help' || n === 'prestige') { if (state !== 'menu') { state = 'menu'; Aud.engine(false, 0); } prepare(); }
+  if (n === 'menu' || n === 'garage' || n === 'maps' || n === 'jobs' || n === 'codes' || n === 'board' || n === 'police' || n === 'name' || n === 'help' || n === 'prestige' || n === 'daily' || n === 'achieve') { if (state !== 'menu') { state = 'menu'; Aud.engine(false, 0); } prepare(); Aud.setStyle('menu'); checkAch(); }
   render(n);
   var f = OV[n].querySelector('[autofocus]'); if (f && window.matchMedia('(pointer:fine)').matches) f.focus();
 }
 function hideAll() { cur = null; for (var k in OV) OV[k].hidden = true; }
 function render(n) {
   if (n === 'name') rName(); else if (n === 'menu') rMenu(); else if (n === 'garage') rGarage(); else if (n === 'maps') rMaps();
-  else if (n === 'prestige') rPrestige();
+  else if (n === 'prestige') rPrestige(); else if (n === 'daily') rDaily(); else if (n === 'achieve') rAchieve();
   else if (n === 'codes') rCodes(); else if (n === 'board') rBoard(); else if (n === 'police') rPolice(); else if (n === 'jobs') rJobs(); else if (n === 'settings') rSettings(); else if (n === 'pause') rPause(); else if (n === 'help') rHelp();
 }
 function head(title, back) {
@@ -5024,7 +5256,7 @@ function rMenu() {
       '<div class="ride"><canvas id="menuCar" width="880" height="300"></canvas>' +
         '<div class="rideTx"><div><small>' + esc(car.brand) + ' · ' + esc(car.cls) + '</small><b>' + esc(car.model) + '</b></div><em>' + fmt(save.wallet) + '</em></div>' +
         '<div class="rideTags"><span>' + esc(map.name) + '</span><span class="g">x' + fmtMult(map.cash) + ' map</span><span>' + Math.round(topSpeed(car) * 3.6) + ' km/h</span>' + ((save.prestige || 0) ? '<span class="p">★ ' + save.prestige + ' · x' + bigNum(prestigeMult()) + '</span>' : '') + '</div></div>' +
-      giftHtml() +
+      giftHtml() + dailyCardHtml() +
       '<button class="btn big ibtn" data-act="play">' + ICON.play + 'PLAY</button>' +
       prestigeBtn() +
       '<div class="grid2">' +
@@ -5036,6 +5268,7 @@ function rMenu() {
         '<button class="btn c-teal mbtn" data-act="go" data-to="board">' + ICON.board + 'Leaderboard</button>' +
         '<button class="btn c-grey mbtn" data-act="settings" data-back="menu">' + ICON.settings + 'Settings</button>' +
         '<button class="btn c-pink mbtn" data-act="go" data-to="help">' + ICON.help + 'How to play</button>' +
+        '<button class="btn c-orange mbtn wide2" data-act="go" data-to="achieve">' + ICON.trophy + 'Achievements<span class="badge">' + achCount() + '/' + ACH.length + '</span></button>' +
       '</div>' +
       '<div class="mini">' +
         '<div><b>' + fmt(save.best) + '</b><span>Best run</span></div>' +
@@ -5337,29 +5570,29 @@ function rPolice() {
   h += '<div class="chips"><button class="chip' + (pTab === 'wanted' ? ' on' : '') + '" data-act="ptab" data-v="wanted">Wanted board</button>' +
        '<button class="chip' + (pTab === 'cars' ? ' on' : '') + '" data-act="ptab" data-v="cars">Police garage <small>' + Object.keys(pol.cars).length + '/' + POLICE_CARS.length + '</small></button></div>';
   if (pTab === 'cars') {
-    h += '<p class="fine">Police cars only drive on police bounties. A faster police car closes in on criminals quicker.</p>';
+    h += '<p class="fine">Police cars only drive on police bounties. A faster police car closes in on criminals quicker.</p>' + pUpgHtml() + '<h4 class="sec">Police cars</h4>';
     POLICE_CARS.forEach(function (c) {
       var own = !!pol.cars[c.id], on = pol.car === c.id;
       h += '<div class="job' + (on ? ' on' : '') + '"><canvas class="wcv" data-pc="' + c.id + '" width="108" height="144"></canvas>' +
         '<div class="jtx"><b>' + esc(c.name) + '</b><span class="fine">' + esc(c.info) + '</span>' +
-        statBar('Chase speed', Math.max(0.04, c.pace)) + statBar('Lives', c.lives / 6) + '</div>' +
+        statBar('Chase speed', Math.max(0.04, (c.pace + 0.06 * pUpg(c.id).spd) / 1.3)) + statBar('Lives', (c.lives + pUpg(c.id).arm) / 9) + '</div>' +
         '<div class="jr">' + (own ? (on ? '<em>Driving</em>' : '<button class="btn sm" data-act="psel" data-id="' + c.id + '">Drive</button>')
-                               : '<em>' + (c.price ? fmt(c.price) : 'Free') + '</em><button class="btn sm" data-act="pbuy" data-id="' + c.id + '"' + (save.wallet < c.price ? ' disabled' : '') + '>Buy</button>') +
+                               : '<em>' + (c.price ? fmt(pcPrice(c)) : 'Free') + '</em><button class="btn sm" data-act="pbuy" data-id="' + c.id + '"' + (save.wallet < pcPrice(c) ? ' disabled' : '') + '>Buy</button>') +
         '</div></div>';
     });
   } else {
     h += '<p class="fine">Pick a wanted criminal. Stay in their lane to catch up, then ram them until they pull over. Bigger bounties are faster and trickier, so bring a fast police car.</p>';
-    h += '<div class="job on"><div class="jtx"><small>Your police car</small><b>' + esc(pc.name) + '</b>' + statBar('Chase speed', Math.max(0.04, pc.pace)) + '</div>' +
+    h += '<div class="job on"><div class="jtx"><small>Your police car</small><b>' + esc(pc.name) + '</b>' + statBar('Chase speed', Math.max(0.04, (pc.pace + 0.06 * pUpg(pc.id).spd) / 1.3)) + '</div>' +
          '<div class="jr"><button class="btn ghost sm" data-act="ptab" data-v="cars">Change</button></div></div>';
     WANTED.forEach(function (w, i) {
-      var open = wantedOpen(i), b = niceAmt(w.bounty * 2 * M.cash * econScale());
+      var open = wantedOpen(i), b = niceAmt(w.bounty * 2 * M.cash * econScale() * pBountyMult());
       h += '<div class="job' + (open ? '' : ' lock') + '"><canvas class="wcv" data-i="' + i + '" width="108" height="144"></canvas>' +
         '<div class="jtx"><small class="stars">' + STARS.slice(0, w.stars) + '</small><b>' + esc(w.name) + '</b>' +
         '<span class="fine">' + (open ? esc(w.info) : 'Catch the ' + esc(WANTED[i - 1].name) + ' to unlock') + '</span>' +
         (pol.caught[i] ? '<span class="fine">Caught ' + pol.caught[i] + (pol.caught[i] === 1 ? ' time' : ' times') + '</span>' : '') + '</div>' +
         '<div class="jr"><em>' + fmt(b) + '</em><button class="btn sm" data-act="chase" data-v="' + i + '"' + (open ? '' : ' disabled') + '>Chase</button></div></div>';
     });
-    h += '<p class="fine">+25% for a clean catch (no crashes) and +25% for a fast catch. Catch them one after another and every bounty grows by 10%. Bounties on ' + esc(M.name) + ' pay x' + M.cash + '. Tap the spike strip button once per suspect to slow them down.</p>';
+    h += '<p class="fine">+25% for a clean catch (no crashes) and +25% for a fast catch. Catch them one after another and every bounty grows by 10%. Bounties on ' + esc(M.name) + ' pay x' + M.cash + '. Tap the spike strip button once per suspect to slow them down. Your shift ends when ' + ESC_MAX + ' suspects get away (or your car is wrecked).</p>';
     h += '<p class="fine">Best shift: ' + fmt(pol.best) + ' · ' + pol.busts + ' criminals busted</p>';
   }
   OV.police.innerHTML = h + '</div>';
@@ -5444,7 +5677,7 @@ function redeem(raw) {
   return { ok: true, msg: 'Code redeemed: ' + got + '!' + (r.gold ? ' Pick it in Garage › Paint.' : '') };
 }
 /* ---------- prestige (rebirth) ----------
-   Like a rebirth: once you have enough cash you can prestige. Your cash and cars reset (you keep your maps, codes,
+   Like a rebirth: once you have enough cash you can prestige. Only your cash resets (you keep your cars, mods, maps, codes,
    gold paint and stats), you earn more cash for ever after, and the next price band of cars unlocks. Cars you
    already owned before prestige existed stay yours. */
 // ten levels: the car list is split into eleven equal bands and each prestige unlocks the next one (CAR_BANDS: where
@@ -5485,7 +5718,7 @@ function rPrestige() {
     var fr = clamp(save.wallet / nx.need, 0, 1), ready = fr >= 1;
     h += '<p class="fine">Next: <b>Prestige ' + (p + 1) + '</b>. Unlocks: ' + esc(nx.unlock) + ', and a x' + pMultAt(p + 1) + ' cash multiplier for ever.</p>' +
       '<div class="pbar"><i style="width:' + Math.round(fr * 100) + '%"></i><span>' + fmt(save.wallet) + ' / ' + fmt(nx.need) + '</span></div>';
-    if (ready && pConfirm) h += '<p class="pwarn">This resets your cash to $0 and your cars back to the starter truck. You keep your maps, codes, gold paint, police cars and stats. Tap again to rebirth.</p>';
+    if (ready && pConfirm) h += '<p class="pwarn">This resets your cash to $0. You keep all your cars and their mods, maps, codes, gold paint, police cars and stats. Tap again to rebirth.</p>';
     h += '<button class="btn big ibtn" data-act="prestige"' + (ready ? '' : ' disabled') + '>' + (ready ? (pConfirm ? 'YES, REBIRTH NOW' : '★ PRESTIGE ' + (p + 1)) : 'Earn ' + fmt(nx.need - save.wallet) + ' more') + '</button>';
   } else h += '<p class="fine">You have reached the highest prestige. Legend!</p>';
   h += '<h4 class="sec">Prestige levels</h4><div class="plist">';
@@ -5500,10 +5733,10 @@ function doPrestige() {
   if (!pConfirm) { pConfirm = true; Aud.sfx('click'); rPrestige(); return; }
   pConfirm = false;
   save.prestige = p + 1; save.wallet = 0;
-  // a fresh job board too (old jobs were sized for the cars you just gave up)
+  // a fresh job board too (old jobs were sized for the cash you just gave up)
   save.jobs = { board: [], active: [], n: save.jobs.n || 0 };
-  var keepG = save.garage.hauler; save.owned = { hauler: 1 }; save.garage = {}; if (keepG) save.garage.hauler = keepG; save.car = 'hauler';
-  grantCodeCars();
+  // only your cash resets: every car you own and all its mods stay yours
+  grantCodeCars(); fixDrivenCar();
   persist(); Aud.sfx('buy'); confetti(90); toast('Prestige ' + save.prestige + '! Your cash multiplier is now x' + bigNum(prestigeMult()) + '.', 3200);
   gView = save.car; rPrestige();
 }
@@ -5530,24 +5763,25 @@ function doRedeem() {
 /* ---------- top runs (online leaderboard) ---------- */
 var boardTok = 0, boardTab = 'runs';
 function rBoard() {
-  var tok = ++boardTok, cops = boardTab === 'cops', P2 = save.police, h = head(cops ? 'Top cops' : 'Top runs') + '<div class="card wide flat">';
-  h += '<div class="chips"><button class="chip' + (cops ? '' : ' on') + '" data-act="btab" data-v="runs">Top runs</button><button class="chip' + (cops ? ' on' : '') + '" data-act="btab" data-v="cops">Top cops</button></div>';
+  var tok = ++boardTok, cops = boardTab === 'cops', week = boardTab === 'week', P2 = save.police, h = head(cops ? 'Top cops' : week ? 'This week' : 'Top runs') + '<div class="card wide flat">';
+  h += '<div class="chips"><button class="chip' + (week ? ' on' : '') + '" data-act="btab" data-v="week">This week</button><button class="chip' + (!cops && !week ? ' on' : '') + '" data-act="btab" data-v="runs">All time</button><button class="chip' + (cops ? ' on' : '') + '" data-act="btab" data-v="cops">Top cops</button></div>';
   if (cops) {
     h += '<div class="lbMe"><span>Criminals busted by <b style="color:#fff">' + esc(save.name) + '</b></span><b>' + P2.busts + '</b></div>' +
       (P2.bq ? '<p class="fine">Your total of ' + P2.bq + ' hasn’t been sent yet. It will go up as soon as you’re online.</p>' : '');
   } else {
-    h += '<div class="lbMe"><span>Your best run as <b style="color:#fff">' + esc(save.name) + '</b></span><b>' + fmt(save.best) + '</b></div>' +
+    h += '<div class="lbMe"><span>' + (week ? 'Your best this week' : 'Your best run') + ' as <b style="color:#fff">' + esc(save.name) + '</b></span><b>' + fmt(week ? weekBest() : save.best) + '</b></div>' +
+      (week ? '<p class="fine">Everyone starts again every Monday. Resets in ' + weekLeft() + '.</p>' : '') +
       (save.lbQueue ? '<p class="fine">Your best run ' + fmt(save.lbQueue.score) + ' hasn’t been sent yet. It will go up as soon as you’re online.</p>' : '');
   }
   OV.board.innerHTML = h + '<p id="bSrc" class="fine">Loading the leaderboard…</p><ol id="bList" class="board"></ol>' +
     '<button class="btn ghost ibtn wide" data-act="refresh">' + ICON.restart + 'Refresh</button></div>';
-  var load = cops ? (P2.bq ? bustFlush() : Promise.resolve()).then(copsTop) : (save.lbQueue ? lbFlush() : Promise.resolve()).then(lbTop);
+  var load = cops ? (P2.bq ? bustFlush() : Promise.resolve()).then(copsTop) : (save.lbQueue ? lbFlush() : Promise.resolve()).then(week ? lbWeek : lbTop);
   load.then(function (rows) {
     if (tok !== boardTok || cur !== 'board') return;
     var src = document.getElementById('bSrc'), list = document.getElementById('bList'), me = String(save.name || '').toLowerCase();
     rows = Array.isArray(rows) ? rows : [];
-    src.textContent = rows.length ? (cops ? 'Most criminals busted in Police mode, from everyone who plays Cargo Run.' : 'The best run of every driver, from everyone who plays Cargo Run.')
-                                  : (cops ? 'Nobody has busted a criminal yet. Catch one in Police mode to take first place!' : 'No scores yet. Finish a run to take first place!');
+    src.textContent = rows.length ? (cops ? 'Most criminals busted in Police mode, from everyone who plays Cargo Run.' : week ? 'The best run of every driver this week.' : 'The best run of every driver, from everyone who plays Cargo Run.')
+                                  : (cops ? 'Nobody has busted a criminal yet. Catch one in Police mode to take first place!' : week ? 'No runs yet this week. Finish a run to take first place!' : 'No scores yet. Finish a run to take first place!');
     rows.forEach(function (row, i) {
       var li = document.createElement('li');
       li.className = (String(row.name).toLowerCase() === me ? 'me' : '') + (i < 3 ? ' top' : '');
@@ -5596,7 +5830,7 @@ function nextCarHtml() {
     '<i class="pbarn"><u style="width:' + Math.round(fr * 100) + '%"></u></i><em>' + (can ? fmt(c.price) + ' · tap to buy' : fmt(c.price - save.wallet) + ' to go') + '</em></span></button>';
 }
 function rOver(res) {
-  var r = res.run;
+  var r = res.run; lastRes = res;
   if (res.police) {
     var pz = res.police;
     OV.over.innerHTML = '<div class="card narrow center"><h1 class="ttl">' + esc(res.reason) + '</h1>' +
@@ -5605,7 +5839,8 @@ function rOver(res) {
       '<div class="mini"><div><b>' + pz.busts + '</b><span>Busted</span></div><div><b>' + fmt(pz.bounty) + '</b><span>Bounties</span></div><div><b>' + r.crates + '</b><span>Crates</span></div><div><b>' + res.km.toFixed(1) + '</b><span>km</span></div></div>' +
       (r.jobsDone && r.jobsDone.length ? '<div class="jdone">' + r.jobsDone.map(function (jd) { return '<div><span>' + esc(jd.title) + '</span><b>+' + fmt(jd.reward) + '</b></div>'; }).join('') + '</div>' : '') +
       '<p class="fine">Wallet: ' + fmt(save.wallet) + '</p>' +
-      '<button class="btn big ibtn" data-act="chase" data-v="' + pz.lvl + '" autofocus>' + ICON.restart + 'CHASE AGAIN</button><div class="grid2"><button class="btn c-navy ibtn" data-act="go" data-to="police">' + ICON.police + 'Wanted</button><button class="btn c-grey ibtn" data-act="go" data-to="menu">' + ICON.home + 'Menu</button></div></div>';
+      '<button class="btn big ibtn" data-act="chase" data-v="' + pz.lvl + '" autofocus>' + ICON.restart + 'CHASE AGAIN</button><div class="grid2"><button class="btn c-navy ibtn" data-act="go" data-to="police">' + ICON.police + 'Wanted</button><button class="btn c-grey ibtn" data-act="go" data-to="menu">' + ICON.home + 'Menu</button></div>' +
+      '<button class="btn c-teal ibtn wide" data-act="share">' + ICON.share + 'Share this shift</button></div>';
     return;
   }
   OV.over.innerHTML = '<div class="card narrow center"><h1 class="ttl">' + esc(res.reason) + '</h1>' +
@@ -5613,10 +5848,12 @@ function rOver(res) {
     (res.newBest && res.earned > 0 ? '<p class="nb">New personal best!</p>' : '') +
     '<div class="mini"><div><b>x' + fmtMult(M.cash) + '</b><span>Map bonus</span></div><div><b>' + r.near + '</b><span>Near misses</span></div><div><b>' + r.crates + '</b><span>Crates</span></div><div><b>' + res.km.toFixed(1) + '</b><span>km</span></div></div>' +
     (r.jobsDone && r.jobsDone.length ? '<div class="jdone">' + r.jobsDone.map(function (jd) { return '<div><span>' + esc(jd.title) + '</span><b>+' + fmt(jd.reward) + '</b></div>'; }).join('') + '</div>' : '') +
+    (res.daily ? (res.daily.won ? '<p class="nb">' + (res.daily.pay ? 'Daily challenge won! +' + fmt(res.daily.pay) : 'Daily challenge done again!') + '</p>' : '<p class="fine">Daily challenge: ' + esc(res.daily.title) + ' · ' + jobFmt(res.daily.goal, res.daily.val) + '. So close, try again!</p>') : '') +
     (res.starter ? '<p class="nb">Welcome bonus +' + fmt(res.starter) + ': buy your first new car!</p>' : '') +
     nextCarHtml() +
     '<p class="fine">Wallet: ' + fmt(save.wallet) + '</p><p id="ovRank" class="fine"></p>' +
-    '<button class="btn big ibtn" data-act="play" autofocus>' + ICON.restart + 'RUN AGAIN</button><div class="grid2"><button class="btn c-blue ibtn" data-act="go" data-to="garage">' + ICON.garage + 'Garage</button><button class="btn c-grey ibtn" data-act="go" data-to="menu">' + ICON.home + 'Menu</button></div></div>';
+    '<button class="btn big ibtn" data-act="' + (res.daily ? 'dplay' : 'play') + '" autofocus>' + ICON.restart + (res.daily ? 'TRY AGAIN' : 'RUN AGAIN') + '</button><div class="grid2"><button class="btn c-blue ibtn" data-act="go" data-to="garage">' + ICON.garage + 'Garage</button><button class="btn c-grey ibtn" data-act="go" data-to="menu">' + ICON.home + 'Menu</button></div>' +
+    '<button class="btn c-teal ibtn wide" data-act="share">' + ICON.share + 'Share this run</button></div>';
   var nc = nextCarGoal(), ncv = document.getElementById('ovNext'); if (nc && ncv) topPreview(ncv, nc, {});
   // once the score has gone up, show where the driver ranks
   if (res.sub) res.sub.then(lbTop).then(function (rows) {
@@ -5637,8 +5874,8 @@ var HELP = [
   { t: 'Power-ups', p: 'Shields, magnets, nitro, double cash, cash bags and repair kits. Nitro makes you faster and lets you smash through traffic.', art: 'power' },
   { t: 'Build your ride', p: 'Spend your cash on ' + CARS.length + ' cars, upgrades, mods and wild paint jobs. Unlock ' + MAPS.length + ' maps.', art: 'garage' },
   { t: 'Police mode', p: 'Switch sides! Pick a criminal from the Wanted board, chase them in your police car and ram them until they pull over.', art: 'police' },
-  { t: 'Prestige', p: 'Rich enough? Prestige to unlock the next band of cars. You lose your cash and cars, but your cash multiplier doubles every time, up to x1,024.', art: 'cash' },
-  { t: 'Play every day', p: 'Open your daily gift, finish jobs for big payouts, and redeem secret codes for free stuff.', art: 'daily' }
+  { t: 'Prestige', p: 'Rich enough? Prestige to unlock the next band of cars. Only your cash resets: you keep your cars and mods, and your cash multiplier doubles every time, up to x1,024.', art: 'cash' },
+  { t: 'Play every day', p: 'Open your daily gift, beat the daily challenge, finish jobs, earn achievements and climb the weekly leaderboard.', art: 'daily' }
 ];
 var helpPage = 0, helpRaf = 0;
 function rHelp() {
@@ -5759,15 +5996,21 @@ function act(a, el) {
     case 'psel': if (save.police.cars[d('id')]) { save.police.car = d('id'); persist(); Aud.sfx('buy'); } rPolice(); return;
     case 'pbuy':
       c = pcById(d('id'));
-      if (!save.police.cars[c.id] && spend(c.price)) { save.police.cars[c.id] = 1; save.police.car = c.id; persist(); Aud.sfx('buy'); toast(c.name + ' is yours!'); } else Aud.sfx('deny');
+      if (!save.police.cars[c.id] && spend(pcPrice(c))) { save.police.cars[c.id] = 1; save.police.car = c.id; persist(); Aud.sfx('buy'); toast(c.name + ' is yours!'); } else Aud.sfx('deny');
       rPolice(); return;
     case 'btab': boardTab = d('v'); Aud.sfx('click'); rBoard(); return;
     case 'chase': if (!wantedOpen(+d('v'))) return; Aud.sfx('click'); mode = 'police'; chaseLvl = +d('v'); hideAll(); startRun(); return;
     case 'settings': setBack = d('back') || 'menu'; Aud.sfx('click'); cur = 'settings'; for (var k in OV) OV[k].hidden = k !== 'settings'; rSettings(); return;
     case 'resume': hideAll(); resumeGame(); return;
-    case 'restart': hideAll(); startRun(); return;
+    case 'restart': hideAll(); startRun(); return;   // (keeps the mode: a daily restarts the daily)
     case 'quit': state = 'menu'; Aud.engine(false, 0); show('menu'); return;
     case 'gclass': gClass = d('v'); rChips(); rCars(); return;
+    case 'dplay': Aud.sfx('click'); mode = 'daily'; hideAll(); startRun(); return;
+    case 'share': Aud.sfx('click'); shareRun(); return;
+    case 'pupg':
+      var pu = PUPG.filter(function (p) { return p.k === d('k'); })[0], pl = pUpg(save.police.car);
+      if (pu && pl[pu.k] < pu.max && spend(pUpgCost(pu, pl[pu.k]))) { pl[pu.k]++; persist(); Aud.sfx('buy'); toast(pu.name + ' level ' + pl[pu.k] + '!'); checkAch(); } else Aud.sfx('deny');
+      rPolice(); return;
     case 'gonext': gView = d('id'); Aud.sfx('click'); show('garage'); return;
     case 'gview': gView = d('id'); Aud.sfx('click'); var cc = OV.garage.querySelectorAll('.cc'); for (var i = 0; i < cc.length; i++) cc[i].classList.toggle('on', cc[i].getAttribute('data-id') === gView); rDetail(); return;
     case 'gtab': gTab = d('v'); rDetail(); return;
@@ -5876,8 +6119,11 @@ OV.settings.addEventListener('click', function (e) {
 /* ---------- boot ---------- */
 function boot() {
   grantCodeCars(); fixDrivenCar();
+  setTimeout(function () { checkAch(); }, 2600);
   // the collection starts with every car you own now (no rewards for those, they were already earned)
   if (!save.collected) { save.collected = {}; Object.keys(save.owned).forEach(function (id) { save.collected[id] = 1; }); var n0 = collectionCount(), i0 = 0; while (i0 < COL_MILESTONES.length && n0 >= COL_MILESTONES[i0]) i0++; save.colRewarded = i0; }
+  // older versions took your cars away on a prestige: give back every car you had ever owned
+  if (!save.carsBack) { save.carsBack = true; var back = 0; Object.keys(save.collected).forEach(function (id) { if (!save.owned[id] && CARS.some(function (c) { return c.id === id; })) { save.owned[id] = 1; Gw(id); back++; } }); if (back) { fixDrivenCar(); persist(); setTimeout(function () { toast('Your ' + back + ' cars are back in the garage!', 3600); }, 1200); } }
   // (old test saves could hold more money than the whole game now costs)
   if (save.wallet > 1e15) save.wallet = 1e15;
   if (save.best > 1e15) save.best = 1e15; if (save.lbBest > 1e15) save.lbBest = 1e15; if (save.stats.earned > 1e16) save.stats.earned = 1e16;
@@ -5934,7 +6180,7 @@ if (window.__CR_TEST || /[?&]crtest\b/.test(location.search)) window.__CR = {
   clear: function () { traffic.length = 0; items.length = 0; },
   freeze: function () { state = 'paused'; },
   god: function () { lives = 99; maxLives = 3; fuel = 100; },
-  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
+  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
 };
 
 })();
