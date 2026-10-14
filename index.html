@@ -192,10 +192,12 @@ input { -webkit-user-select: text; user-select: text; }
 .cc.on { border-color: var(--accent); background: #2d2a2a; box-shadow: 0 4px 0 var(--accent-dk); }
 .gright { background: var(--panel); border: 3px solid var(--edge); border-radius: 20px; padding: 14px; box-shadow: 0 6px 0 var(--edge); }
 .det { display: flex; gap: 14px; align-items: center; }
-.gift.dch { background: linear-gradient(90deg, #ff4f9a, #8f5cff); color: #fff; animation: none; } .gift.dch b { font-size: 19px; } .gift.dch.done { background: #10142a; color: var(--dim); cursor: pointer; }
+.gift.dch { background: linear-gradient(90deg, #ff4f9a, #8f5cff); color: #fff; animation: none; } .gift.dch b { font-size: 19px; } .gift.dch.done { background: linear-gradient(90deg, #4a2a63, #3a3274); color: #e9defa; cursor: pointer; } .gift.dch.done b { color: #fff; }
 .dgoal { background: #10142a; border: 3px solid var(--edge); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
 .dgoal small { font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: #ff8ac0; } .dgoal b { font-family: var(--disp); font-weight: 400; font-size: 24px; color: #fff; } .dgoal em { font-style: normal; font-weight: 800; color: var(--good); }
 .mbtn.wide2 { grid-column: 1 / -1; justify-content: center; }
+.sync.link { background: none; border: 0; padding: 0; font: inherit; color: var(--good); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; } .sync.link.bad { color: #ffb020; }
+.btn.gbtn { background: #fff; color: #1f1f1f; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; text-shadow: none; } .btn.gbtn svg { width: 22px; height: 22px; }
 .ach .atr { width: 44px; height: 44px; flex-shrink: 0; filter: grayscale(1) opacity(.45); } .ach.on .atr { filter: none; } .ach .atr svg { width: 100%; height: 100%; }
 .pips { display: flex; gap: 4px; margin-top: 4px; } .pips i { width: 18px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.14); } .pips i.f { background: var(--accent); }
 .colbar { font-size: 13px; font-weight: 800; color: var(--dim); margin: 2px 2px 6px; } .colbar b { color: var(--accent); }
@@ -3043,6 +3045,7 @@ var saveOk = true;
 function persist() {
   save.rev = (save.rev || 0) + 1; save.ts = Date.now();
   try { localStorage.setItem(KEY, JSON.stringify(save)); saveOk = true; } catch (e) { saveOk = false; }
+  if (typeof cloudQueue === 'function') cloudQueue();
 }
 function Gr(id) { return save.garage[id] || EMPTY_G; }
 function Gw(id) {
@@ -3383,7 +3386,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.2', updBusy = false;
+var APP_VERSION = '2026-10-14.3', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3452,6 +3455,151 @@ function lbWeek() {
   });
 }
 function weekLeft() { var ms = weekStart() + 7 * 864e5 - Date.now(), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5); return (d ? d + 'd ' : '') + h + 'h'; }
+/* ================= Google sign-in + cloud save =================
+   Optional. "Sign in with Google" goes through the game's Supabase project: Google shows its own account picker, then
+   sends the player back here with a session in the address (#access_token=...), which is stored in this browser.
+   Signed-in players get their whole save kept online (table public.saves, one row per player, only readable and
+   writable by that player), so the same progress follows them to any device. Playing without signing in still works. */
+var SB = LB.url.replace('/rest/v1', ''), AUTH_KEY = 'cr-auth', LINK_KEY = 'cr-linked';
+// Google only sends players back to the real site, so the button is only live there (and on ?crtest for testing)
+var AUTH_OK = /github\.io$/.test(location.hostname) || /[?&]crtest/.test(location.search);
+var auth = (function () { try { return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); } catch (e) { return null; } })();
+var cloud = { state: auth ? 'idle' : 'off', timer: null, busy: false, missing: false };
+function storeAuth(a) { auth = a; try { if (a) localStorage.setItem(AUTH_KEY, JSON.stringify(a)); else localStorage.removeItem(AUTH_KEY); } catch (e) {} }
+function jwtBody(tok) { try { var b = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(decodeURIComponent(escape(atob(b + '==='.slice((b.length + 3) % 4))))); } catch (e) { return null; } }
+function authFrom(tk) {
+  var j = jwtBody(tk.access_token); if (!j || !j.sub) return null;
+  var md = j.user_metadata || {};
+  return { access: tk.access_token, refresh: tk.refresh_token, exp: Date.now() + (+tk.expires_in || 3600) * 1000,
+           id: j.sub, email: j.email || md.email || '', gname: md.full_name || md.name || '' };
+}
+// coming back from Google: the session is in the address bar; keep it and tidy the address
+function authFromHash() {
+  var h = location.hash || ''; if (h.length < 2) return;
+  var q = new URLSearchParams(h.slice(1));
+  if (q.get('access_token')) {
+    var a = authFrom({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token'), expires_in: q.get('expires_in') });
+    if (a) { storeAuth(a); cloud.state = 'idle'; setTimeout(function () { toast('Signed in' + (a.gname ? ' as ' + a.gname : '') + '!', 2600); }, 500); }
+  } else if (q.get('error')) setTimeout(function () { toast('Sign-in didn’t work: ' + (q.get('error_description') || q.get('error')).replace(/\+/g, ' '), 4000); }, 500);
+  else return;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+}
+function signIn() {
+  if (!AUTH_OK) { toast('Sign-in works on the game’s website: ranveerrrr248.github.io/cargo-run', 3600); return; }
+  location.href = SB + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(location.origin + location.pathname);
+}
+function signOut() {
+  var a = auth; storeAuth(null); cloud.state = 'off'; try { localStorage.removeItem(LINK_KEY); } catch (e) {}
+  if (a) fetch(SB + '/auth/v1/logout', { method: 'POST', headers: { apikey: LB.key, Authorization: 'Bearer ' + a.access } }).catch(function () {});
+  toast('Signed out. Your progress stays on this device.', 2600);
+}
+// a fresh access token (they last an hour; the refresh token gets a new one)
+function authToken() {
+  if (!auth) return Promise.reject(new Error('signed out'));
+  if (auth.exp - Date.now() > 60000) return Promise.resolve(auth.access);
+  return fetch(SB + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: LB.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: auth.refresh }) })
+    .then(function (r) {
+      if (r.status === 400 || r.status === 401) { storeAuth(null); cloud.state = 'off'; toast('Please sign in again to keep saving online', 3200); throw new Error('expired'); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (tk) { var a = authFrom(tk); if (!a) throw new Error('bad token'); storeAuth(a); return a.access; });
+}
+function cloudFetch(path, opts) {
+  return authToken().then(function (tok) { opts = opts || {}; opts.headers = opts.headers || {}; opts.headers.Authorization = 'Bearer ' + tok; return lbFetch(path, opts); });
+}
+function cloudGet() { return cloudFetch('/saves?select=data&user_id=eq.' + auth.id).then(function (rows) { return rows && rows[0] ? rows[0].data : null; }); }
+function cloudPut() {
+  if (!auth) return Promise.resolve(false);
+  var body = JSON.stringify({ user_id: auth.id, data: save, updated_at: new Date().toISOString() });
+  return cloudFetch('/saves?on_conflict=user_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: body });
+}
+function cloudErr(e) {
+  var m = String(e && e.message);
+  cloud.missing = /HTTP 404/.test(m); cloud.state = auth ? 'error' : 'off'; updSyncTag();
+  return false;
+}
+function hasProgress(s) { return !!s && ((s.stats && s.stats.runs > 0) || (s.wallet || 0) > 0 || Object.keys(s.owned || {}).length > 1); }
+function adoptCloud(cd) {
+  save = normalize(cd);
+  try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {}
+  grantCodeCars(); fixDrivenCar(); gView = save.car;
+  if (!inRun()) { prepare(); show(save.name ? 'menu' : 'name'); }
+}
+// after signing in, and whenever the game opens: line up this device and the online save
+function cloudSync() {
+  if (!auth || cloud.busy) return Promise.resolve(false);
+  if (inRun()) { setTimeout(cloudSync, 5000); return Promise.resolve(false); }
+  cloud.busy = true; cloud.state = 'sync'; updSyncTag();
+  var linked = null; try { linked = localStorage.getItem(LINK_KEY); } catch (e) {}
+  return cloudGet().then(function (cd) {
+    var done = function () { try { localStorage.setItem(LINK_KEY, auth.id); } catch (e) {} cloud.state = 'ok'; updSyncTag(); };
+    if (!cd) return cloudPut().then(done);
+    if (linked === auth.id) {
+      // this device has synced with this account before: the newer save wins
+      if ((cd.ts || 0) > (save.ts || 0)) { adoptCloud(cd); done(); toast('Loaded your newest progress from your account', 2600); return; }
+      if ((save.ts || 0) > (cd.ts || 0)) return cloudPut().then(done);
+      return done();
+    }
+    // first time on this device: take the online save; if both have progress, merge them so nothing is lost
+    if (!hasProgress(save)) { adoptCloud(cd); done(); toast('Welcome back! Your progress is loaded.', 2600); return; }
+    if (!hasProgress(cd)) return cloudPut().then(done);
+    adoptCloud(mergeSaves(save, cd)); persist();
+    return cloudPut().then(function () { done(); toast('Saves merged: ' + Object.keys(save.owned).length + ' cars, ' + fmt(save.wallet) + '. Nothing lost!', 3600); });
+  }).catch(cloudErr).then(function (r) { cloud.busy = false; return r; });
+}
+// every change is sent at most every few seconds, and straight away when the game goes into the background
+function cloudQueue() {
+  if (!auth || cloud.state === 'off' || cloud.timer) return;
+  var linked = null; try { linked = localStorage.getItem(LINK_KEY); } catch (e) {}
+  if (linked !== auth.id) return;
+  cloud.timer = setTimeout(function () { cloud.timer = null; cloudPut().then(function () { cloud.state = 'ok'; updSyncTag(); }, cloudErr); }, 6000);
+}
+function cloudFlushNow() { if (cloud.timer) { clearTimeout(cloud.timer); cloud.timer = null; cloudPut().catch(function () {}); } }
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloudFlushNow(); });
+// Two separate saves meeting for the first time (say, a phone and a computer both played before signing in) are
+// combined so nobody loses anything: every car, map, mod, code, achievement and police car from both; the higher of
+// every amount (money, prestige, upgrade levels, stats, bests). The most recently played save decides the rest
+// (which car you drive, your name, the job board, today's challenge), and this device keeps its own settings.
+function mergeVal(p, o) {
+  if (o === undefined || o === null) return p;
+  if (p === undefined || p === null) return o;
+  if (typeof p === 'number' && typeof o === 'number') return Math.max(p, o);
+  if (typeof p === 'boolean' && typeof o === 'boolean') return p || o;
+  if (Array.isArray(p) || Array.isArray(o)) {
+    if (!Array.isArray(p) || !Array.isArray(o)) return p;
+    var nums = p.concat(o).every(function (v) { return typeof v === 'number'; });
+    if (!nums) return p;
+    var r = []; for (var i = 0; i < Math.max(p.length, o.length); i++) r.push(Math.max(p[i] || 0, o[i] || 0)); return r;
+  }
+  if (typeof p === 'object' && typeof o === 'object') {
+    var m = {}, k; for (k in o) m[k] = o[k]; for (k in p) m[k] = mergeVal(p[k], o[k]); return m;
+  }
+  return p;
+}
+function mergeSaves(local, other) {
+  var a = JSON.parse(JSON.stringify(local)), b = JSON.parse(JSON.stringify(other));
+  var p = (a.ts || 0) >= (b.ts || 0) ? a : b, o = p === a ? b : a, m = mergeVal(p, o);
+  m.jobs = p.jobs; m.lbQueue = p.lbQueue; m.daily = p.daily; m.name = p.name || o.name; m.car = p.car; m.map = p.map;
+  m.dchal = p.dchal ? JSON.parse(JSON.stringify(p.dchal)) : o.dchal; if (m.dchal) m.dchal.wins = Math.max((a.dchal || {}).wins || 0, (b.dchal || {}).wins || 0);
+  m.settings = a.settings;
+  return normalize(m);
+}
+function updSyncTag() { var t = document.getElementById('syncTag'); if (t) t.outerHTML = syncTagHtml(); }
+function syncTagHtml() {
+  if (!auth) return AUTH_OK ? '<button id="syncTag" class="sync link" data-act="signin">☁ Sign in to save online</button>' : '<span id="syncTag" class="sync">' + syncLabel() + '</span>';
+  var s = cloud.state, txt = s === 'sync' ? 'Syncing…' : s === 'error' ? (cloud.missing ? 'Online save not switched on' : 'Offline · saved here') : 'Saved online';
+  return '<button id="syncTag" class="sync link' + (s === 'error' ? ' bad' : '') + '" data-act="settings" data-back="menu">☁ ' + txt + '</button>';
+}
+function accountHtml() {
+  if (!auth) return '<h4>Account</h4><div class="it"><div class="itx"><b>Not signed in</b><span>Sign in to keep your progress online and play on any device.</span></div></div>' +
+    '<button class="btn gbtn" data-act="signin">' + ICON.google + 'Sign in with Google</button>' +
+    (AUTH_OK ? '' : '<p class="fine">Sign-in works on the game’s website: ranveerrrr248.github.io/cargo-run</p>');
+  return '<h4>Account</h4><div class="it"><div class="itx"><b>' + esc(auth.gname || 'Google account') + '</b><span>' + esc(auth.email) + '</span></div></div>' +
+    '<div class="it"><div class="itx"><b>Cloud save</b><span>' + (cloud.state === 'error' ? (cloud.missing ? 'Online saving isn’t switched on yet' : 'Can’t reach the server right now. Your progress is safe on this device.') : cloud.state === 'sync' ? 'Syncing…' : 'On. Your progress follows you to any device.') + '</span></div>' +
+    '<button class="btn ghost sm" data-act="syncnow">Sync now</button></div>' +
+    '<button class="btn ghost wide" data-act="signout">Sign out</button>';
+}
+
 // Top cops: every driver's lifetime criminals busted. Sent whenever the total goes up; a failed send is retried later.
 function bustSubmit() {
   var p = save.police;
@@ -3487,7 +3635,7 @@ function finish(reason) {
     persist();
     res = { reason: reason, earned: earned, best: save.best, newBest: newBest, km: dist / 1000, run: run, sub: lbSubmit(earned), starter: starter, carId: S.id, daily: run.daily ? { won: !!run.dailyWon, pay: run.dailyPay || 0, title: dailyTitle(run.daily), val: jobVal(run.daily.goal), goal: run.daily.goal } : null };
   }
-  checkAch();
+  checkAch(); cloudFlushNow();
   setTimeout(function () { if (state === 'over') UIH.over(res); }, 800);
 }
 
@@ -5157,6 +5305,7 @@ var ICON = {
   paint: '<svg viewBox="0 0 24 24"><path d="M12 2.5s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 9.7 12 2.5 12 2.5z" fill="currentColor"/></svg>',
   trophy: '<svg viewBox="0 0 24 24"><g' + OL + '><path d="M7 3h10v5.2a5 5 0 0 1-10 0z" fill="#ffc21a"/><path d="M7 4.8H4.1v1.7a3.3 3.3 0 0 0 3.3 3.3M17 4.8h2.9v1.7a3.3 3.3 0 0 1-3.3 3.3" fill="none"/><path d="M10.6 13.2h2.8v3.2h-2.8z" fill="#f0a500"/><path d="M6.5 21v-2.2c0-.6.5-1.1 1.1-1.1h8.8c.6 0 1.1.5 1.1 1.1V21z" fill="#8f5cff"/></g><path d="M9 4.4v3.4" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".7"/></svg>',
   daily: '<svg viewBox="0 0 40 40"><rect x="5" y="8" width="30" height="28" rx="4" fill="#fff" stroke="#2a1100" stroke-width="2.5"/><path d="M5 12a4 4 0 0 1 4-4h22a4 4 0 0 1 4 4v5H5z" fill="#ff4f9a" stroke="#2a1100" stroke-width="2.5"/><path d="M13 4v8M27 4v8" stroke="#2a1100" stroke-width="3" stroke-linecap="round"/><path d="M20 20.5l2 4.1 4.5.6-3.3 3.1.8 4.4-4-2.1-4 2.1.8-4.4-3.3-3.1 4.5-.6z" fill="#ffc21a" stroke="#2a1100" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  google: '<svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>',
   share: '<svg viewBox="0 0 24 24"><g' + OL + '><circle cx="18" cy="5.5" r="3" fill="#fff"/><circle cx="6" cy="12" r="3" fill="#fff"/><circle cx="18" cy="18.5" r="3" fill="#fff"/></g><path d="M8.6 10.6l6.8-3.7M8.6 13.4l6.8 3.7" stroke="#fff" stroke-width="2"/></svg>',
   gift: '<svg viewBox="0 0 40 40"><rect x="5" y="15" width="30" height="21" rx="3" fill="#fff" stroke="#2a1100" stroke-width="2.5"/><rect x="3" y="10" width="34" height="8" rx="2.5" fill="#ff4f9a" stroke="#2a1100" stroke-width="2.5"/><rect x="17" y="10" width="6" height="26" fill="#ff4f9a" stroke="#2a1100" stroke-width="2.5"/><path d="M20 10c-3-6-10-6-9-1 1 3 6 2 9 1zM20 10c3-6 10-6 9-1-1 3-6 2-9 1z" fill="#ffc21a" stroke="#2a1100" stroke-width="2.5"/></svg>'
 };
@@ -5260,7 +5409,7 @@ function rMenu() {
   var car = carById(save.car), map = mapById(save.map), st = save.stats;
   OV.menu.innerHTML =
     '<div class="card narrow menuCard">' +
-      '<div class="topline"><span class="who">' + esc(save.name) + '</span><span id="syncTag" class="sync">' + syncLabel() + '</span></div>' +
+      '<div class="topline"><span class="who">' + esc(save.name) + '</span>' + syncTagHtml() + '</div>' +
       '<div class="logo"><span>CARGO</span><b>RUN</b><small class="tagline">' + CARS.length + ' cars · ' + MAPS.length + ' maps · ' + PRESTIGE_MAX + ' prestiges</small></div>' +
       // the showroom: your car side-on under a spotlight, with what it does
       '<div class="ride"><canvas id="menuCar" width="880" height="300"></canvas>' +
@@ -5820,8 +5969,10 @@ function rSettings() {
     '<h4>Controls</h4>' + segs('ctrl', 'Steering', [['tap', 'Tap sides'], ['swipe', 'Swipe'], ['buttons', 'Buttons']]) +
     '<p class="fine">Keyboard: ← → or A D to steer, Esc or P to pause. Game controllers work too.</p>' +
     '<h4>Display</h4>' + segs('quality', 'Graphics', [['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['ultra', 'Ultra']]) + tog('shake', 'Screen shake') + tog('vibe', 'Vibration') + tog('fps', 'Show FPS') +
-    '<h4>Driver</h4><div class="it"><div class="itx"><b>' + esc(save.name) + '</b><span>Saved in this browser · ' + syncLabel() + '</span></div>' +
+    '<h4>Driver</h4><div class="it"><div class="itx"><b>' + esc(save.name) + '</b><span>' + (auth ? 'Saved on this device and online' : 'Saved in this browser · ' + syncLabel()) + '</span></div>' +
       (setBack === 'pause' ? '' : '<button class="btn ghost sm" data-act="rename" data-back="settings">Change name</button>') + '</div>' +
+    (setBack === 'pause' ? '' : accountHtml()) +
+    '<p class="fine"><a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></p>' +
     '</div>';
   OV.settings.innerHTML = h;
 }
@@ -6015,6 +6166,9 @@ function act(a, el) {
     case 'restart': hideAll(); startRun(); return;   // (keeps the mode: a daily restarts the daily)
     case 'quit': state = 'menu'; Aud.engine(false, 0); show('menu'); return;
     case 'gclass': gClass = d('v'); rChips(); rCars(); return;
+    case 'signin': Aud.sfx('click'); signIn(); return;
+    case 'signout': Aud.sfx('click'); signOut(); rSettings(); return;
+    case 'syncnow': Aud.sfx('click'); cloudSync().then(function () { if (cur === 'settings') rSettings(); }); rSettings(); return;
     case 'dplay': Aud.sfx('click'); mode = 'daily'; hideAll(); startRun(); return;
     case 'share': Aud.sfx('click'); shareRun(); return;
     case 'pupg':
@@ -6128,6 +6282,7 @@ OV.settings.addEventListener('click', function (e) {
 
 /* ---------- boot ---------- */
 function boot() {
+  authFromHash();
   grantCodeCars(); fixDrivenCar();
   setTimeout(function () { checkAch(); }, 2600);
   // the collection starts with every car you own now (no rewards for those, they were already earned)
@@ -6151,6 +6306,7 @@ function boot() {
     persist();
   }
   lbFlush(); bustFlush();
+  if (auth) setTimeout(cloudSync, 400);
   checkForUpdate();
 }
 boot();
@@ -6190,7 +6346,7 @@ if (window.__CR_TEST || /[?&]crtest\b/.test(location.search)) window.__CR = {
   clear: function () { traffic.length = 0; items.length = 0; },
   freeze: function () { state = 'paused'; },
   god: function () { lives = 99; maxLives = 3; fuel = 100; },
-  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
+  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, cloud: { fromHash: authFromHash, sync: cloudSync, merge: mergeSaves, put: cloudPut, info: function () { var l = null; try { l = localStorage.getItem(LINK_KEY); } catch (e) {} return { auth: auth, state: cloud.state, missing: cloud.missing, linked: l, timer: !!cloud.timer }; } }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
 };
 
 })();
