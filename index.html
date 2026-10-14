@@ -196,6 +196,8 @@ input { -webkit-user-select: text; user-select: text; }
 .dgoal { background: #10142a; border: 3px solid var(--edge); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
 .dgoal small { font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: #ff8ac0; } .dgoal b { font-family: var(--disp); font-weight: 400; font-size: 24px; color: #fff; } .dgoal em { font-style: normal; font-weight: 800; color: var(--good); }
 .mbtn.wide2 { grid-column: 1 / -1; justify-content: center; }
+.errbox { position: fixed; left: 10px; right: 10px; bottom: 10px; z-index: 99999; background: #2a0f16; border: 3px solid #ff5d5d; border-radius: 14px; padding: 10px 12px; color: #fff; display: flex; flex-direction: column; gap: 4px; font: 13px/1.35 system-ui, sans-serif; cursor: pointer; }
+.errbox b { font-size: 15px; color: #ff9a9a; } .errbox code { font-size: 11px; color: #ffd6d6; word-break: break-word; white-space: pre-wrap; }
 .sync.link { background: none; border: 0; padding: 0; font: inherit; color: var(--good); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; } .sync.link.bad { color: #ffb020; }
 .btn.gbtn { background: #fff; color: #1f1f1f; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; text-shadow: none; } .btn.gbtn svg { width: 22px; height: 22px; }
 .ach .atr { width: 44px; height: 44px; flex-shrink: 0; filter: grayscale(1) opacity(.45); } .ach.on .atr { filter: none; } .ach .atr svg { width: 100%; height: 100%; }
@@ -3388,7 +3390,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.8', updBusy = false;
+var APP_VERSION = '2026-10-14.9', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -5334,15 +5336,29 @@ function pollPad() {
 
 var last = 0;
 function frame(ts) {
+  // the next frame is booked first, and each step is guarded, so one error can never freeze the game on a blank screen
+  requestAnimationFrame(frame);
   clock = ts / 1000;
-  var dt = Math.min(0.05, (ts - last) / 1000 || 0);
+  var dt = clamp((ts - last) / 1000 || 0, 0, 0.05);
   last = ts;
   if (dt > 0) fpsA = lerp(fpsA, 1 / dt, 0.05);
-  pollPad();
-  update(dt);
-  draw();
-  requestAnimationFrame(frame);
+  try { pollPad(); } catch (e) { reportErr(e, 'controller'); }
+  try { update(dt); } catch (e) { reportErr(e, 'update'); }
+  try { draw(); } catch (e) { reportErr(e, 'draw'); try { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; } catch (e2) {} }
 }
+// if something goes wrong, show what it was (once per problem) so a screenshot tells the developer exactly what to fix
+var errSeen = {};
+function reportErr(e, where) {
+  var msg = (e && e.message) || String(e), st = (e && e.stack) ? String(e.stack).split('\n').slice(0, 3).join(' | ') : '', key = where + msg;
+  if (errSeen[key]) return; errSeen[key] = 1;
+  try { console.error('[Cargo Run]', where, e); localStorage.setItem('cr-lasterr', JSON.stringify({ v: APP_VERSION, where: where, msg: msg, st: st, at: Date.now() })); } catch (e2) {}
+  var box = document.getElementById('errBox');
+  if (!box) { box = document.createElement('div'); box.id = 'errBox'; box.className = 'errbox'; document.body.appendChild(box); box.addEventListener('click', function () { box.remove(); }); }
+  box.innerHTML = '<b>Oops, something went wrong</b><span>Please send a screenshot of this to the developer. Tap to close.</span><code></code>';
+  box.querySelector('code').textContent = APP_VERSION + ' · ' + where + ': ' + msg + (st ? ' · ' + st : '');
+}
+window.addEventListener('error', function (ev) { reportErr(ev.error || ev.message, 'page'); });
+window.addEventListener('unhandledrejection', function (ev) { var r = ev.reason; if (r && /HTTP|fetch|network|abort|expired|signed out/i.test(String(r.message || r))) return; reportErr(r, 'promise'); });
 
 /* ================= UI ================= */
 var OV = {};
@@ -6412,7 +6428,7 @@ if (window.__CR_TEST || /[?&]crtest\b/.test(location.search)) window.__CR = {
   clear: function () { traffic.length = 0; items.length = 0; },
   freeze: function () { state = 'paused'; },
   god: function () { lives = 99; maxLives = 3; fuel = 100; },
-  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, cloud: { fromHash: authFromHash, sync: cloudSync, merge: mergeSaves, put: cloudPut, info: function () { var l = null; try { l = localStorage.getItem(LINK_KEY); } catch (e) {} return { auth: auth, state: cloud.state, missing: cloud.missing, linked: l, timer: !!cloud.timer }; } }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
+  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, frameAt: function (ts) { var raf = window.requestAnimationFrame; window.requestAnimationFrame = function () { return 0; }; try { frame(ts); } finally { window.requestAnimationFrame = raf; } }, cloud: { fromHash: authFromHash, sync: cloudSync, merge: mergeSaves, put: cloudPut, info: function () { var l = null; try { l = localStorage.getItem(LINK_KEY); } catch (e) {} return { auth: auth, state: cloud.state, missing: cloud.missing, linked: l, timer: !!cloud.timer }; } }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
 };
 
 })();
