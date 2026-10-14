@@ -3427,7 +3427,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.14', updBusy = false;
+var APP_VERSION = '2026-10-14.16', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3453,7 +3453,7 @@ function lbFetch(path, opts) {
   opts = opts || {};
   var h = { apikey: LB.key, 'Content-Type': 'application/json' }, k;
   for (k in (opts.headers || {})) h[k] = opts.headers[k];
-  var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, 8000) : null;
+  var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, opts.timeout || 8000) : null;
   try {
     return fetch(LB.url + path, { method: opts.method || 'GET', headers: h, body: opts.body, signal: ctl ? ctl.signal : undefined }).then(function (r) {
       if (tm) clearTimeout(tm);
@@ -3466,7 +3466,7 @@ function lbFetch(path, opts) {
 function lbSubmit(earned) {
   // (a weekly best goes up too, even when it isn't an all-time best, so the weekly board stays fair)
   if ((earned > (save.lbBest || 0) || earned > weekBest()) && save.name && (!save.lbQueue || earned > save.lbQueue.score || save.lbQueue.wk !== weekStart())) {
-    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(LB_MAX, Math.round(earned)), car: (S && S.car ? S.car.name : carById(save.car).name).slice(0, 24), map: M.name.slice(0, 24), wk: weekStart(), badge: badgeText() };
+    save.lbQueue = { name: save.name.slice(0, 12), score: Math.min(LB_MAX, Math.round(earned)), car: (S && S.car ? S.car.name : carById(save.car).name).slice(0, 24), map: M.name.slice(0, 24), wk: weekStart() };
     persist();
   }
   return lbFlush();
@@ -3483,7 +3483,7 @@ function lbFlush() {
   function sent(score) {
     save.lbBest = Math.max(save.lbBest || 0, score);
     if (q.wk === weekStart()) save.lbWeek = { wk: q.wk, best: Math.max(weekBest(), score) };
-    if (save.lbQueue === q) save.lbQueue = null; persist(); return true;
+    if (save.lbQueue && save.lbQueue.score === q.score && save.lbQueue.name === q.name) save.lbQueue = null; persist(); return true;
   }
   return post(q).then(function () { return sent(q.score); }, function (e) {
     if (!(q.score > LB_OLD_MAX && /HTTP 4/.test(e && e.message))) return false;
@@ -3492,7 +3492,7 @@ function lbFlush() {
   });
 }
 function lbTop() { return lbFetch('/top_runs?select=*&order=score.desc&limit=50'); }
-function badgeText() { var p = save.prestige || 0, a = achCount(); return ((p ? '★' + p : '') + (a ? (p ? ' ' : '') + '🏆' + a : '')).slice(0, 24); }
+
 // the weekly board starts again every Monday at midnight (UTC): the best run each driver has sent this week
 function weekStart() { var d = new Date(), day = (d.getUTCDay() + 6) % 7; return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day); }
 function weekBest() { var w = save.lbWeek; return w && w.wk === weekStart() ? w.best : 0; }
@@ -3502,19 +3502,8 @@ function lbWeek() {
   });
 }
 // friends: driver names you follow (saved with your progress); the board shows your and their best runs
-function lbFriends() {
-  var names = (save.friends || []).concat(save.name ? [save.name] : []);
-  if (!names.length) return Promise.resolve([]);
-  var or = '(' + names.map(function (n) { return 'name.ilike."' + String(n).replace(/[^A-Za-z0-9 ]/g, '') + '"'; }).join(',') + ')';
-  return lbFetch('/top_runs?select=*&or=' + encodeURIComponent(or) + '&order=score.desc&limit=50');
-}
-function friendsEditHtml() {
-  var f = save.friends || [];
-  return '<div class="frbox"><div class="codeRow"><input id="frIn" maxlength="12" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Friend’s driver name" aria-label="Friend’s driver name"><button class="btn" data-act="fradd">Add</button></div>' +
-    '<p id="frMsg" class="codeMsg" role="status"></p>' +
-    (f.length ? '<div class="frlist">' + f.map(function (n) { return '<span class="frchip">' + esc(n) + '<button data-act="frdel" data-v="' + esc(n) + '" aria-label="Remove ' + esc(n) + '">×</button></span>'; }).join('') + '</div>' : '') +
-    '<p class="fine">Ask your friends for their driver name. It’s shown at the top of their main menu.</p></div>';
-}
+
+
 function weekLeft() { var ms = weekStart() + 7 * 864e5 - Date.now(), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5); return (d ? d + 'd ' : '') + h + 'h'; }
 /* ================= Google sign-in + cloud save =================
    Optional. "Sign in with Google" goes through the game's Supabase project: Google shows its own account picker, then
@@ -3562,7 +3551,7 @@ function emailSignIn() {
     }, function () { say('No internet connection. Try again when you’re online.'); });
 }
 function signOut() {
-  var a = auth; storeAuth(null); cloud.state = 'off'; try { localStorage.removeItem(LINK_KEY); localStorage.removeItem(BASE_KEY); } catch (e) {}
+  var a = auth; storeAuth(null); cloud.state = 'off'; try { localStorage.removeItem(LINK_KEY); localStorage.removeItem(BASE_KEY); localStorage.removeItem(PEND_KEY); } catch (e) {}
   if (a) fetch(SB + '/auth/v1/logout', { method: 'POST', headers: { apikey: LB.key, Authorization: 'Bearer ' + a.access } }).catch(function () {});
   toast('Signed out. Your progress stays on this device.', 2600);
 }
@@ -3580,11 +3569,14 @@ function authToken() {
 function cloudFetch(path, opts) {
   return authToken().then(function (tok) { opts = opts || {}; opts.headers = opts.headers || {}; opts.headers.Authorization = 'Bearer ' + tok; return lbFetch(path, opts); });
 }
-function cloudGet() { return cloudFetch('/saves?select=data&user_id=eq.' + auth.id).then(function (rows) { return rows && rows[0] ? rows[0].data : null; }); }
-function cloudPut() {
+function cloudGet() {
+  return cloudFetch('/saves?select=data,repair&user_id=eq.' + auth.id).then(function (rows) { return rows && rows[0] ? { data: rows[0].data, repair: rows[0].repair } : null; });
+}
+// (a 30 s wait: on a slow phone connection the save can take a while to arrive)
+function cloudPut(data) {
   if (!auth) return Promise.resolve(false);
-  var body = JSON.stringify({ user_id: auth.id, data: save, updated_at: new Date().toISOString() });
-  return cloudFetch('/saves?on_conflict=user_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: body });
+  var body = JSON.stringify({ user_id: auth.id, data: data || save, updated_at: new Date().toISOString() });
+  return cloudFetch('/saves?on_conflict=user_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: body, timeout: 30000 });
 }
 function cloudErr(e) {
   var m = String(e && e.message);
@@ -3595,6 +3587,10 @@ function hasProgress(s) { return !!s && ((s.stats && s.stats.runs > 0) || (s.wal
 // the last save this device and the account agreed on: comparing against it tells us what changed on each side
 var BASE_KEY = 'cr-base';
 function loadBase() { try { var x = JSON.parse(localStorage.getItem(BASE_KEY) || 'null'); return x && auth && x.uid === auth.id ? x.save : null; } catch (e) { return null; } }
+// the save we're sending right now (if the answer gets lost, the next sync can still see it arrived)
+var PEND_KEY = 'cr-pend';
+function loadPend() { try { var x = JSON.parse(localStorage.getItem(PEND_KEY) || 'null'); return x && auth && x.uid === auth.id ? x.save : null; } catch (e) { return null; } }
+function storePend(s) { try { if (s) localStorage.setItem(PEND_KEY, JSON.stringify({ uid: auth.id, save: s })); else localStorage.removeItem(PEND_KEY); } catch (e) {} }
 function storeBase(s) { try { localStorage.setItem(BASE_KEY, JSON.stringify({ uid: auth.id, save: s })); } catch (e) {} }
 // (the database stores keys in its own order, so compare saves with sorted keys, ignoring timestamps and settings)
 function canon(v) {
@@ -3619,38 +3615,54 @@ function adoptCloud(cd) {
 //  - only the account changed (you played on another device): load it
 //  - both changed (say, the phone played offline while the laptop played too): keep BOTH sets of changes; money and
 //    totals get each side's gains (and spending) since the last sync, so nothing is lost and nothing counts twice
+// Lines up this device and the online save. It runs when the game opens, when you come back to it, every minute,
+// a few seconds after anything changes and after every run; you never have to press anything.
+//  - only this device changed since the last sync: send it up
+//  - only the account changed (you played on another device): load it
+//  - both changed (say, the phone played offline while the laptop played too): keep BOTH sets of changes
+// The "last sync" record is exactly the save that was sent (or loaded). An upload that looked like it failed but did
+// arrive is recognised (the online save is exactly what we sent), and two saves that are already the same are never
+// merged, so nothing can ever be counted twice. (In October 2026 a slow upload that looked failed got merged with
+// itself every minute and doubled a player's money and stats.)
 function cloudSync() {
   if (!auth || cloud.busy) return Promise.resolve(false);
   if (inRun()) { cloudLater(); return Promise.resolve(false); }
   cloud.busy = true; cloud.state = 'sync'; updSyncTag();
   var linked = null; try { linked = localStorage.getItem(LINK_KEY); } catch (e) {}
-  return cloudGet().then(function (cd) {
-    var done = function (msg) {
+  return cloudGet().then(function (row) {
+    var cd = row && row.data, rep = row && row.repair;
+    var clone = function (s) { return JSON.parse(JSON.stringify(s)); };
+    var finish = function (msg, b) {
       try { localStorage.setItem(LINK_KEY, auth.id); } catch (e) {}
-      storeBase(JSON.parse(JSON.stringify(save)));
+      if (b) storeBase(b);
       cloud.state = 'ok'; cloud.missing = false; cloud.at = Date.now(); updSyncTag();
       if (msg) toast(msg, 3400);
     };
-    var push = function (msg) { return cloudPut().then(function () { done(msg); }); };
+    var push = function (msg) { var sent = clone(save); storePend(sent); return cloudPut(sent).then(function () { storePend(null); finish(msg, sent); }); };
+    // a repaired copy of this account's save is waiting: load it, once
+    if (rep && rep.id && rep.data && save.repairId !== rep.id) {
+      var rd = clone(rep.data); rd.repairId = rep.id; adoptCloud(rd); persist();
+      return push('Your save was repaired. Sorry about the glitch!');
+    }
     if (!cd) return push();
     var mine = linked === auth.id || (cd.sids || [cd.sid]).indexOf(save.sid) >= 0;
     if (mine) {
+      var pend = loadPend(); if (pend && sameSave(cd, pend)) { storeBase(pend); storePend(null); }
+      if (sameSave(save, cd)) return finish(null, clone(cd));
       var base = loadBase();
       if (base) {
         var here = !sameSave(save, base), there = !sameSave(cd, base);
-        if (!here && !there) return done();
         if (here && !there) return push();
-        if (!here && there) { adoptCloud(cd); return done('Loaded your newest progress from your other device'); }
+        if (!here) { adoptCloud(cd); return finish('Loaded your newest progress from your other device', clone(cd)); }
         adoptCloud(mergeSaves(save, cd, base)); persist();
         return push('Progress from both devices combined: ' + fmt(save.wallet));
       }
-      // no record of the last sync (an older version, or you signed out and back in): keep the best of both, adding nothing twice
-      if (sameSave(save, cd)) return done();
+      // no record of the last sync (an older version, or you signed out and back in): keep the best of both, adding nothing
       adoptCloud(mergeSaves(save, cd, null, true)); persist();
       return push();
     }
     // a different save meeting this account for the first time: take the online one, or add the two together
-    if (!hasProgress(save)) { adoptCloud(cd); return done('Welcome back! Your progress is loaded.'); }
+    if (!hasProgress(save)) { adoptCloud(cd); return finish('Welcome back! Your progress is loaded.', clone(cd)); }
     if (!hasProgress(cd)) return push();
     adoptCloud(mergeSaves(save, cd, null)); persist();
     return push('Saves merged! Money added together: ' + fmt(save.wallet) + ', ' + Object.keys(save.owned).length + ' cars.');
@@ -3697,7 +3709,7 @@ function mergeSaves(local, other, base, maxOnly) {
   m.dchal = p.dchal ? JSON.parse(JSON.stringify(p.dchal)) : o.dchal;
   m.settings = a.settings;
   if (!maxOnly) {
-    var add = function (x, y, w) { return Math.max(0, (+x || 0) + (+y || 0) - (+w || 0)); };
+    var add = function (x, y, w) { var a2 = +x || 0, b2 = +y || 0; return clamp(a2 + b2 - (+w || 0), 0, 2 * Math.max(a2, b2)); };
     m.wallet = add(a.wallet, b.wallet, z.wallet);
     var as = a.stats || {}, bs = b.stats || {}, zs = z.stats || {}, sk = {}, k;
     m.stats = m.stats || {}; for (k in as) sk[k] = 1; for (k in bs) sk[k] = 1;
@@ -3803,7 +3815,16 @@ function raceJoin(code, host) {
       raceCheckFull(); if (cur === 'race') rRace();
     });
     ch.on('broadcast', { event: 'start' }, function (m) { raceBegin(m.payload || {}); });
-    ch.on('broadcast', { event: 'pos' }, function (m) { var p = m.payload; if (p && p.id && p.id !== raceId()) { p.at = Date.now(); R.others[p.id] = p; } });
+    ch.on('broadcast', { event: 'pos' }, function (m) {
+      var p = m.payload; if (!p || !p.id || p.id === raceId()) return;
+      var o = R.others[p.id] || (R.others[p.id] = { buf: [] }), now = Date.now();
+      o.id = p.id; o.name = p.name; o.car = p.car; o.pts = p.pts; o.alive = p.alive; o.d = p.d; o.lf = p.lf; o.at = now;
+      if (typeof p.gt === 'number') {
+        o.buf.push({ t: p.gt, d: p.d, lf: p.lf }); if (o.buf.length > 40) o.buf.shift();
+        // their clock vs ours: the smallest gap seen is the best guess (it's the message that arrived fastest)
+        var off = now / 1000 - p.gt; o.off = o.off == null ? off : Math.min(off, o.off + 0.02);
+      }
+    });
     ch.subscribe(function (status) {
       if (R.ch !== ch) return;
       if (status === 'SUBSCRIBED') {
@@ -3851,10 +3872,10 @@ function raceBegin(pl) {
 function racePts() { return run && run.race ? Math.round(run.crates * 10 + run.near * 5 + dist / 25) : 0; }
 function raceSend(alive) {
   if (!R.ch) return;
-  try { R.ch.send({ type: 'broadcast', event: 'pos', payload: { id: raceId(), name: (save.name || 'Driver').slice(0, 12), car: save.car, d: Math.round(dist * 10) / 10, lf: Math.round((P.x - ROAD_X) / LANE_W * 100) / 100, pts: racePts(), alive: alive } }); } catch (e) {}
+  try { R.ch.send({ type: 'broadcast', event: 'pos', payload: { id: raceId(), name: (save.name || 'Driver').slice(0, 12), car: save.car, d: Math.round(dist * 10) / 10, lf: Math.round((P.x - ROAD_X) / LANE_W * 100) / 100, gt: Math.round(t * 1000) / 1000, pts: racePts(), alive: alive } }); } catch (e) {}
 }
 function raceTick(dt) {
-  R.sendT -= dt; if (R.sendT <= 0) { R.sendT = 0.15; raceSend(true); }
+  R.sendT -= dt; if (R.sendT <= 0) { R.sendT = 0.12; raceSend(true); }
   if (t >= R.len) finish('Time! Race over');
 }
 // everyone's score, best first
@@ -3866,36 +3887,70 @@ function raceStandings() {
   (R.expect || []).forEach(function (x) { if (!R.others[x.id]) list.push({ name: x.name, pts: 0, alive: Date.now() < R.startAt + (R.len + 6) * 1000 }); });
   return list.sort(function (a, b) { return b.pts - a.pts; });
 }
+// Friends' cars. Their position arrives about 8 times a second, so between updates each ghost glides: it keeps going at
+// the speed it was last seen at, eases sideways into its lane (leaning into the turn like a real lane change) and
+// follows the road's bends, instead of jumping from one update to the next.
+// where a friend's car was ~0.15 s ago on their own clock, interpolated between the positions they sent (or carried
+// on for up to half a second at their last speed if updates are late); vlf = how fast they're moving across lanes
+function ghostAt(o, now) {
+  var b = o.buf || [];
+  if (b.length < 2 || o.off == null) return { d: o.d, lf: o.lf, vlf: 0 };
+  var rt = now / 1000 - o.off - 0.15, i;
+  if (!o.alive) rt = b[b.length - 1].t;
+  if (rt <= b[0].t) return { d: b[0].d, lf: b[0].lf, vlf: 0 };
+  for (i = 1; i < b.length; i++) if (b[i].t >= rt) break;
+  if (i >= b.length) {
+    var p1 = b[b.length - 2], p2 = b[b.length - 1], sp = Math.max(0.001, p2.t - p1.t), ex = Math.min(0.5, rt - p2.t);
+    return { d: p2.d + (p2.d - p1.d) / sp * ex, lf: p2.lf, vlf: 0 };
+  }
+  var a = b[i - 1], c = b[i], span = Math.max(0.001, c.t - a.t), f = (rt - a.t) / span;
+  return { d: a.d + (c.d - a.d) * f, lf: a.lf + (c.lf - a.lf) * f, vlf: (c.lf - a.lf) / span };
+}
 function drawGhosts() {
   if (!run || !run.race) return;
-  var g = ctx, k;
+  var g = ctx, k, now = Date.now(), fdt = Math.min(0.1, Math.max(0, (now - (R.lastDraw || now)) / 1000)); R.lastDraw = now;
   for (k in R.others) {
-    var o = R.others[k]; if (Date.now() - o.at > 4000) continue;
-    var gx = ROAD_X + o.lf * LANE_W, gy = P.y - (o.d - dist) * 40, car = carById(o.car);
+    var o = R.others[k]; if (now - o.at > 4000) continue;
+    var tg = ghostAt(o, now), vlf = tg.vlf;
+    if (o.dS == null || Math.abs(tg.d - o.dS) > 25) { o.dS = tg.d; o.lfS = tg.lf; }
+    o.dS = Math.max(o.dS, o.dS + (tg.d - o.dS) * Math.min(1, fdt * 18)); o.lfS += (tg.lf - o.lfS) * Math.min(1, fdt * 18);
+    var car = carById(o.car), gx = ROAD_X + o.lfS * LANE_W, gy = P.y - (o.dS - dist) * 40, tilt = clamp(vlf * 0.16, -0.3, 0.3);
     if (gy < -60 || gy > H + 60) {
-      // off screen: a little tag at the top (ahead of you) or bottom (behind)
-      var ty = gy < 0 ? 132 : H - 30, txt = (gy < 0 ? '▲ ' : '▼ ') + o.name + ' ' + (o.d > dist ? '+' : '') + Math.round(o.d - dist) + ' m';
-      g.font = '800 12px ' + FONT; var tw = g.measureText(txt).width + 16, tx = clamp(gx, tw / 2 + 6, W - tw / 2 - 6);
-      g.fillStyle = 'rgba(11,14,28,0.75)'; rr(g, tx - tw / 2, ty - 11, tw, 22, 9); g.fill();
+      // off screen: a small tag at the top of the road (ahead of you) or just under your car (behind)
+      var ty = gy < 0 ? (compactHud() ? 84 : 20) : P.y + P.h / 2 + 22, txt = (gy < 0 ? '▲ ' : '▼ ') + o.name + ' ' + (o.dS > dist ? '+' : '') + Math.round(o.dS - dist) + ' m';
+      g.font = '800 12px ' + FONT; var tw = g.measureText(txt).width + 16, tx = clamp(gx, ROAD_X + tw / 2, ROAD_X + ROAD_W - tw / 2);
+      g.fillStyle = 'rgba(11,14,28,0.7)'; rr(g, tx - tw / 2, ty - 11, tw, 22, 9); g.fill();
       g.fillStyle = '#9be7ff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, tx, ty);
       continue;
     }
-    g.save(); g.globalAlpha = 0.42; g.translate(gx, gy); drawCarFull(g, car, 0, 0, { clock: clock, lq: lq() }); g.restore();
+    bendPush(gx, gy);
     g.font = '800 12px ' + FONT; var nw = g.measureText(o.name).width + 14;
-    g.fillStyle = 'rgba(11,14,28,0.7)'; rr(g, gx - nw / 2, gy - car.h / 2 - 26, nw, 20, 8); g.fill();
+    g.fillStyle = 'rgba(11,14,28,0.65)'; rr(g, gx - nw / 2, gy - car.h / 2 - 26, nw, 20, 8); g.fill();
     g.fillStyle = '#9be7ff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(o.name, gx, gy - car.h / 2 - 16);
+    g.translate(gx, gy); g.rotate(tilt); g.globalAlpha = 0.45;
+    drawCarFull(g, car, 0, 0, { clock: clock, lq: lq(), sig: Math.abs(vlf) > 0.6 ? (vlf > 0 ? 1 : -1) : 0 });
+    g.restore();
   }
 }
-function drawRaceHud() {
-  var g = ctx, y = compactHud() ? 92 : 128, list = raceStandings().slice(0, 4), w = Math.min(230, W - 30), x = W / 2 - w / 2, h = 30 + list.length * 18;
-  var left = Math.max(0, Math.ceil(R.len - t)), tt = Math.floor(left / 60) + ':' + (left % 60 < 10 ? '0' : '') + (left % 60);
-  g.fillStyle = 'rgba(11,14,28,0.8)'; rr(g, x, y, w, h, 12); g.fill(); g.strokeStyle = '#37e4f0'; g.lineWidth = 2; g.stroke();
-  g.textBaseline = 'middle'; g.font = '800 14px ' + FONT; g.textAlign = 'left'; g.fillStyle = '#37e4f0'; g.fillText('RACE · ' + R.code, x + 10, y + 15);
-  g.textAlign = 'right'; g.fillStyle = left <= 10 ? '#ff5d5d' : '#fff'; g.fillText('⏱ ' + tt, x + w - 10, y + 15);
-  list.forEach(function (p, i) {
-    var ly = y + 34 + i * 18; g.font = '700 13px ' + FONT; g.textAlign = 'left'; g.fillStyle = p.me ? '#ffd23f' : (p.alive ? '#fff' : 'rgba(255,255,255,0.5)');
-    g.fillText((i + 1) + '. ' + p.name, x + 10, ly); g.textAlign = 'right'; g.fillText(String(p.pts), x + w - 10, ly);
-  });
+// the race board: a full list in the side verge on wide screens, one slim line at the bottom on phones
+function drawRaceHud(slots) {
+  var g = ctx, list = raceStandings(), left = Math.max(0, Math.ceil(R.len - t)), tt = Math.floor(left / 60) + ':' + (left % 60 < 10 ? '0' : '') + (left % 60), b;
+  if (slots.wide) {
+    var rows = list.slice(0, 4), h = 30 + rows.length * 18;
+    b = slots.next(h); infoBox(b, h, '#37e4f0');
+    g.textBaseline = 'middle'; g.font = '800 14px ' + FONT; g.textAlign = 'left'; g.fillStyle = '#37e4f0'; g.fillText('RACE · ' + R.code, b.x + 10, b.y + 15);
+    g.textAlign = 'right'; g.fillStyle = left <= 10 ? '#ff5d5d' : '#fff'; g.fillText('⏱ ' + tt, b.x + b.w - 10, b.y + 15);
+    rows.forEach(function (p, i) {
+      var ly = b.y + 34 + i * 18; g.font = '700 13px ' + FONT; g.textAlign = 'left'; g.fillStyle = p.me ? '#ffd23f' : (p.alive ? '#fff' : 'rgba(255,255,255,0.5)');
+      var nm = (i + 1) + '. ' + p.name; fitText(g, nm, b.w - 70, 13); g.fillText(nm, b.x + 10, ly); g.textAlign = 'right'; g.font = '700 13px ' + FONT; g.fillText(String(p.pts), b.x + b.w - 10, ly);
+    });
+    return;
+  }
+  var pos = 1; for (var i = 0; i < list.length; i++) if (list[i].me) { pos = i + 1; break; }
+  var ord = pos === 1 ? '1st' : pos === 2 ? '2nd' : pos === 3 ? '3rd' : pos + 'th', me = list[pos - 1];
+  var line = '⏱ ' + tt + '   ' + ord + ' of ' + list.length + '   ' + me.pts + ' pts' + (pos > 1 ? '   (leader ' + list[0].pts + ')' : '');
+  b = slots.next(28); infoBox(b, 28, pos === 1 ? '#ffd23f' : '#37e4f0');
+  g.fillStyle = left <= 10 ? '#ff9a9a' : '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; fitText(g, line, b.w - 16, 14); g.fillText(line, b.x + b.w / 2, b.y + 14);
 }
 function rRace() {
   if (cur !== 'race') return;
@@ -4083,29 +4138,37 @@ function eventNearMiss() {
   EV.n++;
   if (EV.n >= 5) { EV.done = true; dbl = 10; EV.t = Math.min(EV.t, 1.2); pop(P.x, P.y - 90, 'CHALLENGE DONE! x2 CASH', '#ffd23f', true); Aud.sfx('buy'); vibe(60); }
 }
+// Where the run's info boxes go (race board, daily goal, event banners), so they never cover the road ahead:
+//  - wide screens: stacked in the empty verge on the left, under the cash panel (and the jobs list)
+//  - phones and narrow windows: slim lines at the very bottom, behind your car, so the top of the road stays clear
+function infoSlots() {
+  var aj = activeJobs(), jobsH = aj.length && state !== 'count' && !chase ? 10 + aj.length * 26 + 6 : 0;
+  if (!compactHud() && ROAD_X >= 200) return { wide: true, y: 12 + 104 + jobsH, w: Math.min(178, ROAD_X - 28), next: function (h) { var r = { x: 14, y: this.y, w: this.w }; this.y += h + 6; return r; } };
+  return { wide: false, y: H - 12 - (SET().ctrl === 'buttons' ? 100 : 0), w: Math.min(340, W - 24), next: function (h) { this.y -= h; var r = { x: W / 2 - this.w / 2, y: this.y, w: this.w }; this.y -= 6; return r; } };
+}
+function infoBox(b, h, col) { var g = ctx; g.fillStyle = 'rgba(11,14,28,0.8)'; rr(g, b.x, b.y, b.w, h, 10); g.fill(); g.strokeStyle = col; g.lineWidth = 2; g.stroke(); }
 function drawEvents() {
-  var g = ctx, y = compactHud() ? 92 : 128, w = Math.min(250, W - 40), x = W / 2 - w / 2, txt = null, col = '#ffd23f', fr = 0;
-  if (run && run.race && state === 'play') { drawRaceHud(); return; }
-  // the daily challenge goal sits under the HUD, and any event banner goes below it
+  var g = ctx, slots = infoSlots(), txt = null, col = '#ffd23f', fr = 0, b;
+  if (run && run.race && state === 'play') { drawRaceHud(slots); return; }
+  // the daily challenge goal
   if (run && run.daily && state === 'play') {
-    var D = run.daily, v = jobVal(D.goal), dn = run.dailyWon, dw = Math.min(300, W - 30), dl = 'DAILY: ' + (dn ? 'DONE ✓' : JOB_SHORT[D.goal.k] + ' ' + jobFmt(D.goal, v));
-    g.fillStyle = 'rgba(11,14,28,0.82)'; rr(g, W / 2 - dw / 2, y, dw, 28, 10); g.fill(); g.strokeStyle = dn ? '#4ce38f' : '#ff4f9a'; g.lineWidth = 2; g.stroke();
-    g.fillStyle = dn ? '#4ce38f' : '#fff'; g.font = '800 14px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(dl, W / 2, y + 14);
-    y += 36;
+    var D = run.daily, v = jobVal(D.goal), dn = run.dailyWon, dl = (slots.wide ? 'DAILY ' : 'DAILY: ') + (dn ? 'DONE ✓' : JOB_SHORT[D.goal.k] + ' ' + jobFmt(D.goal, v));
+    b = slots.next(26); infoBox(b, 26, dn ? '#4ce38f' : '#ff4f9a');
+    g.fillStyle = dn ? '#4ce38f' : '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; fitText(g, dl, b.w - 16, 13); g.fillText(dl, b.x + b.w / 2, b.y + 13);
   }
   if (EV) {
     fr = clamp(EV.t / EV.max, 0, 1);
     if (EV.k === 'rush') { txt = 'CRATE RUSH!'; col = '#3ddc97'; }
     else if (EV.k === 'works') { txt = EV.t > EV.max - EV.warn ? 'ROADWORKS AHEAD!' : 'ROADWORKS: lane closed'; col = '#ff9a3d'; }
-    else if (EV.k === 'boss') { txt = EV.done ? 'BOSS DOWN!' : boss && boss.ph !== 'hold' ? 'IT’S BRAKING: GET IN ITS LANE!' : 'BOSS: RAM THE TRUCK ' + (boss ? boss.max - boss.hp : 0) + '/3'; col = EV.done ? '#3ddc97' : '#ff5d5d'; }
+    else if (EV.k === 'boss') { txt = EV.done ? 'BOSS DOWN!' : boss && boss.ph !== 'hold' ? 'BRAKING: GET IN ITS LANE!' : 'BOSS: RAM THE TRUCK ' + (boss ? boss.max - boss.hp : 0) + '/3'; col = EV.done ? '#3ddc97' : '#ff5d5d'; }
     else { txt = EV.done ? 'DOUBLE CASH!' : 'NEAR MISSES ' + EV.n + '/5'; col = EV.done ? '#ffd23f' : '#9be7ff'; }
   }
   if (txt) {
-    g.fillStyle = 'rgba(11,14,28,0.82)'; rr(g, x, y, w, 34, 12); g.fill(); g.strokeStyle = col; g.lineWidth = 2; g.stroke();
-    g.fillStyle = col; g.font = '800 16px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, W / 2, y + 14);
-    g.fillStyle = 'rgba(255,255,255,0.15)'; rr(g, x + 12, y + 25, w - 24, 4, 2); g.fill(); g.fillStyle = col; rr(g, x + 12, y + 25, Math.max(4, (w - 24) * fr), 4, 2); g.fill();
-    // the closed lane gets a striped barrier at the top of the screen while the warning shows
-    if (EV.k === 'works' && EV.t > EV.max - EV.warn) { var lx = laneX(EV.lane); for (var s = 0; s < 4; s++) { g.fillStyle = s % 2 ? '#fff' : '#ff7a1a'; g.fillRect(lx - LANE_W * .4 + s * LANE_W * .2, y + 44, LANE_W * .2, 8); } }
+    b = slots.next(32); infoBox(b, 32, col);
+    g.fillStyle = col; g.textAlign = 'center'; g.textBaseline = 'middle'; fitText(g, txt, b.w - 16, 15); g.fillText(txt, b.x + b.w / 2, b.y + 13);
+    g.fillStyle = 'rgba(255,255,255,0.15)'; rr(g, b.x + 10, b.y + 24, b.w - 20, 4, 2); g.fill(); g.fillStyle = col; rr(g, b.x + 10, b.y + 24, Math.max(4, (b.w - 20) * fr), 4, 2); g.fill();
+    // the closed lane gets a striped barrier at the top of the road while the warning shows
+    if (EV.k === 'works' && EV.t > EV.max - EV.warn) { var lx = laneX(EV.lane), sy = compactHud() ? 76 : 14; for (var s = 0; s < 4; s++) { g.fillStyle = s % 2 ? '#fff' : '#ff7a1a'; g.fillRect(lx - LANE_W * .4 + s * LANE_W * .2, sy, LANE_W * .2, 8); } }
   }
   // first-run coaching tips
   if (save.stats.runs === 0 && !chase && state === 'play') {
@@ -6399,8 +6462,9 @@ function doRedeem() {
 /* ---------- top runs (online leaderboard) ---------- */
 var boardTok = 0, boardTab = 'runs';
 function rBoard() {
-  var tok = ++boardTok, cops = boardTab === 'cops', week = boardTab === 'week', fr = boardTab === 'friends', P2 = save.police, h = head(cops ? 'Top cops' : week ? 'This week' : fr ? 'Friends' : 'Top runs') + '<div class="card wide flat">';
-  h += '<div class="chips"><button class="chip' + (week ? ' on' : '') + '" data-act="btab" data-v="week">This week</button><button class="chip' + (!cops && !week && !fr ? ' on' : '') + '" data-act="btab" data-v="runs">All time</button><button class="chip' + (fr ? ' on' : '') + '" data-act="btab" data-v="friends">Friends</button><button class="chip' + (cops ? ' on' : '') + '" data-act="btab" data-v="cops">Top cops</button></div>';
+  if (boardTab === 'friends') boardTab = 'runs';
+  var tok = ++boardTok, cops = boardTab === 'cops', week = boardTab === 'week', fr = false, P2 = save.police, h = head(cops ? 'Top cops' : week ? 'This week' : fr ? 'Friends' : 'Top runs') + '<div class="card wide flat">';
+  h += '<div class="chips"><button class="chip' + (week ? ' on' : '') + '" data-act="btab" data-v="week">This week</button><button class="chip' + (!cops && !week && !fr ? ' on' : '') + '" data-act="btab" data-v="runs">All time</button><button class="chip' + (cops ? ' on' : '') + '" data-act="btab" data-v="cops">Top cops</button></div>';
   if (cops) {
     h += '<div class="lbMe"><span>Criminals busted by <b style="color:#fff">' + esc(save.name) + '</b></span><b>' + P2.busts + '</b></div>' +
       (P2.bq ? '<p class="fine">Your total of ' + P2.bq + ' hasn’t been sent yet. It will go up as soon as you’re online.</p>' : '');
@@ -6409,10 +6473,9 @@ function rBoard() {
       (week ? '<p class="fine">Everyone starts again every Monday. Resets in ' + weekLeft() + '.</p>' : '') +
       (save.lbQueue ? '<p class="fine">Your best run ' + fmt(save.lbQueue.score) + ' hasn’t been sent yet. It will go up as soon as you’re online.</p>' : '');
   }
-  if (fr) h += friendsEditHtml();
   OV.board.innerHTML = h + '<p id="bSrc" class="fine">Loading the leaderboard…</p><ol id="bList" class="board"></ol>' +
     '<button class="btn ghost ibtn wide" data-act="refresh">' + ICON.restart + 'Refresh</button></div>';
-  var load = cops ? (P2.bq ? bustFlush() : Promise.resolve()).then(copsTop) : (save.lbQueue ? lbFlush() : Promise.resolve()).then(fr ? lbFriends : week ? lbWeek : lbTop);
+  var load = cops ? (P2.bq ? bustFlush() : Promise.resolve()).then(copsTop) : (save.lbQueue ? lbFlush() : Promise.resolve()).then(week ? lbWeek : lbTop);
   load.then(function (rows) {
     if (tok !== boardTok || cur !== 'board') return;
     var src = document.getElementById('bSrc'), list = document.getElementById('bList'), me = String(save.name || '').toLowerCase();
@@ -6424,7 +6487,7 @@ function rBoard() {
       li.className = (String(row.name).toLowerCase() === me ? 'me' : '') + (i < 3 ? ' top' : '');
       li.innerHTML = '<span class="rk"></span><span class="nm"></span><span class="sc"></span><span class="mt"></span>';
       li.children[0].textContent = i < 3 ? ['🥇', '🥈', '🥉'][i] : '#' + (i + 1);
-      li.children[1].textContent = row.name + (row.badge ? '  ' + row.badge : '');
+      li.children[1].textContent = row.name;
       if (cops) { li.children[2].textContent = row.busts + ' busted'; }
       else { li.children[2].textContent = fmt(row.score); li.children[3].textContent = [row.car, row.map].filter(Boolean).join(' · '); }
       list.appendChild(li);
@@ -6648,14 +6711,6 @@ function act(a, el) {
       if (!save.police.cars[c.id] && spend(pcPrice(c))) { save.police.cars[c.id] = 1; save.police.car = c.id; persist(); Aud.sfx('buy'); toast(c.name + ' is yours!'); } else Aud.sfx('deny');
       rPolice(); return;
     case 'btab': boardTab = d('v'); Aud.sfx('click'); rBoard(); return;
-    case 'fradd':
-      var fi = document.getElementById('frIn'), fm = document.getElementById('frMsg'), fn = fi ? fi.value.trim() : '';
-      save.friends = save.friends || [];
-      if (!/^[A-Za-z0-9 ]{1,12}$/.test(fn)) { if (fm) fm.textContent = 'Type their driver name (letters and numbers).'; Aud.sfx('deny'); return; }
-      if (save.friends.concat([save.name || '']).some(function (x) { return x.toLowerCase() === fn.toLowerCase(); })) { if (fm) fm.textContent = 'Already on your list.'; return; }
-      if (save.friends.length >= 30) { if (fm) fm.textContent = 'You can follow up to 30 friends.'; return; }
-      save.friends.push(fn); persist(); Aud.sfx('buy'); rBoard(); return;
-    case 'frdel': save.friends = (save.friends || []).filter(function (x) { return x !== d('v'); }); persist(); Aud.sfx('click'); rBoard(); return;
     case 'chase': if (!wantedOpen(+d('v'))) return; Aud.sfx('click'); mode = 'police'; chaseLvl = +d('v'); hideAll(); startRun(); return;
     case 'settings': setBack = d('back') || 'menu'; Aud.sfx('click'); cur = 'settings'; for (var k in OV) OV[k].hidden = k !== 'settings'; rSettings(); return;
     case 'resume': hideAll(); resumeGame(); return;
@@ -6856,7 +6911,7 @@ if (window.__CR_TEST || /[?&]crtest\b/.test(location.search)) window.__CR = {
   clear: function () { traffic.length = 0; items.length = 0; },
   freeze: function () { state = 'paused'; },
   god: function () { lives = 99; maxLives = 3; fuel = 100; },
-  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; if (k === 'boss' && !boss) bossStart(); if (k !== 'boss') boss = null; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, boss: function () { return boss && { hp: boss.hp, ph: boss.ph, lane: boss.lane, y: Math.round(boss.y), x: Math.round(boss.x) }; }, frameAt: function (ts) { var raf = window.requestAnimationFrame; window.requestAnimationFrame = function () { return 0; }; try { frame(ts); } finally { window.requestAnimationFrame = raf; } }, cloud: { fromHash: authFromHash, sync: cloudSync, merge: mergeSaves, put: cloudPut, info: function () { var l = null; try { l = localStorage.getItem(LINK_KEY); } catch (e) {} return { auth: auth, state: cloud.state, missing: cloud.missing, linked: l, timer: !!cloud.timer }; } }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
+  sim: function (n, ghost) { for (var i = 0; i < n && state !== 'over'; i++) { if (state === 'count') countT = 0; if (ghost) { inv = 5; fuel = 100; } if (Math.random() < 0.03) move(Math.random() < .5 ? -1 : 1); update(1 / 60); } return { state: state, t: t, cash: cash, booms: run.booms, near: run.near, crates: run.crates, traffic: traffic.length, items: items.length, parts: parts.length }; }, ev: function (k) { if (k) { startEvent(); EV.k = k; EV.max = EV.t = { rush: 8, works: 11, combo: 12 }[k]; EV.warn = k === 'works' ? 1.6 : 0; if (k === 'boss' && !boss) bossStart(); if (k !== 'boss') boss = null; } return EV && { k: EV.k, t: EV.t, n: EV.n, done: !!EV.done, lane: EV.lane }; }, nearMiss: function () { eventNearMiss(); }, race: function () { return R; }, ghostDraw: function () { drawGhosts(); }, boss: function () { return boss && { hp: boss.hp, ph: boss.ph, lane: boss.lane, y: Math.round(boss.y), x: Math.round(boss.x) }; }, frameAt: function (ts) { var raf = window.requestAnimationFrame; window.requestAnimationFrame = function () { return 0; }; try { frame(ts); } finally { window.requestAnimationFrame = raf; } }, cloud: { fromHash: authFromHash, sync: cloudSync, merge: mergeSaves, put: cloudPut, info: function () { var l = null; try { l = localStorage.getItem(LINK_KEY); } catch (e) {} return { auth: auth, state: cloud.state, missing: cloud.missing, linked: l, timer: !!cloud.timer }; } }, shareImg: function () { return lastRes ? shareImage(lastRes).toDataURL('image/jpeg', 0.8) : null; }, dblNow: function () { return dbl; }, boom: function () { explode(W / 2, H * 0.35, 1.2, true); traffic.push(mkCar(1, 200, 0.5)); traffic[traffic.length - 1].wreck = true; }
 };
 
 })();
