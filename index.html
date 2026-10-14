@@ -3427,7 +3427,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.16', updBusy = false;
+var APP_VERSION = '2026-10-14.17', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3588,7 +3588,9 @@ function hasProgress(s) { return !!s && ((s.stats && s.stats.runs > 0) || (s.wal
 var BASE_KEY = 'cr-base';
 function loadBase() { try { var x = JSON.parse(localStorage.getItem(BASE_KEY) || 'null'); return x && auth && x.uid === auth.id ? x.save : null; } catch (e) { return null; } }
 // the save we're sending right now (if the answer gets lost, the next sync can still see it arrived)
-var PEND_KEY = 'cr-pend';
+var PEND_KEY = 'cr-pend', REPAIR_KEY = 'cr-repaired';
+// a save with impossible numbers (left behind by the October 2026 sync bug)
+function saneSave(s) { return !!s && !!s.stats && (s.stats.runs || 0) < 1e6 && (s.stats.km || 0) < 1e7 && (s.wallet || 0) < 1e15 && (s.stats.earned || 0) < 1e18; }
 function loadPend() { try { var x = JSON.parse(localStorage.getItem(PEND_KEY) || 'null'); return x && auth && x.uid === auth.id ? x.save : null; } catch (e) { return null; } }
 function storePend(s) { try { if (s) localStorage.setItem(PEND_KEY, JSON.stringify({ uid: auth.id, save: s })); else localStorage.removeItem(PEND_KEY); } catch (e) {} }
 function storeBase(s) { try { localStorage.setItem(BASE_KEY, JSON.stringify({ uid: auth.id, save: s })); } catch (e) {} }
@@ -3639,9 +3641,12 @@ function cloudSync() {
       if (msg) toast(msg, 3400);
     };
     var push = function (msg) { var sent = clone(save); storePend(sent); return cloudPut(sent).then(function () { storePend(null); finish(msg, sent); }); };
-    // a repaired copy of this account's save is waiting: load it, once
-    if (rep && rep.id && rep.data && save.repairId !== rep.id) {
-      var rd = clone(rep.data); rd.repairId = rep.id; adoptCloud(rd); persist();
+    // a repaired copy of this account's save is waiting. Each device takes it once (remembered on the device, since an
+    // old game version can copy the repair marker into a broken save), and again whenever a save is clearly broken.
+    // If another device already repaired and kept playing, its healthy save is taken instead, so that play isn't lost.
+    if (rep && rep.id && rep.data && (localStorage.getItem(REPAIR_KEY) !== rep.id || !saneSave(save) || (cd && !saneSave(cd)))) {
+      var src = cd && saneSave(cd) && cd.repairId === rep.id ? cd : rep.data, rd = clone(src); rd.repairId = rep.id;
+      adoptCloud(rd); persist(); try { localStorage.setItem(REPAIR_KEY, rep.id); } catch (e) {}
       return push('Your save was repaired. Sorry about the glitch!');
     }
     if (!cd) return push();
