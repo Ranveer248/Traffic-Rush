@@ -2796,9 +2796,12 @@ function drawScene(g, sc) {
           if (kind === 'house' && sc.snow) kind = 'chalet';
         }
         var inner = s < 0 ? ROAD_X - 22 - ci * COLW : W - ROAD_X + 22 + ci * COLW;
-        var P0 = { x0: s < 0 ? inner - COLW : inner, x1: s < 0 ? inner : inner + COLW, y: yy, h: STEP, s: s, n: id, zone: zone, back: ci > 0,
+        // (plots just behind the start of the road have negative numbers; plot art picks colours with n % k, so keep n positive)
+        var P0 = { x0: s < 0 ? inner - COLW : inner, x1: s < 0 ? inner : inner + COLW, y: yy, h: STEP, s: s, n: id < 0 ? 1000000 - id : id, zone: zone, back: ci > 0,
           roof: sc.roof[Math.floor(hsh(id, 13) * sc.roof.length)] };
-        var spr = plotSprite(kind, sc, P0); if (spr) g.drawImage(spr, spr.ox, P0.y - spr.pad, spr.lw, spr.lh);
+        // (scenery is decoration: if one plot ever fails to draw, skip it rather than lose the frame)
+        var spr = null; try { spr = plotSprite(kind, sc, P0); } catch (e) { reportErr(e, 'scenery ' + kind); }
+        if (spr) g.drawImage(spr, spr.ox, P0.y - spr.pad, spr.lw, spr.lh);
       }); })(ci);
     }
   });
@@ -3391,7 +3394,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.10', updBusy = false;
+var APP_VERSION = '2026-10-14.11', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -5350,7 +5353,7 @@ function frame(ts) {
 // the last problem the game hit, kept in Settings so it can be screenshotted later
 function lastErrHtml() {
   var e = null; try { e = JSON.parse(localStorage.getItem('cr-lasterr') || 'null'); } catch (x) {}
-  if (!e) return '';
+  if (!e || e.v !== APP_VERSION) return '';   // (problems from an older version were fixed by updating)
   return '<h4>Problem report</h4><p class="fine">The game recovered from this problem on ' + esc(new Date(e.at).toLocaleString()) + '. Send a screenshot of this to the developer.</p>' +
     '<code class="errcode">' + esc(e.v + ' · ' + e.where + ': ' + e.msg + (e.st ? ' · ' + e.st : '')) + '</code>';
 }
