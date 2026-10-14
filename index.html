@@ -3388,7 +3388,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.7', updBusy = false;
+var APP_VERSION = '2026-10-14.8', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3644,7 +3644,15 @@ function mergeSaves(local, other, base, maxOnly) {
   m.sid = p.sid || o.sid; m.sids = Object.keys(ids);
   return normalize(m);
 }
-function updSyncTag() { var t = document.getElementById('syncTag'); if (t) t.outerHTML = syncTagHtml(); }
+function updSyncTag() { var t = document.getElementById('syncTag'); if (t) t.outerHTML = syncTagHtml(); var l = document.getElementById('cloudLine'); if (l) l.textContent = cloudLine(); }
+// there's no sync button: it all happens by itself, so this just says how it's going
+function cloudLine() {
+  var s = cloud.state;
+  if (s === 'error') return cloud.missing ? 'Online saving isn’t switched on yet.' : 'Offline right now. Your progress is safe on this device and goes online by itself when you’re back.';
+  if (s === 'sync') return 'Saving…';
+  if (s === 'ok') return 'On. Saves by itself every minute (last at ' + new Date(cloud.at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '). Your progress follows you to any device.';
+  return 'On. Saves by itself every minute.';
+}
 function syncTagHtml() {
   if (!auth) return AUTH_OK ? '<button id="syncTag" class="sync link" data-act="signin">☁ Sign in to save online</button>' : '<span id="syncTag" class="sync">' + syncLabel() + '</span>';
   var s = cloud.state, txt = s === 'sync' ? 'Syncing…' : s === 'error' ? (cloud.missing ? 'Online save not switched on' : 'Offline · saved here') : 'Saved online';
@@ -3655,8 +3663,7 @@ function accountHtml() {
     '<button class="btn gbtn" data-act="signin">' + ICON.google + 'Sign in with Google</button>' +
     (AUTH_OK ? '' : '<p class="fine">Sign-in works on the game’s website: ranveer248.github.io/cargo-run</p>');
   return '<h4>Account</h4><div class="it"><div class="itx"><b>' + esc(auth.gname || 'Google account') + '</b><span>' + esc(auth.email) + '</span></div></div>' +
-    '<div class="it"><div class="itx"><b>Cloud save</b><span>' + (cloud.state === 'error' ? (cloud.missing ? 'Online saving isn’t switched on yet' : 'Can’t reach the server right now. Your progress is safe on this device.') : cloud.state === 'sync' ? 'Syncing…' : cloud.state === 'ok' ? 'On. Last synced ' + new Date(cloud.at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '. Your progress follows you to any device.' : 'Not synced yet. Tap Sync now.') + '</span></div>' +
-    '<button class="btn ghost sm" data-act="syncnow">Sync now</button></div>' +
+    '<div class="it"><div class="itx"><b>Cloud save</b><span id="cloudLine">' + cloudLine() + '</span></div></div>' +
     '<button class="btn ghost wide" data-act="signout">Sign out</button>';
 }
 
@@ -6228,14 +6235,6 @@ function act(a, el) {
     case 'gclass': gClass = d('v'); rChips(); rCars(); return;
     case 'signin': Aud.sfx('click'); signIn(); return;
     case 'signout': Aud.sfx('click'); signOut(); rSettings(); return;
-    case 'syncnow':
-      Aud.sfx('click');
-      var go = function () { cloudSync().then(function () {
-        if (cur === 'settings') rSettings();
-        toast(cloud.state === 'ok' ? 'Synced! Your progress is saved online.' : cloud.missing ? 'Online saving isn’t switched on yet: the saves table is missing in Supabase.' : 'Couldn’t sync. Check your internet and try again.', 3400);
-      }); };
-      if (cloud.busy) setTimeout(go, 1500); else go();
-      rSettings(); return;
     case 'dplay': Aud.sfx('click'); mode = 'daily'; hideAll(); startRun(); return;
     case 'share': Aud.sfx('click'); shareRun(); return;
     case 'pupg':
