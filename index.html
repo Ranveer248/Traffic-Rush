@@ -3386,7 +3386,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.4', updBusy = false;
+var APP_VERSION = '2026-10-14.5', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3532,7 +3532,7 @@ function cloudSync() {
   cloud.busy = true; cloud.state = 'sync'; updSyncTag();
   var linked = null; try { linked = localStorage.getItem(LINK_KEY); } catch (e) {}
   return cloudGet().then(function (cd) {
-    var done = function () { try { localStorage.setItem(LINK_KEY, auth.id); } catch (e) {} cloud.state = 'ok'; updSyncTag(); };
+    var done = function () { try { localStorage.setItem(LINK_KEY, auth.id); } catch (e) {} cloud.state = 'ok'; cloud.missing = false; cloud.at = Date.now(); updSyncTag(); };
     if (!cd) return cloudPut().then(done);
     if (linked === auth.id) {
       // this device has synced with this account before: the newer save wins
@@ -3552,7 +3552,7 @@ function cloudQueue() {
   if (!auth || cloud.state === 'off' || cloud.timer) return;
   var linked = null; try { linked = localStorage.getItem(LINK_KEY); } catch (e) {}
   if (linked !== auth.id) return;
-  cloud.timer = setTimeout(function () { cloud.timer = null; cloudPut().then(function () { cloud.state = 'ok'; updSyncTag(); }, cloudErr); }, 6000);
+  cloud.timer = setTimeout(function () { cloud.timer = null; cloudPut().then(function () { cloud.state = 'ok'; cloud.at = Date.now(); updSyncTag(); }, cloudErr); }, 6000);
 }
 function cloudFlushNow() { if (cloud.timer) { clearTimeout(cloud.timer); cloud.timer = null; cloudPut().catch(function () {}); } }
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') cloudFlushNow(); });
@@ -3595,7 +3595,7 @@ function accountHtml() {
     '<button class="btn gbtn" data-act="signin">' + ICON.google + 'Sign in with Google</button>' +
     (AUTH_OK ? '' : '<p class="fine">Sign-in works on the game’s website: ranveer248.github.io/cargo-run</p>');
   return '<h4>Account</h4><div class="it"><div class="itx"><b>' + esc(auth.gname || 'Google account') + '</b><span>' + esc(auth.email) + '</span></div></div>' +
-    '<div class="it"><div class="itx"><b>Cloud save</b><span>' + (cloud.state === 'error' ? (cloud.missing ? 'Online saving isn’t switched on yet' : 'Can’t reach the server right now. Your progress is safe on this device.') : cloud.state === 'sync' ? 'Syncing…' : 'On. Your progress follows you to any device.') + '</span></div>' +
+    '<div class="it"><div class="itx"><b>Cloud save</b><span>' + (cloud.state === 'error' ? (cloud.missing ? 'Online saving isn’t switched on yet' : 'Can’t reach the server right now. Your progress is safe on this device.') : cloud.state === 'sync' ? 'Syncing…' : cloud.state === 'ok' ? 'On. Last synced ' + new Date(cloud.at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '. Your progress follows you to any device.' : 'Not synced yet. Tap Sync now.') + '</span></div>' +
     '<button class="btn ghost sm" data-act="syncnow">Sync now</button></div>' +
     '<button class="btn ghost wide" data-act="signout">Sign out</button>';
 }
@@ -6168,7 +6168,14 @@ function act(a, el) {
     case 'gclass': gClass = d('v'); rChips(); rCars(); return;
     case 'signin': Aud.sfx('click'); signIn(); return;
     case 'signout': Aud.sfx('click'); signOut(); rSettings(); return;
-    case 'syncnow': Aud.sfx('click'); cloudSync().then(function () { if (cur === 'settings') rSettings(); }); rSettings(); return;
+    case 'syncnow':
+      Aud.sfx('click');
+      var go = function () { cloudSync().then(function () {
+        if (cur === 'settings') rSettings();
+        toast(cloud.state === 'ok' ? 'Synced! Your progress is saved online.' : cloud.missing ? 'Online saving isn’t switched on yet: the saves table is missing in Supabase.' : 'Couldn’t sync. Check your internet and try again.', 3400);
+      }); };
+      if (cloud.busy) setTimeout(go, 1500); else go();
+      rSettings(); return;
     case 'dplay': Aud.sfx('click'); mode = 'daily'; hideAll(); startRun(); return;
     case 'share': Aud.sfx('click'); shareRun(); return;
     case 'pupg':
