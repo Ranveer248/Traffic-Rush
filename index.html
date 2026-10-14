@@ -1405,9 +1405,11 @@ function designBody(id) {
   if (B.bed) B.bed = B.bed.map(r3); if (B.cockpit) B.cockpit = B.cockpit.map(r3);
   return (BODY_CACHE[id] = B);
 }
-var PLAN2D = { hyper: { pn: .32, pt: .16, hip: .07 }, mid: { pn: .26, pt: .14, hip: .06 }, fast: { pn: .16, pt: .12, hip: .045 }, coupe: { pn: .12, pt: .1, hip: .035 },
-  muscle: { pn: .06, pt: .06, hip: .04 }, roadster: { pn: .16, pt: .1, hip: .04 }, sedan: { pn: .08, pt: .07, hip: .02 }, hatch: { pn: .1, pt: .05, hip: .02 },
-  wagon: { pn: .08, pt: .04, hip: .02 }, classic: { pn: .12, pt: .1, hip: 0 }, suv: { pn: .05, pt: .03, hip: .02 }, kei: { pn: .04, pt: .02, hip: 0 }, mpv: { pn: .06, pt: .02, hip: 0 } };
+// (October 2026: the types are pushed further apart so they're told apart at a glance: supercars pinch harder at the
+// nose and flare more at the rear haunches, muscle cars and classics get bigger rear fenders)
+var PLAN2D = { hyper: { pn: .36, pt: .18, hip: .1 }, mid: { pn: .3, pt: .15, hip: .085 }, fast: { pn: .18, pt: .12, hip: .055 }, coupe: { pn: .13, pt: .1, hip: .04 },
+  muscle: { pn: .07, pt: .05, hip: .065 }, roadster: { pn: .18, pt: .11, hip: .05 }, sedan: { pn: .08, pt: .07, hip: .02 }, hatch: { pn: .1, pt: .05, hip: .02 },
+  wagon: { pn: .08, pt: .04, hip: .02 }, classic: { pn: .14, pt: .11, hip: .04 }, suv: { pn: .05, pt: .03, hip: .02 }, kei: { pn: .04, pt: .02, hip: 0 }, mpv: { pn: .06, pt: .02, hip: 0 } };
 // the top-down 2D car: windscreen, roof and lights where the design puts them
 function topDesign(id) {
   var d = DZ[id]; if (!d || d.pre) return null;
@@ -1955,6 +1957,17 @@ function drawCarBody(g, s, b, x, y, o, col, fin) {
   if (fin === 'carbon') wrapDraw(g, 'carbon', x, y0, hw, L);
   // a glossy highlight down the middle of the bonnet, two bonnet creases, and the door seams beside the cabin
   if (fin !== 'matte' && fin !== 'carbon') { var hg = g.createLinearGradient(x - hw * .5, 0, x + hw * .5, 0); hg.addColorStop(0, 'rgba(255,255,255,0)'); hg.addColorStop(.5, 'rgba(255,255,255,0.16)'); hg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = hg; g.fillRect(x - hw * .5, y0 + 1, hw, Math.max(4, cb0 - y0 - 2)); }
+  // depth: the body curves away at its sides, nose and tail (darker there) and catches the light along the middle, so it
+  // reads as rounded metal rather than a flat shape. (matte paint gets less sheen)
+  if (!o.lq) {
+    var sheen = fin === 'matte' || fin === 'carbon' ? 0.03 : 0.09;
+    var vgr = g.createLinearGradient(x - hw, 0, x + hw, 0);
+    vgr.addColorStop(0, 'rgba(0,0,0,0.24)'); vgr.addColorStop(.2, 'rgba(0,0,0,0)'); vgr.addColorStop(.42, 'rgba(255,255,255,' + sheen + ')'); vgr.addColorStop(.6, 'rgba(255,255,255,0)'); vgr.addColorStop(.82, 'rgba(0,0,0,0)'); vgr.addColorStop(1, 'rgba(0,0,0,0.3)');
+    g.fillStyle = vgr; g.fillRect(x - hw, y0, w, L);
+    var lgr = g.createLinearGradient(0, y0, 0, y1);
+    lgr.addColorStop(0, 'rgba(0,0,0,0.2)'); lgr.addColorStop(.09, 'rgba(0,0,0,0)'); lgr.addColorStop(.91, 'rgba(0,0,0,0)'); lgr.addColorStop(1, 'rgba(0,0,0,0.24)');
+    g.fillStyle = lgr; g.fillRect(x - hw, y0, w, L);
+  }
   g.strokeStyle = 'rgba(0,0,0,0.13)'; g.lineWidth = .7; g.beginPath(); g.moveTo(x - hw * .46, y0 + L * .05); g.lineTo(x - hw * .4, cb0 - 1.5); g.moveTo(x + hw * .46, y0 + L * .05); g.lineTo(x + hw * .4, cb0 - 1.5);
   if (!b.open && !b.oneBox) { var ds = cb0 + cl * .5; g.moveTo(x - hw, ds); g.lineTo(x - cw * .95, ds); g.moveTo(x + hw, ds); g.lineTo(x + cw * .95, ds); }
   g.stroke();
@@ -1976,6 +1989,7 @@ function drawCarBody(g, s, b, x, y, o, col, fin) {
   if (b.fender) { g.fillStyle = shade(base, -.1); [.22, .77].forEach(function (f) { var fy = y0 + L * f; rr(g, x - hw - 1.5, fy - L * .08, 3.5, L * .16, 1.5); g.fill(); rr(g, x + hw - 2, fy - L * .08, 3.5, L * .16, 1.5); g.fill(); }); }
   // cabin
   var win = o.tint ? '#0a1224' : '#1b2233', shine = 'rgba(160,200,240,0.35)';
+  if (!o.lq) { var wgr = g.createLinearGradient(0, cb0, 0, cb1); wgr.addColorStop(0, o.tint ? '#1a2438' : '#34445e'); wgr.addColorStop(.5, o.tint ? '#0a1224' : '#1b2233'); wgr.addColorStop(1, o.tint ? '#141c2e' : '#283448'); win = wgr; }
   if (b.open) {
     g.fillStyle = '#1a1b21'; rr(g, x - cw * .9, cb0, cw * 1.8, cl, 3); g.fill();
     g.fillStyle = '#444955'; rr(g, x - cw * .72, cb0 + cl * .32, cw * .62, cl * .48, 2); g.fill(); rr(g, x + cw * .1, cb0 + cl * .32, cw * .62, cl * .48, 2); g.fill();
@@ -1986,6 +2000,8 @@ function drawCarBody(g, s, b, x, y, o, col, fin) {
     if (ws + rw > cl - 6) { var sc = (cl - 6) / (ws + rw); ws *= sc; rw *= sc; }
     g.fillStyle = win; rr(g, x - cw * .86, cb0, cw * 1.72, ws, Math.min(3, ws / 2)); g.fill();
     g.fillStyle = shine; g.fillRect(x - cw * .6, cb0 + Math.min(1.5, ws * .3), cw * .5, 1.5);
+    // a diagonal reflection across the windscreen
+    if (!o.lq && ws > 4) { g.save(); rr(g, x - cw * .86, cb0, cw * 1.72, ws, Math.min(3, ws / 2)); g.clip(); g.strokeStyle = 'rgba(200,225,255,0.22)'; g.lineWidth = 2.2; g.beginPath(); g.moveTo(x - cw * .2, cb0 - 1); g.lineTo(x - cw * .75, cb0 + ws + 1); g.moveTo(x + cw * .05, cb0 - 1); g.lineTo(x - cw * .3, cb0 + ws + 1); g.stroke(); g.restore(); }
     var r0 = cb0 + ws + 1, r1 = cb1 - rw - 1;
     g.fillStyle = win; g.fillRect(x - cw * .92, r0, 2.2, r1 - r0); g.fillRect(x + cw * .92 - 2.2, r0, 2.2, r1 - r0);
     if (b.glass) { g.fillStyle = '#26324a'; rr(g, x - cw * .72, r0, cw * 1.44, r1 - r0, 3); g.fill(); g.fillStyle = shine; g.fillRect(x - cw * .45, r0 + 2, 1.5, (r1 - r0) - 4); }
@@ -3579,7 +3595,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.21', updBusy = false;
+var APP_VERSION = '2026-10-14.22', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -5970,14 +5986,16 @@ function lastErrHtml() {
     '<code class="errcode">' + esc(e.v + ' · ' + e.where + ': ' + e.msg + (e.st ? ' · ' + e.st : '')) + '</code>';
 }
 // auto graphics: if a run keeps stuttering (under ~38 frames a second for 4 seconds), drop one graphics level
-var slowT = 0;
+var slowT = 0, autoDropped = false;
+// (at most one step down per session and never to Low: phones in battery saver are capped at 30 fps whatever the
+// graphics level, so dropping further would only throw away detail)
 function autoQuality(dt) {
-  if (!SET().autoq || state !== 'play' || document.visibilityState !== 'visible' || dt <= 0) { slowT = 0; return; }
+  if (!SET().autoq || autoDropped || state !== 'play' || document.visibilityState !== 'visible' || dt <= 0) { slowT = 0; return; }
   slowT = fpsA < 38 ? slowT + dt : Math.max(0, slowT - dt * 2);
   if (slowT < 4) return;
   slowT = -6;
   var Q = ['low', 'medium', 'high', 'ultra'], i = Q.indexOf(SET().quality);
-  if (i > 0) { SET().quality = Q[i - 1]; persist(); toast('Graphics set to ' + Q[i - 1] + ' to keep the game smooth', 2600); }
+  if (i > 1) { autoDropped = true; SET().quality = Q[i - 1]; persist(); toast('Graphics set to ' + Q[i - 1] + ' to keep the game smooth', 2600); }
 }
 // if something goes wrong, show what it was (once per problem) so a screenshot tells the developer exactly what to fix
 var errSeen = {};
