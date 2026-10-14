@@ -3386,7 +3386,7 @@ function resumeGame() { if (state === 'paused') { state = 'count'; countT = 1.2;
    The whole game is one file (index.html). When the game opens, or comes back from the background, it downloads
    a fresh copy of itself and reads the version written in it; if that is newer it reloads (never during a run).
    Bump APP_VERSION for every release. */
-var APP_VERSION = '2026-10-14.3', updBusy = false;
+var APP_VERSION = '2026-10-14.4', updBusy = false;
 function inRun() { return state === 'play' || state === 'count' || state === 'paused'; }
 function checkForUpdate() {
   if (updBusy || inRun() || !/^https?:$/.test(location.protocol)) return;
@@ -3485,7 +3485,7 @@ function authFromHash() {
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
 }
 function signIn() {
-  if (!AUTH_OK) { toast('Sign-in works on the game’s website: ranveerrrr248.github.io/cargo-run', 3600); return; }
+  if (!AUTH_OK) { toast('Sign-in works on the game’s website: ranveer248.github.io/cargo-run', 3600); return; }
   location.href = SB + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(location.origin + location.pathname);
 }
 function signOut() {
@@ -3593,7 +3593,7 @@ function syncTagHtml() {
 function accountHtml() {
   if (!auth) return '<h4>Account</h4><div class="it"><div class="itx"><b>Not signed in</b><span>Sign in to keep your progress online and play on any device.</span></div></div>' +
     '<button class="btn gbtn" data-act="signin">' + ICON.google + 'Sign in with Google</button>' +
-    (AUTH_OK ? '' : '<p class="fine">Sign-in works on the game’s website: ranveerrrr248.github.io/cargo-run</p>');
+    (AUTH_OK ? '' : '<p class="fine">Sign-in works on the game’s website: ranveer248.github.io/cargo-run</p>');
   return '<h4>Account</h4><div class="it"><div class="itx"><b>' + esc(auth.gname || 'Google account') + '</b><span>' + esc(auth.email) + '</span></div></div>' +
     '<div class="it"><div class="itx"><b>Cloud save</b><span>' + (cloud.state === 'error' ? (cloud.missing ? 'Online saving isn’t switched on yet' : 'Can’t reach the server right now. Your progress is safe on this device.') : cloud.state === 'sync' ? 'Syncing…' : 'On. Your progress follows you to any device.') + '</span></div>' +
     '<button class="btn ghost sm" data-act="syncnow">Sync now</button></div>' +
@@ -3856,12 +3856,12 @@ function shareImage(res) {
     g.font = '64px ' + FONT; g.fillStyle = '#fff'; g.fillText(String(s[0]), x + 120, 1110); g.font = '30px ' + FONT; g.fillStyle = '#b8b2c9'; g.fillText(s[1], x + 120, 1162);
   });
   g.font = '40px ' + FONT; g.fillStyle = '#fff'; g.fillText((save.name || 'Driver') + ' · Can you beat it?', Wd / 2, 1260);
-  g.font = '30px ' + FONT; g.fillStyle = '#b8b2c9'; g.fillText('ranveerrrr248.github.io/cargo-run', Wd / 2, 1310);
+  g.font = '30px ' + FONT; g.fillStyle = '#b8b2c9'; g.fillText('ranveer248.github.io/cargo-run', Wd / 2, 1310);
   return cv;
 }
 function shareRun() {
   if (!lastRes) return;
-  var cv = shareImage(lastRes), txt = 'I earned ' + fmt(lastRes.earned) + ' in Cargo Run! Can you beat it? https://ranveerrrr248.github.io/cargo-run/';
+  var cv = shareImage(lastRes), txt = 'I earned ' + fmt(lastRes.earned) + ' in Cargo Run! Can you beat it? https://ranveer248.github.io/cargo-run/';
   cv.toBlob(function (b) {
     if (!b) { toast('Couldn’t make the picture', 2000); return; }
     var file = null; try { file = new File([b], 'cargo-run.png', { type: 'image/png' }); } catch (e) {}
