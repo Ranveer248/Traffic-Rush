@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cargo Run 3D · Coast (test)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Cargo Run 3D: a small coastal island to drive around. A test build, separate from the main game (it only READS your save). */
+:root { --edge: #0d0f1c; --panel: rgba(16, 20, 42, 0.86); --accent: #ffd23f; --ink: #fff; --dim: #aab3d6; --go: #31c46b; --stop: #ff5050; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: #0b1020; color: var(--ink); font: 800 15px/1.25 Nunito, system-ui, sans-serif; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.ov { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(16px, env(safe-area-inset-bottom)); background: rgba(8, 10, 24, 0.55); z-index: 5; }
+.ov[hidden] { display: none; }
+.card { width: min(560px, 100%); max-height: 100%; overflow: auto; background: var(--panel); border: 3px solid var(--edge); border-radius: 22px; padding: 18px; display: grid; gap: 12px; box-shadow: 0 10px 0 var(--edge); }
+h1 { margin: 0; font: 400 40px/1 'Lilita One', 'Arial Black', sans-serif; letter-spacing: .01em; }
+h1 b { color: #1b1300; background: var(--accent); padding: 0 10px 4px; border-radius: 12px; border: 3px solid var(--edge); font-weight: 400; display: inline-block; transform: rotate(-3deg); }
+.sub { color: var(--dim); font-weight: 700; margin: 0; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+button { font: 900 17px/1.1 Nunito, system-ui, sans-serif; color: #fff; border: 3px solid var(--edge); border-radius: 16px; padding: 12px 14px; background: #3b6cf2; box-shadow: 0 5px 0 var(--edge); cursor: pointer; text-align: left; }
+button small { display: block; font-weight: 700; font-size: 12px; opacity: .85; margin-top: 3px; }
+button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--edge); }
+button:focus-visible { outline: 3px solid #4fe3ff; outline-offset: 2px; }
+.b-go { background: var(--accent); color: #1b1300; font: 400 28px/1 'Lilita One', sans-serif; text-align: center; }
+.b-green { background: #23a35a; } .b-orange { background: #f07a1a; } .b-grey { background: #4a5170; } .b-purple { background: #8a4ff0; }
+.cars { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.cars button { flex: 0 0 auto; padding: 8px 10px; font-size: 14px; background: #202848; }
+.cars button.on { background: #3b6cf2; outline: 3px solid var(--accent); }
+.note { font-size: 12px; color: var(--dim); font-weight: 700; margin: 0; }
+/* HUD */
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+#mm { position: absolute; left: max(10px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); width: 128px; height: 128px; border-radius: 50%; border: 3px solid var(--edge); background: rgba(10, 16, 34, 0.8); box-shadow: 0 4px 0 var(--edge); }
+#topbar { position: absolute; top: max(10px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); display: flex; gap: 8px; pointer-events: auto; }
+#topbar button { padding: 8px 12px; font-size: 15px; background: var(--panel); }
+#ev { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: var(--panel); border: 3px solid var(--edge); border-radius: 14px; padding: 6px 14px; text-align: center; min-width: 170px; }
+#ev[hidden] { display: none; }
+#ev b { font: 400 22px/1.1 'Lilita One', sans-serif; color: var(--accent); display: block; }
+#speed { position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: 104px; height: 104px; border-radius: 50%; background: rgba(10, 16, 34, 0.82); border: 3px solid var(--edge); display: grid; place-content: center; text-align: center; box-shadow: 0 4px 0 var(--edge); }
+#speed b { font: 400 34px/1 'Lilita One', sans-serif; }
+#speed span { font-size: 11px; color: var(--dim); }
+#msg { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font: 400 44px/1 'Lilita One', sans-serif; color: #fff; -webkit-text-stroke: 3px var(--edge); paint-order: stroke fill; text-shadow: 0 5px 0 var(--edge); white-space: nowrap; transition: opacity .3s; }
+#toast { position: absolute; left: 50%; bottom: 140px; transform: translateX(-50%); background: var(--panel); border: 3px solid var(--edge); border-radius: 12px; padding: 8px 14px; font-size: 14px; opacity: 0; transition: opacity .3s; max-width: 90vw; text-align: center; }
+/* touch controls: steer on the left, pedals on the right */
+#touch { position: fixed; inset: auto 0 0 0; height: 46%; z-index: 4; pointer-events: none; }
+#touch[hidden] { display: none; }
+.tc { position: absolute; bottom: max(18px, env(safe-area-inset-bottom)); width: 78px; height: 78px; border-radius: 22px; border: 3px solid var(--edge); background: rgba(255, 255, 255, 0.16); display: grid; place-content: center; font: 900 30px/1 Nunito, sans-serif; color: #fff; pointer-events: auto; box-shadow: 0 4px 0 var(--edge); touch-action: none; }
+.tc.on { background: rgba(255, 210, 63, 0.55); transform: translateY(3px); box-shadow: 0 1px 0 var(--edge); }
+#tL { left: max(16px, env(safe-area-inset-left)); } #tR { left: calc(max(16px, env(safe-area-inset-left)) + 90px); }
+#tGas { right: max(16px, env(safe-area-inset-right)); height: 110px; background: rgba(49, 196, 107, 0.4); font-size: 16px; }
+#tBrk { right: calc(max(16px, env(safe-area-inset-right)) + 90px); background: rgba(255, 80, 80, 0.35); font-size: 16px; }
+#load { position: fixed; inset: 0; display: grid; place-content: center; text-align: center; gap: 10px; background: #0b1020; z-index: 9; font: 400 28px/1 'Lilita One', sans-serif; }
+#load[hidden], #hud[hidden] { display: none; }
+/* with touch buttons on screen the speedometer sits above them */
+body.touch #speed { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 104px); width: 84px; height: 84px; }
+body.touch #speed b { font-size: 26px; }
+body.touch #toast { bottom: 210px; }
+#load small { font: 700 14px/1.3 Nunito, sans-serif; color: var(--dim); max-width: 320px; }
+@media (max-height: 460px) { #speed { width: 84px; height: 84px; } #speed b { font-size: 26px; } #mm { width: 104px; height: 104px; } .tc { width: 66px; height: 66px; } #tGas { height: 90px; } #tR { left: calc(max(16px, env(safe-area-inset-left)) + 78px); } #tBrk { right: calc(max(16px, env(safe-area-inset-right)) + 78px); } }
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Cargo Run 3D"></canvas>
+<div id="hud" hidden>
+  <canvas id="mm" width="256" height="256"></canvas>
+  <div id="topbar"><button id="bMenu" type="button" aria-label="Menu">☰ Menu</button></div>
+  <div id="ev" hidden><b id="evT">0.0</b><span id="evS"></span></div>
+  <div id="speed"><b id="spd">0</b><span>km/h</span></div>
+  <div id="msg"></div>
+  <div id="toast"></div>
+</div>
+<div id="touch" hidden>
+  <div class="tc" id="tL" aria-label="Steer left">◀</div><div class="tc" id="tR" aria-label="Steer right">▶</div>
+  <div class="tc" id="tBrk" aria-label="Brake">BRAKE</div><div class="tc" id="tGas" aria-label="Gas">GAS</div>
+</div>
+<div class="ov" id="menu" hidden>
+  <div class="card">
+    <h1>CARGO <b>RUN</b> 3D</h1>
+    <p class="sub" id="who">Coast island · test build</p>
+    <button class="b-go" id="bFree" type="button">FREE DRIVE</button>
+    <div class="row">
+      <button class="b-green" id="bSprint" type="button">Coast Sprint<small id="bestS">15 checkpoints around the island</small></button>
+      <button class="b-orange" id="bHunt" type="button">Crate Hunt<small id="bestH">Grab 12 crates in 2 minutes</small></button>
+    </div>
+    <div class="cars" id="cars" role="group" aria-label="Car"></div>
+    <div class="row">
+      <button class="b-grey" id="bGfx" type="button">Graphics: High<small>Low = smoother on weak phones</small></button>
+      <button class="b-purple" id="bBack" type="button">Back to Cargo Run<small>The normal game</small></button>
+    </div>
+    <p class="note">Test version: no cash or prizes yet, and your save is only read, never changed. Drive to the glowing markers to start events, or tap them here. Keys: WASD / arrows, Space = brake. Controllers work too.</p>
+  </div>
+</div>
+<div id="load">Loading the island…<small id="loadS">Downloading 3D graphics (about 1–2 MB the first time)</small></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  function fail(why) { $('load').innerHTML = '3D can’t run here<small>' + why + '<br><br><a href="./" style="color:#ffd23f">Back to Cargo Run</a></small>'; }
+  if (typeof THREE === 'undefined') { fail('The 3D library couldn’t load. Check your internet connection and try again.'); return; }
+  var test = document.createElement('canvas');
+  if (!(test.getContext('webgl2') || test.getContext('webgl'))) { fail('This device or browser has no WebGL (3D graphics).'); return; }
+
+  // ---------- your save (read only) ----------
+  var SAVE = null; try { SAVE = JSON.parse(localStorage.getItem('cargorun-save-v4') || 'null'); } catch (e) {}
+  var CARS = [ // the cars with Blender models so far; len in metres
+    { id: 'hauler', name: 'Ferd F-150', len: 5.3, col: '#f2a516' }, { id: 'kettle', name: 'Minny Cooper', len: 3.9, col: '#c63b3b' },
+    { id: 'tarn', name: 'Mercedez G-Wagun', len: 4.8, col: '#262a33' }, { id: 'brute', name: 'Ferd Mustung', len: 4.8, col: '#d42a2a' },
+    { id: 'helion', name: 'Lamborgini Huracane', len: 4.5, col: '#9ad03a' }, { id: 'singularity', name: 'Bugotti Chyron', len: 4.5, col: '#2f5fd6' }];
+  function paintOf(id) { try { var g = SAVE.garage[id]; return (g && g.paint) || null; } catch (e) { return null; } }
+  var pick = CARS[0]; if (SAVE && SAVE.car) CARS.forEach(function (c) { if (c.id === SAVE.car) pick = c; });
+  var GFX = 'high'; try { GFX = localStorage.getItem('cr3d-gfx') || (Math.min(navigator.hardwareConcurrency || 4, navigator.deviceMemory || 4) <= 2 ? 'low' : 'high'); } catch (e) {}
+
+  // ---------- small seeded random ----------
+  var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+
+  // ---------- the island: land inside an uneven ring, sea outside, hills in the middle ----------
+  var TAU = Math.PI * 2;
+  function coastR(a) { return 330 + 34 * Math.sin(a * 3 + 0.6) + 18 * Math.sin(a * 5 + 2.1); }
+  function hills(x, z) { var r = Math.sqrt(x * x + z * z); return 58 * Math.exp(-r * r / (2 * 120 * 120)) + 6 * Math.sin(x * 0.021) * Math.cos(z * 0.017) + 3 * Math.sin(x * 0.05 + z * 0.04); }
+  function baseH(x, z) {
+    var a = Math.atan2(z, x), r = Math.sqrt(x * x + z * z), c = coastR(a);
+    var land = Math.max(0, Math.min(1, (c - r) / 55));          // 0 at the waterline, 1 inland
+    var h = 2.2 + hills(x, z) * land * land;
+    if (r > c) h = 2.2 - (r - c) * 0.12;                        // the sea floor slopes away
+    return h * Math.min(1, land * 3 + (r > c ? 1 : 0)) - (r > c ? 0 : 0);
+  }
+  // the road: a loop that hugs the coast on the south and west, then climbs inland
+  var ROAD = [], RN = 720, RW = 12;
+  (function () {
+    for (var i = 0; i < RN; i++) {
+      var a = i / RN * TAU, c = coastR(a), r = c - 34 - 70 * Math.max(0, Math.sin(a - 0.9)) * 0.9;
+      ROAD.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, y: 0 });
+    }
+    var raw = ROAD.map(function (p) { return Math.max(3.2, baseH(p.x, p.z)); });
+    for (var k = 0; k < RN; k++) { var s = 0; for (var j = -14; j <= 14; j++) s += raw[(k + j + RN) % RN]; ROAD[k].y = s / 29 + 0.3; }
+    ROAD.forEach(function (p, k) { var n = ROAD[(k + 1) % RN], b = ROAD[(k - 1 + RN) % RN], dx = n.x - b.x, dz = n.z - b.z, l = Math.hypot(dx, dz); p.tx = dx / l; p.tz = dz / l; });
+  })();
+  // nearest road point (with a coarse grid so it stays fast)
+  var GRID = {}, GS = 24;
+  ROAD.forEach(function (p, i) { var k = Math.floor(p.x / GS) + ',' + Math.floor(p.z / GS); (GRID[k] = GRID[k] || []).push(i); });
+  function nearRoad(x, z) {
+    var gx = Math.floor(x / GS), gz = Math.floor(z / GS), best = -1, bd = 1e9;
+    for (var a = -2; a <= 2; a++) for (var b = -2; b <= 2; b++) { var l = GRID[(gx + a) + ',' + (gz + b)]; if (!l) continue; for (var q = 0; q < l.length; q++) { var p = ROAD[l[q]], d = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z); if (d < bd) { bd = d; best = l[q]; } } }
+    if (best < 0) { for (var i = 0; i < RN; i += 6) { var p2 = ROAD[i], d2 = (p2.x - x) * (p2.x - x) + (p2.z - z) * (p2.z - z); if (d2 < bd) { bd = d2; best = i; } } }
+    return { i: best, d: Math.sqrt(bd) };
+  }
+  // the ground everywhere: natural terrain, flattened to the road near it
+  function ground(x, z) {
+    var h = baseH(x, z), n = nearRoad(x, z);
+    if (n.d < RW / 2 + 16) { var w = Math.max(0, Math.min(1, (RW / 2 + 16 - n.d) / 14)); w = w * w * (3 - 2 * w); h = h + (ROAD[n.i].y - 0.25 - h) * w; }
+    return h;
+  }
+
+  // ---------- three.js setup ----------
+  var cv = $('c');
+  var R = new THREE.WebGLRenderer({ canvas: cv, antialias: GFX === 'high', powerPreference: 'high-performance' });
+  R.outputEncoding = THREE.sRGBEncoding;
+  var scene = new THREE.Scene(), SKY = new THREE.Color('#8fd3ff');
+  scene.background = SKY; scene.fog = new THREE.Fog(SKY, 320, 1700);
+  var cam = new THREE.PerspectiveCamera(62, 1, 0.5, 4000);
+  scene.add(new THREE.HemisphereLight('#dff4ff', '#6b8f4a', 0.75));
+  var sun = new THREE.DirectionalLight('#fff1d6', 0.95); sun.position.set(-180, 260, 120); scene.add(sun); scene.add(sun.target);
+  function applyGfx() {
+    R.setPixelRatio(Math.min(window.devicePixelRatio || 1, GFX === 'high' ? 1.5 : 1));
+    R.shadowMap.enabled = GFX === 'high'; sun.castShadow = GFX === 'high';
+    if (GFX === 'high') { sun.shadow.mapSize.set(1024, 1024); var sc = sun.shadow.camera; sc.left = -40; sc.right = 40; sc.top = 40; sc.bottom = -40; sc.near = 10; sc.far = 600; sc.updateProjectionMatrix(); }
+    scene.fog.near = GFX === 'high' ? 320 : 220; scene.fog.far = GFX === 'high' ? 1700 : 1050;
+    INST.forEach(function (m) { m.count = GFX === 'high' ? m.userData.full : Math.ceil(m.userData.full * 0.55); });
+    $('bGfx').firstChild.nodeValue = 'Graphics: ' + (GFX === 'high' ? 'High' : 'Low');
+  }
+  function resize() { var w = window.innerWidth, h = window.innerHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.fov = w < h ? 80 : 64; cam.updateProjectionMatrix(); }
+  window.addEventListener('resize', resize);
+
+  // ---------- terrain (one mesh, coloured by height: sand, grass, rock) ----------
+  var INST = [], loader = null;
+  (function () {
+    var S = 820, N = GFX === 'high' ? 170 : 120, geo = new THREE.PlaneGeometry(S, S, N, N); geo.rotateX(-Math.PI / 2);
+    var pos = geo.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
+    for (var i = 0; i < pos.count; i++) {
+      var x = pos.getX(i), z = pos.getZ(i), h = ground(x, z); pos.setY(i, h);
+      var r = Math.hypot(x, z), cr = coastR(Math.atan2(z, x));
+      if (h < 3.4 || r > cr - 8) c.set('#e9d7a1'); else if (h > 38) c.set('#8c8a80'); else if (h > 26) c.set('#6f9a4c'); else c.set(rnd() < .5 ? '#5fa84a' : '#63ae4e');
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals();
+    var m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true })); m.receiveShadow = true; scene.add(m);
+    // the sea, and a pale shallow ring around the beach
+    var sea = new THREE.Mesh(new THREE.PlaneGeometry(4200, 4200), new THREE.MeshPhongMaterial({ color: '#1f8fcf', shininess: 90, specular: '#bfe8ff' }));
+    sea.rotation.x = -Math.PI / 2; sea.position.y = 1.6; scene.add(sea);
+    var shallow = new THREE.Mesh(new THREE.RingGeometry(300, 420, 96), new THREE.MeshBasicMaterial({ color: '#57d0e0', transparent: true, opacity: .35, depthWrite: false }));
+    shallow.rotation.x = -Math.PI / 2; shallow.position.y = 1.65; scene.add(shallow);
+    // far islands on the horizon
+    var far = new THREE.MeshLambertMaterial({ color: '#7fa6a0' });
+    var farSnow = new THREE.MeshLambertMaterial({ color: '#eef3f6' });
+    for (var k = 0; k < 11; k++) { var a = k / 11 * TAU + rnd() * .3, d = 1000 + rnd() * 700, hh = 70 + rnd() * 170, rad = 140 + rnd() * 200, isl = new THREE.Mesh(new THREE.ConeGeometry(rad, hh, 8), far); isl.position.set(Math.cos(a) * d, hh / 2 - 4, Math.sin(a) * d); scene.add(isl);
+      if (hh > 180) { var cap = new THREE.Mesh(new THREE.ConeGeometry(rad * .28, hh * .28, 8), farSnow); cap.position.set(isl.position.x, hh - 4 - hh * .14, isl.position.z); scene.add(cap); } }
+  })();
+
+  // ---------- road ribbon with painted lines, and guardrails on the sea side ----------
+  (function () {
+    var t = document.createElement('canvas'); t.width = 64; t.height = 256; var g = t.getContext('2d');
+    g.fillStyle = '#41434c'; g.fillRect(0, 0, 64, 256);
+    for (var n = 0; n < 900; n++) { g.fillStyle = 'rgba(255,255,255,' + (Math.random() * .05) + ')'; g.fillRect(Math.random() * 64, Math.random() * 256, 1, 1); }
+    g.fillStyle = '#f1f1ea'; g.fillRect(3, 0, 2.5, 256); g.fillRect(58.5, 0, 2.5, 256);
+    g.fillStyle = '#f4c22b'; g.fillRect(30.5, 0, 3, 120);
+    var tex = new THREE.CanvasTexture(t); tex.wrapT = THREE.RepeatWrapping; tex.anisotropy = 4; tex.encoding = THREE.sRGBEncoding;
+    var P = [], U = [], I = [], dist = 0;
+    for (var i = 0; i <= RN; i++) {
+      var p = ROAD[i % RN], nx = -p.tz, nz = p.tx;
+      if (i) { var q = ROAD[(i - 1) % RN]; dist += Math.hypot(p.x - q.x, p.z - q.z); }
+      P.push(p.x + nx * RW / 2, p.y, p.z + nz * RW / 2, p.x - nx * RW / 2, p.y, p.z - nz * RW / 2);
+      U.push(1, dist / 14, 0, dist / 14);
+      if (i < RN) { var b = i * 2; I.push(b, b + 1, b + 2, b + 1, b + 3, b + 2); }
+    }
+    var geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); geo.setIndex(I); geo.computeVertexNormals();
+    var road = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); road.receiveShadow = true; scene.add(road);
+    // rails: on whichever side is closer to the sea, wherever the road runs near the coast
+    var posts = [], rails = [];
+    for (var j = 0; j < RN; j += 3) {
+      var p2 = ROAD[j], a = Math.atan2(p2.z, p2.x), out = coastR(a) - Math.hypot(p2.x, p2.z); if (out > 52) continue;
+      var sx = p2.x / Math.hypot(p2.x, p2.z), sz = p2.z / Math.hypot(p2.x, p2.z), side = (-p2.tz * sx + p2.tx * sz) > 0 ? 1 : -1;
+      var px = p2.x - p2.tz * side * (RW / 2 + .8), pz = p2.z + p2.tx * side * (RW / 2 + .8);
+      posts.push([px, p2.y, pz]); rails.push([px, p2.y + .75, pz, Math.atan2(p2.tx, p2.tz)]);
+    }
+    var pm = new THREE.InstancedMesh(new THREE.BoxGeometry(.18, 1, .18), new THREE.MeshLambertMaterial({ color: '#cfd3da' }), posts.length);
+    var rm = new THREE.InstancedMesh(new THREE.BoxGeometry(.12, .32, 4.4), new THREE.MeshLambertMaterial({ color: '#e9ecf1' }), rails.length);
+    var o = new THREE.Object3D();
+    posts.forEach(function (q, k) { o.position.set(q[0], q[1] + .4, q[2]); o.rotation.set(0, 0, 0); o.updateMatrix(); pm.setMatrixAt(k, o.matrix); });
+    rails.forEach(function (q, k) { o.position.set(q[0], q[1], q[2]); o.rotation.set(0, q[3], 0); o.updateMatrix(); rm.setMatrixAt(k, o.matrix); });
+    scene.add(pm); scene.add(rm);
+  })();
+
+  // ---------- scenery: palms on the beaches, pines inland, a coloured village, a lighthouse, lamps ----------
+  var SOLID = []; // things you bump into: {x, z, r}
+  function placeOK(x, z, minRoad) { var n = nearRoad(x, z); if (n.d < minRoad) return false; return ground(x, z) > 3.3; }
+  function instanced(geo, mat, list, shadow) {
+    var m = new THREE.InstancedMesh(geo, mat, list.length), o = new THREE.Object3D(), c = new THREE.Color();
+    list.forEach(function (q, k) { o.position.set(q.x, q.y, q.z); o.rotation.set(q.rx || 0, q.ry || 0, q.rz || 0); o.scale.setScalar(q.s || 1); if (q.sy) o.scale.y = q.sy; o.updateMatrix(); m.setMatrixAt(k, o.matrix); if (q.c) { c.set(q.c); m.setColorAt(k, c); } });
+    m.castShadow = !!shadow; m.userData.full = list.length; INST.push(m); scene.add(m); return m;
+  }
+  (function () {
+    var palms = [], crowns = [], pines = [], pineT = [], houses = [], roofs = [], lamps = [], heads = [], rocks = [];
+    for (var n = 0; n < 2600 && palms.length < 170; n++) {
+      var a = rnd() * TAU, r = coastR(a) - 6 - rnd() * 46, x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (!placeOK(x, z, RW / 2 + 5)) continue; var y = ground(x, z), s = .8 + rnd() * .5, lean = (rnd() - .5) * .35;
+      palms.push({ x: x, y: y + 3.4 * s, z: z, s: s, rz: lean }); crowns.push({ x: x + lean * -6 * s, y: y + 7 * s, z: z, s: s, ry: rnd() * 6 }); SOLID.push({ x: x, z: z, r: .7 });
+    }
+    for (var m = 0; m < 4000 && pines.length < 260; m++) {
+      var x2 = (rnd() - .5) * 520, z2 = (rnd() - .5) * 520, h2 = baseH(x2, z2); if (h2 < 14 || !placeOK(x2, z2, RW / 2 + 7)) continue;
+      var s2 = .8 + rnd() * .7, y2 = ground(x2, z2); pines.push({ x: x2, y: y2 + 5 * s2, z: z2, s: s2 }); pineT.push({ x: x2, y: y2 + 1.2 * s2, z: z2, s: s2 }); SOLID.push({ x: x2, z: z2, r: .9 });
+    }
+    // the village: houses on both sides of the road on the south coast
+    var HC = ['#ffd9a8', '#f7f1e3', '#a8e0f0', '#ffc2c2', '#c9f0b8', '#f9e38a'], RC = ['#c8553d', '#2f6db3', '#d9822b', '#8c4b8f'];
+    for (var v = 0; v < 900 && houses.length < 26; v++) {
+      var i = 150 + Math.floor(rnd() * 120), p = ROAD[i], side = rnd() < .5 ? 1 : -1, off = RW / 2 + 9 + rnd() * 22;
+      var hx = p.x - p.tz * side * off, hz = p.z + p.tx * side * off; if (!placeOK(hx, hz, RW / 2 + 6)) continue;
+      var ok = true; houses.forEach(function (q) { if (Math.hypot(q.x - hx, q.z - hz) < 11) ok = false; }); if (!ok) continue;
+      var hy = ground(hx, hz), w = 1 + rnd() * .4, ry = Math.atan2(p.tx, p.tz);
+      houses.push({ x: hx, y: hy + 2.6 * w, z: hz, s: w, ry: ry, c: HC[houses.length % HC.length] }); roofs.push({ x: hx, y: hy + 6.4 * w, z: hz, s: w, ry: ry + Math.PI / 4, c: RC[houses.length % RC.length] });
+      SOLID.push({ x: hx, z: hz, r: 4.6 * w });
+    }
+    for (var l = 140; l < 300; l += 12) { var p3 = ROAD[l]; [1, -1].forEach(function (sd) { var lx = p3.x - p3.tz * sd * (RW / 2 + 2), lz = p3.z + p3.tx * sd * (RW / 2 + 2), ly = ground(lx, lz); lamps.push({ x: lx, y: ly + 3, z: lz }); heads.push({ x: lx, y: ly + 6.1, z: lz }); }); }
+    for (var k = 0; k < 90; k++) { var a3 = rnd() * TAU, r3 = coastR(a3) + 2 + rnd() * 18, rx = Math.cos(a3) * r3, rz = Math.sin(a3) * r3; rocks.push({ x: rx, y: 1.5, z: rz, s: 1 + rnd() * 2.6, ry: rnd() * 6 }); }
+    instanced(new THREE.CylinderGeometry(.22, .34, 6.8, 6), new THREE.MeshLambertMaterial({ color: '#8a6a45' }), palms, true);
+    instanced(new THREE.IcosahedronGeometry(2.6, 0).scale(1.4, .45, 1.4), new THREE.MeshLambertMaterial({ color: '#2f9a3e', flatShading: true }), crowns, true);
+    instanced(new THREE.ConeGeometry(2.4, 8, 7), new THREE.MeshLambertMaterial({ color: '#2f7a46', flatShading: true }), pines, true);
+    instanced(new THREE.CylinderGeometry(.3, .4, 2.4, 5), new THREE.MeshLambertMaterial({ color: '#6b4e33' }), pineT, false);
+    instanced(new THREE.BoxGeometry(7, 5.2, 7), new THREE.MeshLambertMaterial({ color: '#ffffff' }), houses, true);
+    instanced(new THREE.ConeGeometry(6.2, 2.8, 4), new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true }), roofs, true);
+    instanced(new THREE.CylinderGeometry(.12, .14, 6, 5), new THREE.MeshLambertMaterial({ color: '#4a4f5c' }), lamps, false);
+    instanced(new THREE.BoxGeometry(.9, .25, .5), new THREE.MeshBasicMaterial({ color: '#fff3c4' }), heads, false);
+    instanced(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshLambertMaterial({ color: '#8d8a83', flatShading: true }), rocks, false);
+  })();
+
+  // ---------- landmarks: big structures modelled in Blender (models/world/*.glb), each placed where you can see it from far away ----------
+  var SPIN = []; // moving parts: [object, axis, speed]
+  function landmark(file, x, z, ry, solidR, cb) {
+    if (!loader && THREE.GLTFLoader) loader = new THREE.GLTFLoader();
+    if (!loader) return;
+    loader.load('models/world/' + file + '.glb', function (gl) {
+      var o = gl.scene; o.position.set(x, ground(x, z) - .4, z); o.rotation.y = ry || 0;
+      o.traverse(function (m) { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+      scene.add(o); if (cb) cb(o);
+    });
+    if (solidR) SOLID.push({ x: x, z: z, r: solidR });
+  }
+  function onLand(a, inset) { var r = coastR(a) - inset; return { x: Math.cos(a) * r, z: Math.sin(a) * r }; }
+  (function () {
+    // the Golden Crate on the hilltop in the middle of the island: you see it from every road
+    landmark('monument', 0, 0, .3, 14);
+    // the lighthouse on the western cape
+    var lh = onLand(Math.PI * 1.02, 26); landmark('lighthouse', lh.x, lh.z, 0, 6);
+    // the old fort on the northern cape
+    var ft = onLand(-Math.PI * .5, 40); landmark('fort', ft.x, ft.z, .4, 17);
+    // a wind farm on the eastern ridge, blades turning
+    for (var k = 0; k < 5; k++) {
+      var a = -.35 + k * .17, r = 150 + (k % 2) * 30, tx = Math.cos(a) * r, tz = Math.sin(a) * r;
+      if (nearRoad(tx, tz).d < 20) continue;
+      landmark('turbine', tx, tz, -a + Math.PI / 2, 2.5, function (o) { var b = o.getObjectByName('blades'); if (b) SPIN.push([b, 'z', .9 + rnd() * .4]); });
+    }
+    // a ferris wheel at the village, turning slowly
+    var fp = ROAD[205], fx = fp.x - fp.tz * 32, fz = fp.z + fp.tx * 32;
+    if (ground(fx, fz) < 3.3) { fx = fp.x + fp.tz * 32; fz = fp.z - fp.tx * 32; }
+    landmark('ferris', fx, fz, Math.atan2(fp.tx, fp.tz), 8, function (o) { var w = o.getObjectByName('wheel'); if (w) SPIN.push([w, 'x', .18]); });
+    // the welcome arch over the road near the start, with its sign
+    var ap = ROAD[60];
+    landmark('arch', ap.x, ap.z, Math.atan2(ap.tx, ap.tz), 0, function (o) {
+      var t = document.createElement('canvas'); t.width = 512; t.height = 96; var g = t.getContext('2d');
+      g.fillStyle = '#ffd23f'; g.fillRect(0, 0, 512, 96); g.fillStyle = '#1b1300'; g.font = '900 52px Nunito, Arial Black, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('CARGO ISLAND', 256, 52);
+      var tex = new THREE.CanvasTexture(t); tex.encoding = THREE.sRGBEncoding;
+      [1, -1].forEach(function (sd) { var pl = new THREE.Mesh(new THREE.PlaneGeometry(15, 2.8), new THREE.MeshBasicMaterial({ map: tex })); pl.position.set(0, 11.2, sd * 1.67); if (sd < 0) pl.rotation.y = Math.PI; o.add(pl); });
+    });
+    [-10.5, 10.5].forEach(function (off) { SOLID.push({ x: ap.x - ap.tz * off, z: ap.z + ap.tx * off, r: 2.6 }); });
+  })();
+
+  // ---------- cars: Blender models (paint material recoloured), with a simple box car if one can't load ----------
+  loader = loader || (THREE.GLTFLoader ? new THREE.GLTFLoader() : null); var MODELS = {};
+  function boxCar(col, len) {
+    var g = new THREE.Group(), pm = new THREE.MeshLambertMaterial({ color: col });
+    var body = new THREE.Mesh(new THREE.BoxGeometry(1.9, .8, len), pm); body.position.y = .75; g.add(body);
+    var cab = new THREE.Mesh(new THREE.BoxGeometry(1.6, .6, len * .45), new THREE.MeshLambertMaterial({ color: '#1f2a40' })); cab.position.set(0, 1.4, -len * .05); g.add(cab);
+    [[-.95, len * .32], [.95, len * .32], [-.95, -len * .32], [.95, -len * .32]].forEach(function (w) { var wh = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .3, 10), new THREE.MeshLambertMaterial({ color: '#15161c' })); wh.rotation.z = Math.PI / 2; wh.position.set(w[0], .42, w[1]); g.add(wh); });
+    g.traverse(function (o) { o.castShadow = true; }); return g;
+  }
+  function loadModel(id) {
+    if (MODELS[id]) return MODELS[id];
+    MODELS[id] = new Promise(function (res) {
+      if (!loader) return res(null);
+      loader.load('models/cars/' + id + '.glb', function (gl) { res(gl.scene); }, undefined, function () { res(null); });
+    });
+    return MODELS[id];
+  }
+  // fit a model to the game's axes (nose = +Z, wheels on y = 0, real length) and give it the chosen paint
+  function prepModel(src, car, col) {
+    var g = src.clone(true), holder = new THREE.Group(); holder.add(g);
+    var box = new THREE.Box3().setFromObject(g), sz = box.getSize(new THREE.Vector3());
+    if (sz.x > sz.z) g.rotation.y = Math.PI / 2;
+    box.setFromObject(g); sz = box.getSize(new THREE.Vector3());
+    // which end is the front? the headlights are on it
+    var front = null; g.traverse(function (o) { if (o.isMesh && o.material && /front/i.test(o.material.name || '')) front = o; });
+    var cen = box.getCenter(new THREE.Vector3());
+    if (front) { var fb = new THREE.Box3().setFromObject(front).getCenter(new THREE.Vector3()); if (fb.z < cen.z) g.rotation.y += Math.PI; }
+    var s = car.len / Math.max(sz.z, .01); g.scale.setScalar(s);
+    box.setFromObject(g); cen = box.getCenter(new THREE.Vector3()); g.position.x -= cen.x; g.position.z -= cen.z; g.position.y -= box.min.y;
+    g.traverse(function (o) {
+      if (!o.isMesh) return; o.castShadow = true;
+      if (o.material && /paint/i.test(o.material.name || '')) { o.material = o.material.clone(); o.material.color = new THREE.Color(col); }
+    });
+    return holder;
+  }
+  function makeCar(car, col) {
+    var holder = new THREE.Group(), tmp = boxCar(col, car.len); holder.add(tmp);
+    loadModel(car.id).then(function (src) { if (!src) return; holder.remove(tmp); holder.add(prepModel(src, car, col)); });
+    return holder;
+  }
+
+  // ---------- the player ----------
+  var P = { x: 0, z: 0, y: 0, yaw: 0, v: 0, steer: 0, mesh: null };
+  function placeAt(i) { var p = ROAD[i]; P.x = p.x; P.z = p.z; P.yaw = Math.atan2(p.tx, p.tz); P.v = 0; P.y = ground(p.x, p.z); }
+  function setCar(c) { pick = c; if (P.mesh) scene.remove(P.mesh); P.mesh = makeCar(c, paintOf(c.id) || c.col); scene.add(P.mesh); }
+
+  // ---------- traffic: a few cars cruising round the island in both directions ----------
+  var TRAFFIC = [];
+  function addTraffic() {
+    var cols = ['#e04646', '#3f7fe0', '#f2f2f2', '#2a2d36', '#f0b429', '#3cb371', '#8a5cf0'];
+    for (var k = 0; k < (GFX === 'high' ? 9 : 5); k++) {
+      var car = CARS[k % CARS.length], dir = k % 2 ? 1 : -1, m = makeCar(car, cols[k % cols.length]);
+      TRAFFIC.push({ s: (k * 83 + 40) % RN, dir: dir, v: 13 + (k % 3) * 3, m: m, x: 0, z: 0 }); scene.add(m);
+    }
+  }
+  function updateTraffic(dt) {
+    TRAFFIC.forEach(function (t) {
+      t.s = (t.s + t.dir * t.v * dt / 2.95 + RN) % RN;   // (road points are about 2.95 m apart)
+      var i = Math.floor(t.s), f = t.s - i, a = ROAD[i], b = ROAD[(i + 1) % RN], lane = 3 * t.dir;
+      var x = a.x + (b.x - a.x) * f - a.tz * lane, z = a.z + (b.z - a.z) * f + a.tx * lane;
+      t.x = x; t.z = z; t.m.position.set(x, a.y + (b.y - a.y) * f, z); t.m.rotation.y = Math.atan2(a.tx, a.tz) + (t.dir < 0 ? Math.PI : 0);
+    });
+  }
+
+  // ---------- events: markers on the road, the Coast Sprint and the Crate Hunt ----------
+  var EV = null, MARK = [];
+  function marker(i, color, kind) {
+    var p = ROAD[i], g = new THREE.Group();
+    var beam = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, 26, 24, 1, true), new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: .28, depthWrite: false, side: THREE.DoubleSide }));
+    beam.position.y = 13; g.add(beam);
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(4.2, .35, 8, 32), new THREE.MeshBasicMaterial({ color: color })); ring.rotation.x = Math.PI / 2; ring.position.y = .5; g.add(ring);
+    g.position.set(p.x, p.y, p.z); scene.add(g); MARK.push({ i: i, kind: kind, g: g, color: color });
+  }
+  var cpMesh = new THREE.Mesh(new THREE.TorusGeometry(6.5, .45, 8, 36), new THREE.MeshBasicMaterial({ color: '#4fe3ff' })); cpMesh.visible = false; scene.add(cpMesh);
+  var crateGeo = new THREE.BoxGeometry(1.4, 1.4, 1.4), crateMat = new THREE.MeshLambertMaterial({ color: '#f0a020', emissive: '#5a3200' }), CRATES = [];
+  function best(k) { try { return +localStorage.getItem('cr3d-best-' + k) || 0; } catch (e) { return 0; } }
+  function setBest(k, v) { try { localStorage.setItem('cr3d-best-' + k, String(v)); } catch (e) {} }
+  function showBests() { var a = best('sprint'), b = best('hunt'); if (a) $('bestS').textContent = 'Best: ' + a.toFixed(1) + ' s · 15 checkpoints'; if (b) $('bestH').textContent = 'Best: ' + b.toFixed(1) + ' s · 12 crates'; }
+  function startEvent(kind) {
+    hideMenu(); clearCrates();
+    var start = kind === 'sprint' ? MARK[0].i : MARK[1].i; placeAt(start);
+    EV = { kind: kind, t: 0, count: 3, n: 0, start: start };
+    if (kind === 'sprint') { EV.cps = []; for (var k = 1; k <= 15; k++) EV.cps.push((start + Math.round(k * RN / 15)) % RN); }
+    else { for (var c = 0; c < 12; c++) { var i = (start + 30 + Math.floor(rnd() * (RN - 60))) % RN, p = ROAD[i], off = (rnd() - .5) * 2 * (RW / 2 + 10), x = p.x - p.tz * off, z = p.z + p.tx * off; var m = new THREE.Mesh(crateGeo, crateMat); m.position.set(x, ground(x, z) + 1.2, z); m.castShadow = true; scene.add(m); CRATES.push(m); } }
+    $('ev').hidden = false;
+  }
+  function clearCrates() { CRATES.forEach(function (m) { scene.remove(m); }); CRATES = []; cpMesh.visible = false; }
+  function endEvent(won) {
+    var e = EV; EV = null; $('ev').hidden = true; clearCrates();
+    if (won) { var k = e.kind, t = e.t, b = best(k); if (!b || t < b) { setBest(k, t); msg('NEW BEST ' + t.toFixed(1) + 's'); } else msg('DONE ' + t.toFixed(1) + 's'); }
+    else msg('TIME UP');
+    showBests();
+  }
+  function updateEvent(dt) {
+    if (!EV) {
+      // (driving through a marker does nothing; stop inside its ring to start the event)
+      MARK.forEach(function (m) { var p = ROAD[m.i]; if (Math.hypot(P.x - p.x, P.z - p.z) < 5) { if (Math.abs(P.v) < 3) startEvent(m.kind); else toast('Stop in the ring to start ' + (m.kind === 'sprint' ? 'Coast Sprint' : 'Crate Hunt')); } });
+      return;
+    }
+    if (EV.count > 0) { EV.count -= dt; P.v = 0; msg(EV.count > 0 ? String(Math.ceil(EV.count)) : 'GO!'); return; }
+    EV.t += dt;
+    if (EV.kind === 'sprint') {
+      var cp = ROAD[EV.cps[EV.n]]; cpMesh.visible = true; cpMesh.position.set(cp.x, cp.y + 4, cp.z); cpMesh.rotation.y = Math.atan2(cp.tx, cp.tz);
+      if (Math.hypot(P.x - cp.x, P.z - cp.z) < 8) { EV.n++; beep(880, .08); if (EV.n >= EV.cps.length) return endEvent(true); }
+      $('evT').textContent = EV.t.toFixed(1) + ' s'; $('evS').textContent = 'Checkpoint ' + (EV.n + 1) + ' / ' + EV.cps.length;
+      if (EV.t > 300) endEvent(false);
+    } else {
+      for (var k = CRATES.length - 1; k >= 0; k--) { var c = CRATES[k]; c.rotation.y += dt * 2; if (Math.hypot(P.x - c.position.x, P.z - c.position.z) < 3.4) { scene.remove(c); CRATES.splice(k, 1); EV.n++; beep(660, .07); } }
+      var left = 120 - EV.t; $('evT').textContent = Math.max(0, left).toFixed(1) + ' s'; $('evS').textContent = 'Crates ' + EV.n + ' / 12';
+      if (EV.n >= 12) endEvent(true); else if (left <= 0) endEvent(false);
+    }
+  }
+
+  // ---------- input: keyboard, touch buttons, controller ----------
+  var K = {}, T = { l: 0, r: 0, g: 0, b: 0 };
+  window.addEventListener('keydown', function (e) { K[e.code] = 1; if (e.code === 'Escape') toggleMenu(); if (/Arrow|Space/.test(e.code)) e.preventDefault(); });
+  window.addEventListener('keyup', function (e) { K[e.code] = 0; });
+  [['tL', 'l'], ['tR', 'r'], ['tGas', 'g'], ['tBrk', 'b']].forEach(function (q) {
+    var el = $(q[0]), ids = {};
+    function on(e) { e.preventDefault(); ids[e.pointerId] = 1; T[q[1]] = 1; el.classList.add('on'); try { el.setPointerCapture(e.pointerId); } catch (x) {} }
+    function off(e) { delete ids[e.pointerId]; if (!Object.keys(ids).length) { T[q[1]] = 0; el.classList.remove('on'); } }
+    el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off);
+  });
+  var touchy = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+  if (touchy) document.body.classList.add('touch');
+  function readInput() {
+    var steer = (K.ArrowLeft || K.KeyA || T.l ? 1 : 0) - (K.ArrowRight || K.KeyD || T.r ? 1 : 0);
+    var gas = K.ArrowUp || K.KeyW || T.g ? 1 : 0, brk = K.ArrowDown || K.KeyS || K.Space || T.b ? 1 : 0;
+    var pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (var i = 0; i < pads.length; i++) { var p = pads[i]; if (!p || !p.connected) continue;
+      var ax = p.axes[0] || 0; if (Math.abs(ax) > .15) steer = -ax;
+      if (p.buttons[7] && p.buttons[7].value > .05) gas = Math.max(gas, p.buttons[7].value); if (p.buttons[0] && p.buttons[0].pressed) gas = 1;
+      if (p.buttons[6] && p.buttons[6].value > .05) brk = Math.max(brk, p.buttons[6].value); if (p.buttons[1] && p.buttons[1].pressed) brk = 1;
+      if (p.buttons[9] && p.buttons[9].pressed && !padStart) { padStart = 1; toggleMenu(); } else if (!(p.buttons[9] && p.buttons[9].pressed)) padStart = 0;
+    }
+    return { steer: steer, gas: gas, brk: brk };
+  }
+  var padStart = 0;
+
+  // ---------- driving: simple arcade handling that stays on the ground ----------
+  var VMAX = 46, ACC = 15, BRK = 32;
+  function drive(dt) {
+    var inp = readInput(), n = nearRoad(P.x, P.z), off = n.d > RW / 2 + 1;
+    var vmax = off ? VMAX * .5 : VMAX;
+    if (inp.gas) P.v += ACC * inp.gas * dt * (1 - Math.max(0, P.v) / vmax * .6);
+    if (inp.brk) P.v -= (P.v > 0 ? BRK : 9) * inp.brk * dt;
+    P.v -= P.v * (off ? 1.1 : .25) * dt; if (!inp.gas && !inp.brk) P.v -= Math.sign(P.v) * Math.min(Math.abs(P.v), 2 * dt);
+    P.v = Math.max(-9, Math.min(vmax * 1.02, P.v));
+    P.steer += (inp.steer - P.steer) * Math.min(1, dt * 8);
+    P.yaw += P.steer * dt * 1.9 * Math.min(1, Math.abs(P.v) / 9) * (P.v >= 0 ? 1 : -1) * (1 - Math.min(.45, Math.abs(P.v) / VMAX * .45));
+    var nx = P.x + Math.sin(P.yaw) * P.v * dt, nz = P.z + Math.cos(P.yaw) * P.v * dt;
+    // bump into houses, trees, rocks and the lighthouse
+    for (var i = 0; i < SOLID.length; i++) { var s = SOLID[i], dx = nx - s.x, dz = nz - s.z, d = Math.hypot(dx, dz), rr = s.r + 1.1; if (d < rr) { nx = s.x + dx / d * rr; nz = s.z + dz / d * rr; P.v *= .6; } }
+    TRAFFIC.forEach(function (t) { var dx = nx - t.x, dz = nz - t.z, d = Math.hypot(dx, dz); if (d < 3.4 && d > 0) { nx = t.x + dx / d * 3.4; nz = t.z + dz / d * 3.4; if (Math.abs(P.v) > 8) toast('Bump!'); P.v *= .5; } });
+    P.x = nx; P.z = nz;
+    var gy = ground(P.x, P.z);
+    if (gy < 1.9 || Math.hypot(P.x, P.z) > 520) { toast('Splash! Back to the road.'); placeAt(nearRoad(P.x, P.z).i); gy = P.y; }
+    P.y += (gy - P.y) * Math.min(1, dt * 14);
+    // tilt with the slope under the car
+    var fx = Math.sin(P.yaw), fz = Math.cos(P.yaw), hF = ground(P.x + fx * 2, P.z + fz * 2), hB = ground(P.x - fx * 2, P.z - fz * 2), hL = ground(P.x + fz, P.z - fx), hR = ground(P.x - fz, P.z + fx);
+    P.mesh.position.set(P.x, P.y, P.z); P.mesh.rotation.set(0, 0, 0); P.mesh.rotation.order = 'YXZ'; P.mesh.rotation.y = P.yaw; P.mesh.rotation.x = -Math.atan2(hF - hB, 4); P.mesh.rotation.z = Math.atan2(hL - hR, 2) * .6;
+  }
+  // chase camera
+  var camPos = new THREE.Vector3(0, 30, 0), look = new THREE.Vector3();
+  function updateCam(dt) {
+    // (the camera sits higher and further back and looks far down the road, so the island's landmarks stay in view)
+    var tall = cam.aspect < 1, fx = Math.sin(P.yaw), fz = Math.cos(P.yaw), back = (tall ? 12 : 10.5) + Math.abs(P.v) * .07, up = (tall ? 6.4 : 5) + Math.abs(P.v) * .025;
+    var want = new THREE.Vector3(P.x - fx * back, P.y + up, P.z - fz * back), gh = ground(want.x, want.z) + 1.5; if (want.y < gh) want.y = gh;
+    camPos.lerp(want, Math.min(1, dt * 5)); cam.position.copy(camPos);
+    look.set(P.x + fx * 24, P.y + (tall ? 1.2 : 2.2), P.z + fz * 24); cam.lookAt(look);
+    sun.position.set(P.x - 120, P.y + 220, P.z + 80); sun.target.position.set(P.x, P.y, P.z);
+  }
+
+  // ---------- minimap ----------
+  var mm = $('mm'), mg = mm.getContext('2d'), MS = 256 / 760;
+  var mapBg = document.createElement('canvas'); mapBg.width = mapBg.height = 256;
+  (function () {
+    var g = mapBg.getContext('2d'); g.fillStyle = '#1f6f9c'; g.fillRect(0, 0, 256, 256);
+    g.beginPath(); for (var a = 0; a <= TAU + .01; a += .05) { var r = coastR(a) * MS; g.lineTo(128 + Math.cos(a) * r, 128 + Math.sin(a) * r); } g.fillStyle = '#4f9a48'; g.fill();
+    g.strokeStyle = '#e8e4d8'; g.lineWidth = 4; g.beginPath(); ROAD.forEach(function (p, i) { var x = 128 + p.x * MS, y = 128 + p.z * MS; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.stroke();
+  })();
+  function drawMini() {
+    mg.save(); mg.clearRect(0, 0, 256, 256); mg.beginPath(); mg.arc(128, 128, 128, 0, TAU); mg.clip();
+    mg.translate(128, 128); mg.rotate(Math.PI + P.yaw); mg.scale(1.9, 1.9); mg.translate(-128 - P.x * MS, -128 - P.z * MS);
+    mg.drawImage(mapBg, 0, 0);
+    MARK.forEach(function (m) { var p = ROAD[m.i]; mg.fillStyle = m.color; mg.beginPath(); mg.arc(128 + p.x * MS, 128 + p.z * MS, 5, 0, TAU); mg.fill(); });
+    if (EV && EV.kind === 'sprint' && EV.cps) { var c = ROAD[EV.cps[EV.n]]; mg.fillStyle = '#4fe3ff'; mg.beginPath(); mg.arc(128 + c.x * MS, 128 + c.z * MS, 5, 0, TAU); mg.fill(); }
+    CRATES.forEach(function (c) { mg.fillStyle = '#f0a020'; mg.fillRect(128 + c.position.x * MS - 2.5, 128 + c.position.z * MS - 2.5, 5, 5); });
+    mg.restore();
+    mg.fillStyle = '#ffd23f'; mg.strokeStyle = '#0d0f1c'; mg.lineWidth = 3; mg.beginPath(); mg.moveTo(128, 116); mg.lineTo(138, 138); mg.lineTo(128, 133); mg.lineTo(118, 138); mg.closePath(); mg.stroke(); mg.fill();
+  }
+
+  // ---------- little helpers: big messages, toasts, a beep ----------
+  var msgT = 0, toastT = 0, AC = null;
+  function msg(s) { $('msg').textContent = s; $('msg').style.opacity = 1; msgT = 1.2; }
+  function toast(s) { if (toastT > 0 && $('toast').textContent === s) return; $('toast').textContent = s; $('toast').style.opacity = 1; toastT = 1.8; }
+  function beep(f, d) { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); var o = AC.createOscillator(), g = AC.createGain(); o.frequency.value = f; g.gain.value = .08; o.connect(g); g.connect(AC.destination); o.start(); g.gain.exponentialRampToValueAtTime(.001, AC.currentTime + d); o.stop(AC.currentTime + d + .02); } catch (e) {} }
+
+  // ---------- menu ----------
+  var paused = true;
+  function showMenu() { paused = true; $('menu').hidden = false; $('touch').hidden = true; $('bFree').focus(); }
+  function hideMenu() { paused = false; $('menu').hidden = true; $('touch').hidden = !touchy; $('hud').hidden = false; }
+  function toggleMenu() { if ($('menu').hidden) showMenu(); else hideMenu(); }
+  $('bMenu').onclick = showMenu;
+  $('bFree').onclick = function () { if (EV) { EV = null; $('ev').hidden = true; clearCrates(); } hideMenu(); };
+  $('bSprint').onclick = function () { startEvent('sprint'); };
+  $('bHunt').onclick = function () { startEvent('hunt'); };
+  $('bBack').onclick = function () { location.href = './'; };
+  $('bGfx').onclick = function () { GFX = GFX === 'high' ? 'low' : 'high'; try { localStorage.setItem('cr3d-gfx', GFX); } catch (e) {} applyGfx(); resize(); };
+  function carButtons() {
+    var box = $('cars'); box.innerHTML = '';
+    CARS.forEach(function (c) { var b = document.createElement('button'); b.type = 'button'; b.textContent = c.name; if (c === pick) b.className = 'on'; b.onclick = function () { setCar(c); carButtons(); }; box.appendChild(b); });
+  }
+
+  // ---------- frame loop with a speed check: drops to Low graphics if the phone struggles ----------
+  var last = 0, fpsAcc = 0, fpsN = 0, fpsT = 0, lowered = false;
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    var dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts;
+    try {
+      if (!paused) { drive(dt); updateEvent(dt); }
+      updateTraffic(dt); updateCam(dt);
+      MARK.forEach(function (m) { m.g.children[1].rotation.z += dt; });
+      SPIN.forEach(function (s) { s[0].rotation[s[1]] += dt * s[2]; });
+      if (msgT > 0) { msgT -= dt; if (msgT <= 0) $('msg').style.opacity = 0; }
+      if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').style.opacity = 0; }
+      $('spd').textContent = Math.round(Math.abs(P.v) * 3.6);
+      drawMini();
+      R.render(scene, cam);
+      if (!paused && !document.hidden) { fpsAcc += dt; fpsN++; fpsT += dt; if (fpsT > 5) { var fps = fpsN / fpsAcc; if (fps < 28 && GFX === 'high' && !lowered) { lowered = true; GFX = 'low'; applyGfx(); resize(); toast('Switched to Low graphics for smoother driving (' + Math.round(fps) + ' fps)'); } fpsAcc = fpsN = fpsT = 0; } }
+    } catch (e) { console.error(e); }
+  }
+
+  // ---------- start ----------
+  try {
+    resize(); marker(30, '#3df07a', 'sprint'); marker(400, '#ffb020', 'hunt');
+    setCar(pick); addTraffic(); applyGfx(); placeAt(8); updateCam(1); carButtons(); showBests();
+    $('who').textContent = (SAVE && SAVE.name ? SAVE.name + ' · ' : '') + 'Coast island · test build';
+    Promise.all([loadModel(pick.id)]).then(function () { $('load').hidden = true; showMenu(); });
+    setTimeout(function () { if (!$('load').hidden) { $('load').hidden = true; showMenu(); } }, 9000);
+    requestAnimationFrame(frame);
+    window.__CR3D = { P: P, startEvent: startEvent, ground: ground, road: ROAD, setGfx: function (g) { GFX = g; applyGfx(); },
+      // (test hook: advance n frames of 1/60 s even when the page isn't drawing on its own)
+      step: function (n) { for (var i = 0; i < (n || 1); i++) { if (!paused) { drive(1 / 60); updateEvent(1 / 60); } updateTraffic(1 / 60); updateCam(1 / 60); } drawMini(); R.render(scene, cam); return { x: P.x, z: P.z, v: P.v, ev: EV && { k: EV.kind, n: EV.n, t: EV.t } }; } };
+  } catch (e) { console.error(e); fail('Something went wrong while building the island: ' + (e && e.message)); }
+})();
+</script>
+</body>
+</html>
