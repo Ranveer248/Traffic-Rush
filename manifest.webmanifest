@@ -1,6 +1,6 @@
 {
-  "name": "Cargo Run",
-  "short_name": "Cargo Run",
+  "name": "Traffic Rush",
+  "short_name": "Traffic Rush",
   "description": "Dodge traffic, grab cash crates and build your dream garage.",
   "start_url": "./",
   "scope": "./",
