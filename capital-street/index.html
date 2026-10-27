@@ -24,36 +24,45 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* map labels */
 #labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
 .lab { position: absolute; left: 0; top: 0; white-space: nowrap; display: none; will-change: transform; }
-.lab.country { font: 600 12px/1 Inter, sans-serif; color: #f4f7ee; opacity: .85; text-shadow: 0 1px 2px rgba(0, 0, 0, .55); }
+.lab.country { font: 600 12px/1 Inter, sans-serif; color: #2a2e2a; text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px rgba(255, 255, 255, .8); }
+.lab.continent { font: 600 14px/1 Inter, sans-serif; color: #44513f; text-shadow: 0 0 2px #fff, 0 0 3px rgba(255, 255, 255, .8); }
 .lab.district { font: 400 13px/1 'Archivo Black', sans-serif; letter-spacing: .12em; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
 .lab.water { font: italic 600 12px/1 Inter, sans-serif; letter-spacing: .25em; color: #e2f1ff; text-shadow: 0 1px 2px rgba(0, 40, 80, .7); }
 .lab.place { font: 800 12px/1 Inter, sans-serif; padding: 5px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--edge); }
 .lab.street { font: 800 11px/1 Inter, sans-serif; color: #f4f4f4; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
 .lab.home { display: none; align-items: center; gap: 6px; font: 800 12px/1 Inter, sans-serif; background: var(--gold); color: var(--gold-ink); padding: 6px 12px 6px 8px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0, 0, 0, .4); }
 .lab.home svg.i { width: 16px; height: 16px; stroke-width: 2.4; }
-.lab.city { text-align: center; pointer-events: auto; cursor: pointer; }
-.lab.city .disc { display: grid; place-content: center; width: 44px; height: 44px; margin: 0 auto 6px; border-radius: 50%; background: var(--bg); border: 3px solid var(--gold); box-shadow: 0 3px 10px rgba(0, 0, 0, .35); position: relative; }
-.lab.city .disc::before { content: ''; position: absolute; inset: -40px; border-radius: 50%; background: radial-gradient(rgba(255, 204, 77, .35), rgba(255, 204, 77, 0) 70%); z-index: -1; }
-.lab.city .tag { display: inline-block; font: 400 11px/1 'Archivo Black', sans-serif; letter-spacing: .06em; color: var(--gold-ink); background: var(--gold); padding: 4px 8px; border-radius: 999px; }
+.lab.city { pointer-events: auto; cursor: pointer; }
+.lab.city .iso { width: 42px; height: 42px; display: block; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .35)); }
+.lab.city .badge { position: absolute; right: -8px; top: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--blue); border: 2px solid #fff; color: #fff; font: 800 11px/16px Inter, sans-serif; text-align: center; }
 /* HUD */
 #hud { position: fixed; inset: 0; pointer-events: none; }
 #hud[hidden] { display: none; }
 #where { position: absolute; left: max(16px, env(safe-area-inset-left)); top: max(16px, env(safe-area-inset-top)); display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--r-md); }
 #where b { display: block; font: 400 15px/1.15 'Archivo Black', sans-serif; }
 #where span { display: block; font-size: 12px; color: var(--dim); }
-#nav { position: absolute; right: max(16px, env(safe-area-inset-right)); top: max(16px, env(safe-area-inset-top)); display: grid; gap: 8px; pointer-events: auto; }
-#nav button { width: 64px; height: 64px; border-radius: var(--r-md); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: 700 11px/1 Inter, sans-serif; padding: 0; }
-#nav button:active { transform: translateY(1px); }
-#nav button.on { border-color: var(--gold); color: var(--gold); }
-#hint { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); border-radius: 999px; padding: 8px 14px; font-size: 13px; white-space: nowrap; transition: opacity .6s; }
-#toast { position: fixed; left: 50%; bottom: max(66px, calc(env(safe-area-inset-bottom) + 54px)); transform: translate(-50%, 12px); width: min(342px, calc(100vw - 32px)); display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--r-lg); opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; }
+/* bottom dock, like the reference: the player in the middle, two round buttons each side, a price ticker underneath */
+#dock { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 30px); transform: translateX(-50%); display: flex; align-items: flex-end; gap: 10px; pointer-events: auto; }
+.dk { width: 40px; height: 40px; margin-bottom: 8px; border-radius: 50%; display: grid; place-content: center; padding: 0; background: rgba(38, 42, 50, .72); border: 1px solid rgba(255, 255, 255, .2); color: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .3); }
+.dk svg.i { width: 20px; height: 20px; }
+.dk.locked { opacity: .6; }
+.dk:active, .avatar:active { transform: translateY(1px); }
+.avatar { width: 46px; height: 74px; padding: 0; border: 0; background: none; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .45)); }
+.avatar svg { width: 100%; height: 100%; display: block; }
+#ticker { position: absolute; left: 0; right: 0; bottom: 0; height: calc(22px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: rgba(10, 14, 22, .55); overflow: hidden; }
+#tape { display: inline-flex; white-space: nowrap; font: 700 11px/22px Inter, sans-serif; letter-spacing: .06em; color: rgba(255, 255, 255, .75); animation: tape 70s linear infinite; }
+#tape span { padding-right: 26px; }
+#tape i { font-style: normal; } #tape .up { color: #39d98a; } #tape .dn { color: #ff6b6b; }
+@keyframes tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+#hint { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 126px); transform: translateX(-50%); border-radius: 999px; padding: 8px 14px; font-size: 13px; white-space: nowrap; transition: opacity .6s; }
+#toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 122px); transform: translate(-50%, 12px); width: min(342px, calc(100vw - 32px)); display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--r-lg); opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
 #toast .badge { width: 36px; height: 36px; flex: none; display: grid; place-content: center; border-radius: var(--r-sm); background: rgba(255, 90, 95, .18); color: var(--locked); }
 #toast .badge svg.i { width: 20px; height: 20px; }
 #toast b { display: block; font: 800 14px/1.2 Inter, sans-serif; }
 #toast span { display: block; font-size: 12px; color: var(--dim); }
 /* big centre text, like "WHERE YOU START" */
-#big { position: fixed; left: 50%; top: 56%; transform: translate(-50%, 10px); font: 400 clamp(34px, 11vw, 64px)/.95 'Archivo Black', sans-serif; text-align: center; color: #fff; text-shadow: 0 4px 0 rgba(0, 0, 0, .35), 0 0 24px rgba(0, 0, 0, .35); opacity: 0; transition: opacity .5s, transform .5s; pointer-events: none; width: 92vw; }
+#big { position: fixed; left: 50%; top: 19%; transform: translate(-50%, 10px); font: 400 clamp(34px, 11vw, 64px)/.95 'Archivo Black', sans-serif; text-align: center; color: #fff; -webkit-text-stroke: 2px rgba(0, 0, 0, .55); paint-order: stroke fill; text-shadow: 0 3px 0 rgba(0, 0, 0, .55), 0 0 18px rgba(0, 0, 0, .55); opacity: 0; transition: opacity .5s, transform .5s; pointer-events: none; width: 92vw; }
 #big.on { opacity: 1; transform: translate(-50%, 0); }
 /* title card */
 .ov { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 16px; padding-bottom: max(24px, env(safe-area-inset-bottom)); background: linear-gradient(to top, rgba(11, 18, 32, .94), rgba(11, 18, 32, 0) 62%); }
@@ -78,21 +87,27 @@ h1 em { font-style: normal; color: var(--green); }
   <symbol id="i-city" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V9h5v12"/><path d="M10 21V4h6v17"/><path d="M16 21v-9h4v9"/></symbol>
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.4c2.9.2 5.5 2.3 5.5 5.6"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9 5.5 4h13L20 9"/><path d="M4 9h16v1.5a2.7 2.7 0 0 1-5.3.8 2.7 2.7 0 0 1-5.4 0 2.7 2.7 0 0 1-5.3-.8z"/><path d="M5 13v7h14v-7"/><path d="M10 20v-4h4v4"/></symbol>
+  <symbol id="i-avatar" viewBox="0 0 40 64"><circle cx="20" cy="14" r="11" fill="#a3a9b2" stroke="#1d2430" stroke-width="2"/><rect x="9" y="27" width="22" height="35" rx="11" fill="#3b6fd8" stroke="#1d2430" stroke-width="2"/></symbol>
+  <symbol id="i-iso" viewBox="0 0 48 48"><path d="M24 7 39 15v20L24 43 9 35V15z" fill="#e9edf2" stroke="#3d4652" stroke-width="2" stroke-linejoin="round"/><path d="M24 23 39 15v20L24 43z" fill="#b6c0cc"/><path d="M24 23 9 15v20l15 8z" fill="#dfe5ec"/><path d="M24 7 39 15 24 23 9 15z" fill="#f8fafc"/><path d="M12 20.5l9 4.5M12 25.5l9 4.5M12 30.5l9 4.5" stroke="#6f8fb3" stroke-width="2"/><path d="M27 25l9-4.5M27 30l9-4.5M27 35l9-4.5" stroke="#55769c" stroke-width="2"/><path d="M24 7 39 15v20L24 43 9 35V15z" fill="none" stroke="#3d4652" stroke-width="2" stroke-linejoin="round"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
 </svg>
 <canvas id="c"></canvas>
 <div id="labels"></div>
 <div id="hud" hidden>
   <div id="where" class="glass"><svg class="i"><use href="#i-pin"/></svg><div><b id="whereCity">New York</b><span id="whereArea">Manhattan</span></div></div>
-  <div id="nav">
-    <button id="bHome" class="glass"><svg class="i"><use href="#i-home"/></svg>Home</button>
-    <button id="bWall" class="glass"><svg class="i"><use href="#i-bank"/></svg>Wall St</button>
-    <button id="bCity" class="glass"><svg class="i"><use href="#i-city"/></svg>City</button>
-    <button id="bWorld" class="glass"><svg class="i"><use href="#i-globe"/></svg>World</button>
+  <div id="dock">
+    <button id="bWorld" class="dk" aria-label="World map"><svg class="i"><use href="#i-globe"/></svg></button>
+    <button id="bWall" class="dk" aria-label="Wall Street"><svg class="i"><use href="#i-bank"/></svg></button>
+    <button id="bHome" class="avatar" aria-label="Home"><svg viewBox="0 0 40 64"><use href="#i-avatar"/></svg></button>
+    <button id="bStaff" class="dk locked" aria-label="Staff"><svg class="i"><use href="#i-people"/></svg></button>
+    <button id="bShop" class="dk locked" aria-label="Shop"><svg class="i"><use href="#i-store"/></svg></button>
   </div>
+  <div id="ticker"><div id="tape"></div></div>
   <div id="hint" class="glass"></div>
 </div>
-<div id="toast" class="glass"><div class="badge"><svg class="i"><use href="#i-lock"/></svg></div><div><b>Locked</b><span>Only New York is open. More cities in a future update.</span></div></div>
+<div id="toast" class="glass"><div class="badge"><svg class="i"><use href="#i-lock"/></svg></div><div><b id="toastT">Locked</b><span id="toastB">Only New York is open. More cities in a future update.</span></div></div>
 <div id="big"></div>
 <div id="title" class="ov" hidden>
   <div class="card">
@@ -120,7 +135,7 @@ const ll = (lat, lon) => [R * K * (lon - LON0) * Math.PI / 180, -R * K * (mercY(
 
 // ---------- places ----------
 const PLACE = {
-  home: ll(40.7262, -73.9818),            // the student's walk-up in the East Village
+  home: ll(40.7097, -74.0087),            // as in the reference: a rooftop room on a tower by John Street and Broadway
   wall: ll(40.7064, -74.0094),
   manhattan: ll(40.7680, -73.9750),
   world: ll(36.0, -82.0)
@@ -157,14 +172,14 @@ function polyGeo(d, name) {
 const canvas = document.getElementById('c');
 // High-end graphics: physically based materials, filmic tone mapping, sky reflections and real-time sun shadows.
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 3)); // high-end devices: full retina so window grids stay crisp
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.82;
+renderer.toneMappingExposure = 0.85;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
-const OCEAN = 0x2f87c8, LAND = 0x7cb05c, HORIZON = 0xd4e4f1, ZENITH = 0x5d9bd6;
+const OCEAN = 0x2b84c4, LAND = 0x64a04b, HORIZON = 0xd4e4f1, ZENITH = 0x5d9bd6, PAVEMENT = 0xa19f99, ASPHALT = 0x50535a; // land and sea as on the reference world map
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(lin(HORIZON), 1e9, 2e9);
 const camera = new THREE.PerspectiveCamera(50, 1, 1, 1e5);
@@ -189,9 +204,9 @@ scene.add(sky);
   envScene.add(new THREE.Mesh(new THREE.CircleGeometry(9.9, 32).rotateX(-Math.PI / 2).translate(0, -1, 0), new THREE.MeshBasicMaterial({ color: lin(0x5d5a55) })));
   scene.environment = pm.fromScene(envScene, 0.02).texture;
 }
-scene.add(new THREE.HemisphereLight(lin(0xdfeaff), lin(0x4d463e), 0.38));
+scene.add(new THREE.HemisphereLight(lin(0xdfeaff), lin(0x4d463e), 0.3));
 const SUN_DIR = new THREE.Vector3(-0.55, 0.72, 0.42).normalize();
-const sunLight = new THREE.DirectionalLight(lin(0xffeccc), 2.6);
+const sunLight = new THREE.DirectionalLight(lin(0xffeccc), 3.0);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(4096, 4096);
 sunLight.shadow.bias = -0.0004;
@@ -199,87 +214,171 @@ sunLight.shadow.camera.near = 10; sunLight.shadow.camera.far = 12000;
 scene.add(sunLight, sunLight.target);
 
 // Flat ground layers are drawn bottom-up without writing depth, so they never flicker against each other.
-function flat(geo, color, order, extra) {
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(Object.assign({ color: lin(color), roughness: 1, metalness: 0, depthWrite: false }, extra)));
+function flat(geo, color, order, extra, unlit) {
+  const m = new THREE.Mesh(geo, unlit ? new THREE.MeshBasicMaterial({ color: lin(color), depthWrite: false, toneMapped: false })
+    : new THREE.MeshStandardMaterial(Object.assign({ color: lin(color), roughness: 1, metalness: 0, depthWrite: false }, extra)));
   m.renderOrder = order; m.frustumCulled = false; m.receiveShadow = true;
   scene.add(m);
   return m;
 }
-flat(new THREE.PlaneGeometry(1e8, 1e8).rotateX(-Math.PI / 2), OCEAN, 0, { roughness: 0.22, envMapIntensity: 0.7 }).receiveShadow = false; // shadows only land on Manhattan
+flat(new THREE.PlaneGeometry(1e8, 1e8).rotateX(-Math.PI / 2), OCEAN, 0, null, true); // flat colours, like the reference map
 
-// The locked world: a dark hatched veil everywhere except around New York.
+// The locked world: a light tint everywhere except around New York (tapping it says it's locked).
 const veil = new THREE.Mesh(new THREE.PlaneGeometry(1e8, 1e8).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
   transparent: true, depthWrite: false,
-  uniforms: { r0: { value: UNLOCKED_R }, r1: { value: UNLOCKED_R * 1.6 }, hatch: { value: 1 }, amount: { value: 1 } },
+  uniforms: { r0: { value: UNLOCKED_R }, r1: { value: UNLOCKED_R * 1.6 }, amount: { value: 1 } },
   vertexShader: 'varying vec2 vP; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vP = w.xz; gl_Position = projectionMatrix * viewMatrix * w; }',
-  fragmentShader: `uniform float r0, r1, hatch, amount; varying vec2 vP;
-    void main(){
-      float a = smoothstep(r0, r1, length(vP));
-      float stripe = step(0.5, fract((vP.x + vP.y) / hatch));
-      gl_FragColor = vec4(0.05, 0.08, 0.16, a * amount * (0.16 + 0.07 * stripe));
-    }`
+  fragmentShader: `uniform float r0, r1, amount; varying vec2 vP;
+    void main(){ gl_FragColor = vec4(0.03, 0.05, 0.1, smoothstep(r0, r1, length(vP)) * amount * 0.1); }`
 }));
 veil.renderOrder = 6; veil.frustumCulled = false;
 scene.add(veil);
 
+// thick screen-space lines (country borders, like the reference map)
+function thickLines(segs, widthPx, color, order) {
+  const n = segs.length / 4, a = new Float32Array(n * 12), b = new Float32Array(n * 12), meta = new Float32Array(n * 8), idx = [];
+  for (let i = 0; i < n; i++) {
+    for (let v = 0; v < 4; v++) {
+      a.set([segs[4 * i], 0, segs[4 * i + 1]], 12 * i + 3 * v);
+      b.set([segs[4 * i + 2], 0, segs[4 * i + 3]], 12 * i + 3 * v);
+      meta.set([v >> 1, v & 1 ? -1 : 1], 8 * i + 2 * v);
+    }
+    const o = 4 * i; idx.push(o, o + 1, o + 2, o + 2, o + 1, o + 3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(a, 3)); g.setAttribute('b', new THREE.BufferAttribute(b, 3)); g.setAttribute('meta', new THREE.BufferAttribute(meta, 2));
+  g.setIndex(idx);
+  const m = new THREE.Mesh(g, new THREE.ShaderMaterial({
+    depthWrite: false, depthTest: false, transparent: true,
+    uniforms: { res: { value: new THREE.Vector2(1, 1) }, width: { value: widthPx }, color: { value: new THREE.Color(color) }, alpha: { value: 1 } },
+    vertexShader: `attribute vec3 b; attribute vec2 meta; uniform vec2 res; uniform float width;
+      void main(){
+        vec4 ca = projectionMatrix * viewMatrix * vec4(position, 1.0), cb = projectionMatrix * viewMatrix * vec4(b, 1.0);
+        vec2 d = normalize((cb.xy / cb.w - ca.xy / ca.w) * res + 1e-6), nrm = vec2(-d.y, d.x);
+        vec4 c = meta.x < 0.5 ? ca : cb;
+        c.xy += nrm * meta.y * width / res * c.w;
+        gl_Position = c;
+      }`,
+    fragmentShader: 'uniform vec3 color; uniform float alpha; void main(){ gl_FragColor = vec4(color, alpha); }'
+  }));
+  m.renderOrder = order; m.frustumCulled = false;
+  scene.add(m);
+  return m;
+}
+
 // ---------- buildings: real footprints and heights, extruded here ----------
-// Flat normals come from screen derivatives, so walls and roofs share vertices. The shader darkens roofs and draws floor lines.
-const buildingMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.78, metalness: 0.05, envMapIntensity: 0.55 });
+// The shader paints each facade from its style (0 glass window bands, 1 stone with punched windows, 2 brick walk-up, 3 all-glass tower),
+// puts shop fronts on the ground floor, a light parapet rim at the top, dark roofs, and lets window glass reflect the sky.
+const buildingMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.88, metalness: 0, envMapIntensity: 0.35 });
 buildingMat.onBeforeCompile = sh => {
   sh.vertexShader = sh.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
-    .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    .replace('#include <common>', '#include <common>\nattribute vec3 fac;\nvarying vec3 vFac;\nvarying vec3 vWP;')
+    .replace('#include <project_vertex>', '#include <project_vertex>\nvFac = fac;\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
   sh.fragmentShader = sh.fragmentShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
+    .replace('#include <common>', `#include <common>
+      varying vec3 vFac; varying vec3 vWP;
+      float boxAA(float f, float a, float b, float w) { return clamp(smoothstep(a - w, a + w, f) - smoothstep(b - w, b + w, f), 0.0, 1.0); }`)
     .replace('#include <color_fragment>', `#include <color_fragment>
-      diffuseColor.rgb = pow(diffuseColor.rgb, vec3(2.2)); // the colours are stored as sRGB bytes
+      vec3 base = pow(diffuseColor.rgb, vec3(2.2)); // stored as sRGB bytes
       vec3 wn = normalize(cross(dFdx(vWP), dFdy(vWP)));
-      if (abs(wn.y) > 0.6) diffuseColor.rgb *= 0.42;
-      else {
-        float f = vWP.y / 3.8, w = fwidth(f);
-        float line = smoothstep(0.62 - w, 0.62 + w, fract(f)) - smoothstep(0.98 - w, 0.98 + w, fract(f));
-        diffuseColor.rgb *= 1.0 - line * 0.3 * (1.0 - smoothstep(0.12, 0.35, w));
-      }`);
+      float y = vWP.y, u = vFac.x, top = vFac.y, sty = floor(vFac.z + 0.5);
+      float gMask = 0.0;
+      vec3 c = base;
+      if (abs(wn.y) > 0.6) {
+        c = y > top - 0.6 ? mix(base, vec3(0.74, 0.73, 0.70), 0.7) : mix(vec3(0.016, 0.017, 0.02), base * 0.1, 0.1); // dark roofs, light parapet caps
+      } else if (y > top - 1.25 && top > 9.0) {
+        c = mix(base, vec3(0.78, 0.77, 0.74), sty > 2.5 ? 0.85 : 0.5);
+      } else {
+        float fh = sty < 0.5 ? 3.9 : sty < 1.5 ? 3.6 : sty < 2.5 ? 3.1 : 3.9;
+        float bay = sty < 0.5 ? 1.5 : sty < 1.5 ? 2.6 : sty < 2.5 ? 2.4 : 1.5;
+        float fy = y / fh, fx = u / bay, wy = fwidth(fy), wx = fwidth(fx), ffy = fract(fy), ffx = fract(fx);
+        float win, cover;
+        if (sty < 0.5) { win = boxAA(ffy, 0.22, 0.9, wy) * (1.0 - boxAA(ffx, 0.0, 0.07, wx)); cover = 0.63; }
+        else if (sty < 1.5) { win = boxAA(ffy, 0.28, 0.82, wy) * boxAA(ffx, 0.22, 0.78, wx); cover = 0.3;
+          c *= 1.0 + 0.08 * boxAA(fract(u / (bay * 2.0)), 0.0, 0.1, fwidth(u / (bay * 2.0))); }
+        else if (sty < 2.5) { win = boxAA(ffy, 0.3, 0.78, wy) * boxAA(ffx, 0.3, 0.7, wx); cover = 0.19;
+          c *= 1.0 + 0.3 * boxAA(ffy, 0.8, 0.88, wy) * boxAA(ffx, 0.26, 0.74, wx); }
+        else { win = 1.0 - 0.75 * boxAA(ffy, 0.0, 0.06, wy); cover = 0.96; }
+        float far = smoothstep(0.3, 0.7, max(wx, wy));
+        win = mix(win, cover, far);
+        if (y < 4.6 && sty < 2.5) win = boxAA(y, 0.4, 3.7, fwidth(y)) * (1.0 - boxAA(fract(u / 4.0), 0.0, 0.06, fwidth(u / 4.0))) * (1.0 - far) + 0.45 * far;
+        gMask = win;
+        c = mix(c, sty > 2.5 ? base * 0.7 : vec3(0.05, 0.12, 0.30), win);
+        c *= mix(0.62, 1.0, smoothstep(0.0, 16.0, y)); // a little ambient occlusion near the street
+      }
+      diffuseColor.rgb = c;`)
+    .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.3, gMask);')
+    .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.25, gMask);');
 };
-const TILE = 1500, TALL = 45;
+const TILE = 1000, TALL = 45;
 const tiles = []; // { mesh, tall }
-let homeTop = 20;
+let homeTop = 20, homeAngle = 0;
 function buildCity(d) {
-  const n = d['b.n'], H = d['b.h'], MH = d['b.mh'], C = d['b.c'], XY = d['b.xy'];
-  const bins = new Map(); // tile key → { tall, pos: [], col: [], idx: [] }
-  let p = 0, best = Infinity;
+  const n = d['b.n'], ni = d['b.ni'], H = d['b.h'], MH = d['b.mh'], C = d['b.c'], S = d['b.s'], XY = d['b.xy'], IXY = d['b.ixy'];
+  const bins = new Map();
+  const ring = (arr, off, k) => { const r = []; for (let j = 0; j < k; j++) r.push(new THREE.Vector2(arr[off + 2 * j] / 2, arr[off + 2 * j + 1] / 2)); return r; };
+  let p = 0, pi = 0, best = Infinity;
   for (let i = 0; i < n.length; i++) {
-    const k = n[i], h = H[i] / 10, mh = MH[i] / 10, x0 = XY[p] / 2, z0 = XY[p + 1] / 2, tall = h >= TALL;
-    // the walk-up: the closest low building to the home spot
-    const dh = (x0 - PLACE.home[0]) ** 2 + (z0 - PLACE.home[1]) ** 2;
-    if (h > 10 && h < 30 && dh < best) { best = dh; homeTop = h; PLACE.homeSnap = [x0, z0]; }
-    const key = Math.floor(x0 / TILE) + ',' + Math.floor(z0 / TILE) + (tall ? 'T' : 'L');
+    const k = n[i], kin = ni[i], h = H[i] / 10, mh = MH[i] / 10, sty = S[i], tall = h >= TALL;
+    const outer = ring(XY, p, k), inner = kin ? ring(IXY, pi, kin) : null;
+    p += 2 * k; pi += 2 * kin;
+    if (h > 90 && mh === 0) { // the start: a tower by the home spot
+      let cx = 0, cz = 0;
+      for (const v of outer) { cx += v.x; cz += v.y; }
+      cx /= k; cz /= k;
+      const near = (cx - PLACE.home[0]) ** 2 + (cz - PLACE.home[1]) ** 2 < 230 ** 2;
+      if (near && -h < best) { // the tallest tower close by, so nothing blocks the view down onto its roof
+        best = -h; homeTop = kin ? h - 1.2 : h; PLACE.homeSnap = [cx, cz];
+        let L = 0; // turn the rooftop room with the building
+        for (let j = 0; j < k; j++) { const a = outer[j], c = outer[(j + 1) % k], l = a.distanceTo(c); if (l > L) { L = l; homeAngle = Math.atan2(c.y - a.y, c.x - a.x); } }
+      }
+    }
+    const key = Math.floor(outer[0].x / TILE) + ',' + Math.floor(outer[0].y / TILE) + (tall ? 'T' : 'L');
     let b = bins.get(key);
-    if (!b) bins.set(key, b = { tall, pos: [], col: [], idx: [] });
-    const base = b.pos.length / 3, contour = [];
-    for (let j = 0; j < k; j++) {
-      const x = XY[p + 2 * j] / 2, z = XY[p + 2 * j + 1] / 2;
-      b.pos.push(x, mh, z); contour.push(new THREE.Vector2(x, z));
+    if (!b) bins.set(key, b = { tall, pos: [], nor: [], col: [], fac: [], idx: [] });
+    const cr = C[3 * i], cg = C[3 * i + 1], cb = C[3 * i + 2];
+    // a wall ring; corners are shared, with one extra vertex where the wall coordinate wraps round
+    const top = kin ? h : h + 2; // the shader's parapet height; buildings without one get a plain dark roof
+    const wall = (pts, y0, y1, inward) => {
+      const first = b.pos.length / 3, m = pts.length;
+      let u = 0;
+      for (let j = 0; j <= m; j++) {
+        const a = pts[j % m], nx = pts[(j + 1) % m], L = a.distanceTo(nx) || 1, s = inward ? -127 : 127;
+        const nX = Math.round((nx.y - a.y) / L * s), nZ = Math.round(-(nx.x - a.x) / L * s);
+        b.pos.push(a.x, y0, a.y, a.x, y1, a.y);
+        b.nor.push(nX, 0, nZ, nX, 0, nZ);
+        b.col.push(cr, cg, cb, cr, cg, cb);
+        b.fac.push(u, top, sty, u, top, sty);
+        u += L;
+      }
+      for (let j = 0; j < m; j++) {
+        const a0 = first + 2 * j, a1 = a0 + 2;
+        if (inward) b.idx.push(a0, a1, a1 + 1, a0, a1 + 1, a0 + 1);
+        else b.idx.push(a0, a1 + 1, a1, a0, a0 + 1, a1 + 1);
+      }
+      return first;
+    };
+    const up = (pts, t, map) => { // add a triangle facing the sky
+      const p0 = pts[t[0]], p1 = pts[t[1]], p2 = pts[t[2]];
+      const ok = (p1.y - p0.y) * (p2.x - p0.x) - (p1.x - p0.x) * (p2.y - p0.y) > 0;
+      b.idx.push(map(t[0]), map(t[ok ? 1 : 2]), map(t[ok ? 2 : 1]));
+    };
+    const o = wall(outer, mh, h, false);
+    if (inner) {
+      const io = wall(inner, h - 1.2, h, true), both = outer.concat(inner);
+      for (const t of THREE.ShapeUtils.triangulateShape(outer, [inner])) up(both, t, v => v < k ? o + 2 * v + 1 : io + 2 * (v - k) + 1); // parapet cap
+      for (const t of THREE.ShapeUtils.triangulateShape(inner, [])) up(inner, t, v => io + 2 * v); // roof, inside the parapet
+    } else {
+      for (const t of THREE.ShapeUtils.triangulateShape(outer, [])) up(outer, t, v => o + 2 * v + 1);
     }
-    for (let j = 0; j < k; j++) { b.pos.push(contour[j].x, h, contour[j].y); }
-    for (let j = 0; j < 2 * k; j++) b.col.push(C[3 * i], C[3 * i + 1], C[3 * i + 2]);
-    for (let j = 0; j < k; j++) { // walls
-      const a = base + j, c = base + (j + 1) % k;
-      b.idx.push(a, c + k, c, a, a + k, c + k);
-    }
-    for (const t of THREE.ShapeUtils.triangulateShape(contour, [])) { // roof, wound to face up
-      const p0 = contour[t[0]], p1 = contour[t[1]], p2 = contour[t[2]];
-      const up = (p1.y - p0.y) * (p2.x - p0.x) - (p1.x - p0.x) * (p2.y - p0.y) > 0;
-      b.idx.push(base + k + t[0], base + k + t[up ? 1 : 2], base + k + t[up ? 2 : 1]);
-    }
-    p += 2 * k;
   }
   for (const b of bins.values()) {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(new Int8Array(b.nor), 3, true)); // only offsets shadow lookups; shading uses flat normals
     g.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(b.col), 3, true));
+    g.setAttribute('fac', new THREE.Float32BufferAttribute(b.fac, 3));
     g.setIndex(b.idx);
-    g.computeVertexNormals(); // only used to offset shadow lookups; lighting uses the flat derivative normals
     g.computeBoundingSphere();
     const m = new THREE.Mesh(g, buildingMat);
     m.renderOrder = 10; m.castShadow = m.receiveShadow = true;
@@ -287,6 +386,105 @@ function buildCity(d) {
     tiles.push({ mesh: m, tall: b.tall });
   }
   if (PLACE.homeSnap) PLACE.home = PLACE.homeSnap;
+}
+
+// instanced things in 800 m tiles, each with a bounding sphere covering its tile so off-screen tiles are culled
+function tiled(count, posOf) {
+  const bins = new Map();
+  for (let i = 0; i < count; i++) {
+    const [x, z] = posOf(i), key = Math.floor(x / 800) + ',' + Math.floor(z / 800);
+    if (!bins.has(key)) bins.set(key, []);
+    bins.get(key).push(i);
+  }
+  return [...bins.values()].map(list => {
+    const box = new THREE.Box3(), v = new THREE.Vector3();
+    for (const i of list) { const [x, z] = posOf(i); box.expandByPoint(v.set(x, 0, z)); }
+    box.max.y = 500;
+    const s = box.getBoundingSphere(new THREE.Sphere()); s.radius += 20;
+    return { list, sphere: s };
+  });
+}
+function instanced(geo, mat, list, sphere, set) {
+  const m = new THREE.InstancedMesh(geo.clone(), mat, list.length), o = new THREE.Object3D();
+  list.forEach((i, j) => { set(i, o, m, j); o.updateMatrix(); m.setMatrixAt(j, o.matrix); });
+  m.geometry.boundingSphere = sphere; // r128 culls instances by the geometry's sphere: make it cover the tile
+  m.castShadow = m.receiveShadow = true; m.renderOrder = 10;
+  scene.add(m);
+  return m;
+}
+function mergeGeos(list) {
+  const pos = [], nor = [], idx = [];
+  let off = 0;
+  for (const g of list) {
+    pos.push(...g.attributes.position.array); nor.push(...g.attributes.normal.array);
+    for (const i of g.index.array) idx.push(i + off);
+    off += g.attributes.position.count;
+  }
+  const m = new THREE.BufferGeometry();
+  m.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); m.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); m.setIndex(idx);
+  return m;
+}
+
+// ---------- rooftops: plant rooms and New York water towers ----------
+const roofThings = [];
+function buildRoofs(d) {
+  const T = d['r.t'], XY = d['r.xy'], Y = d['r.y'], S = d['r.s'], A = d['r.a'];
+  const boxGeo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
+  const tankGeo = new THREE.CylinderGeometry(0.5, 0.5, 1, 14, 1).translate(0, 0.5, 0), coneGeo = new THREE.ConeGeometry(0.53, 1, 14).translate(0, 0.5, 0);
+  const legGeo = mergeGeos([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([x, z]) => new THREE.BoxGeometry(0.07, 1, 0.07).translate(x * 0.3, 0.5, z * 0.3)));
+  const plantMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+  const woodMat = new THREE.MeshStandardMaterial({ color: lin(0x7a5236), roughness: 0.95 }), roofMat = new THREE.MeshStandardMaterial({ color: lin(0x34302c), roughness: 0.9 }), legMat = new THREE.MeshStandardMaterial({ color: lin(0x2b2c30), roughness: 0.8 });
+  const at = i => [XY[2 * i] / 2, XY[2 * i + 1] / 2], tint = new THREE.Color();
+  for (const { list, sphere } of tiled(T.length, at)) {
+    const boxes = list.filter(i => T[i] === 0), towers = list.filter(i => T[i] === 1);
+    const place = (i, o) => { const [x, z] = at(i); o.position.set(x, Y[i] / 10, z); o.rotation.set(0, -A[i] / 255 * Math.PI, 0); };
+    if (boxes.length) roofThings.push(instanced(boxGeo, plantMat, boxes, sphere, (i, o, m, j) => {
+      place(i, o); o.scale.set(S[3 * i] / 10, S[3 * i + 2] / 10, S[3 * i + 1] / 10);
+      m.setColorAt(j, tint.setScalar(0.55 + (i % 5) * 0.07));
+    }));
+    if (towers.length) {
+      const sz = i => [S[3 * i] / 10, S[3 * i + 2] / 10];
+      roofThings.push(instanced(legGeo, legMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.scale.set(w, h * 0.38, w); }));
+      roofThings.push(instanced(tankGeo, woodMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.position.y += h * 0.38; o.scale.set(w, h * 0.47, w); }));
+      roofThings.push(instanced(coneGeo, roofMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.position.y += h * 0.85; o.scale.set(w, h * 0.15, w); }));
+    }
+  }
+}
+
+// ---------- street names painted on the map ----------
+let streetLabels;
+async function buildStreetLabels(d, names) {
+  try { await document.fonts.load('700 26px Inter'); } catch (e) { /* system font is fine */ }
+  const W = 4096, CW = 512, CH = 40, cols = W / CW, cv = document.createElement('canvas');
+  cv.width = W; cv.height = Math.min(4096, Math.ceil(names.length / cols) * CH);
+  const g = cv.getContext('2d');
+  g.font = '700 26px Inter, system-ui, sans-serif'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
+  const cells = names.map((nm, i) => {
+    const x = (i % cols) * CW + 4, y = Math.floor(i / cols) * CH, w = Math.min(CW - 8, g.measureText(nm).width);
+    g.fillText(nm, x, y + CH / 2, CW - 8);
+    return [x, y, w];
+  });
+  const tex = new THREE.CanvasTexture(cv);
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const I = d['sl.i'], XY = d['sl.xy'], A = d['sl.a'], n = I.length, uvo = new Float32Array(n * 4);
+  const geo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, depthTest: false,
+    uniforms: { map: { value: tex }, fade: { value: 1 } },
+    vertexShader: 'attribute vec4 uvo; varying vec2 vUv; void main(){ vUv = uvo.xy + uv * uvo.zw; gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform sampler2D map; uniform float fade; varying vec2 vUv; void main(){ gl_FragColor = vec4(vec3(0.95), texture2D(map, vUv).a * 0.9 * fade); }'
+  });
+  const m = new THREE.InstancedMesh(geo, mat, n), o = new THREE.Object3D(), TH = 6.5;
+  for (let i = 0; i < n; i++) {
+    const [cx, cy, cw] = cells[I[i]];
+    uvo.set([cx / W, 1 - (cy + CH) / cv.height, cw / W, CH / cv.height], 4 * i);
+    o.position.set(XY[2 * i] / 2, 0.3, XY[2 * i + 1] / 2); o.rotation.set(0, -A[i], 0); o.scale.set(TH * cw / CH, 1, TH); o.updateMatrix();
+    m.setMatrixAt(i, o.matrix);
+  }
+  geo.setAttribute('uvo', new THREE.InstancedBufferAttribute(uvo, 4));
+  m.renderOrder = 20; m.frustumCulled = false;
+  scene.add(m);
+  streetLabels = m;
 }
 
 // ---------- trees: every mapped tree in Manhattan, plus the woods ----------
@@ -348,10 +546,6 @@ function cityLabels() {
   [['Empire State Building', 40.7484, -73.9857, 460], ['One World Trade', 40.7130, -74.0132, 560], ['Chrysler Building', 40.7516, -73.9755, 330],
    ['Statue of Liberty', 40.6892, -74.0445, 110], ['Stock Exchange', 40.7069, -74.0113, 50], ['Times Square', 40.7580, -73.9855, 40]]
     .forEach(([t, a, b, y]) => label(t, 'place', ll(a, b), y, 0, 7000));
-  [['Wall St', 40.7064, -74.0094], ['Broadway', 40.7150, -74.0060], ['5th Ave', 40.7400, -73.9900], ['Park Ave', 40.7560, -73.9750],
-   ['Lexington Ave', 40.7700, -73.9600], ['42nd St', 40.7540, -73.9800], ['34th St', 40.7500, -73.9930], ['57th St', 40.7640, -73.9770],
-   ['14th St', 40.7370, -73.9930], ['Houston St', 40.7250, -73.9930], ['Canal St', 40.7190, -74.0010]]
-    .forEach(([t, a, b]) => label(t, 'street', ll(a, b), 3, 0, 1800));
 }
 function countryLabels(list) {
   for (const [name, x, z, km2] of list) {
@@ -359,9 +553,11 @@ function countryLabels(list) {
     const min = Math.max(150000, 2.2e6 - Math.sqrt(km2) * 1500); // big countries stay readable from further out
     label(name, 'country', [x, z], 0, Math.min(min, 2.0e6), 3e7);
   }
-  label('United States', 'country', ll(39.5, -98.5), 0, 6e5, 3e7);
+  label('United States of America', 'country', ll(39.5, -98.5), 0, 6e5, 3e7);
+  [['North America', 47, -103], ['South America', -14, -60], ['Europe', 53, 14], ['Africa', 6, 19], ['Asia', 46, 88], ['Oceania', -24, 134]]
+    .forEach(([t, a, b]) => label(t, 'continent', ll(a, b), 0, 2.5e6, 3e7));
 }
-const nycMarker = label('<div class="disc"><svg class="i"><use href="#i-city"/></svg></div><span class="tag">NEW YORK</span>', 'city', PLACE.manhattan, 0, 30000, 3e7);
+const nycMarker = label('<svg class="iso" viewBox="0 0 48 48"><use href="#i-iso"/></svg><span class="badge">1</span>', 'city', PLACE.manhattan, 0, 30000, 3e7);
 let homeLabel;
 
 // ---------- camera: everything is driven by target + distance + polar + azimuth ----------
@@ -371,11 +567,11 @@ controls.screenSpacePanning = false;
 controls.minDistance = 160; controls.maxDistance = 9e6;
 controls.zoomSpeed = 2.2;
 const tiltFor = dist => dist > 3e5 ? 0.02 : dist > 25000 ? 0.02 + 0.6 * (1 - Math.log(dist / 25000) / Math.log(12)) : dist > 6000 ? 0.62 + 0.6 * (1 - Math.log(dist / 6000) / Math.log(25000 / 6000)) : 1.25;
-function view(target, dist, polar, az) { return { t: new THREE.Vector3(target[0], 0, target[1]), dist, polar, az }; }
+function view(target, dist, polar, az, y = 0) { return { t: new THREE.Vector3(target[0], y, target[1]), dist, polar, az }; }
 function place(v) {
   const s = Math.sin(v.polar) * v.dist;
   controls.target.copy(v.t);
-  camera.position.set(v.t.x + Math.sin(v.az) * s, Math.cos(v.polar) * v.dist, v.t.z + Math.cos(v.az) * s);
+  camera.position.set(v.t.x + Math.sin(v.az) * s, v.t.y + Math.cos(v.polar) * v.dist, v.t.z + Math.cos(v.az) * s);
   camera.lookAt(v.t);
 }
 function current() {
@@ -399,14 +595,16 @@ const AZ = -0.5; // looking up the island
 const V = {
   world: () => view(PLACE.world, 6.5e6, 0.02, 0),
   city: () => view(PLACE.manhattan, 16000, 0.7, AZ),
-  home: () => view(PLACE.home, 650, 0.95, current().az),
-  wall: () => view(PLACE.wall, 900, 0.95, current().az)
+  home: () => view(PLACE.home, 210, 0.38, current().az, homeTop),
+  wall: () => view(PLACE.wall, 700, 0.5, current().az)
 };
 
 // ---------- taps: locked places ----------
 const toastEl = document.getElementById('toast');
 let toastT = 0;
-function toast() { toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2200); }
+function toast(title = 'Locked', body = 'Only New York is open. More cities in a future update.') {
+  document.getElementById('toastT').textContent = title; document.getElementById('toastB').textContent = body;
+  toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2200); }
 const ray = new THREE.Raycaster(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ndc = new THREE.Vector2();
 let down = null;
 canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
@@ -427,7 +625,7 @@ nycMarker.el.onclick = () => { if (!fly && document.getElementById('title').hidd
 
 // ---------- frame loop ----------
 const tmp = new THREE.Vector3();
-let last = performance.now(), clock = 0, w0 = 0, h0 = 0, pin, manhattanLand;
+let last = performance.now(), clock = 0, w0 = 0, h0 = 0, pin, manhattanLand, borders;
 function resize() {
   const w = innerWidth, h = innerHeight;
   if (w === w0 && h === h0) return;
@@ -435,7 +633,7 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }
-const cityGrey = lin(0x6c6f75), cityGreen = lin(LAND);
+const cityGrey = lin(PAVEMENT), cityGreen = lin(LAND);
 // location chip: the neighbourhood under the camera, or the world when zoomed out
 const whereCity = document.getElementById('whereCity'), whereArea = document.getElementById('whereArea');
 let whereT = 0;
@@ -459,19 +657,26 @@ function frame(now) {
     controls.update();
     // keep the camera over New York when zoomed in; the further out, the further you may roam
     const c = current(), t = controls.target, r = Math.hypot(t.x, t.z), lim = Math.max(18000, c.dist * 1.2);
-    if (r > lim || t.y) {
-      const k = r > lim ? lim / r : 1, nx = t.x * k, nz = t.z * k;
-      camera.position.x += nx - t.x; camera.position.z += nz - t.z; camera.position.y -= t.y;
-      t.set(nx, 0, nz);
+    if (r > lim) {
+      const k = lim / r, nx = t.x * k, nz = t.z * k;
+      camera.position.x += nx - t.x; camera.position.z += nz - t.z;
+      t.x = nx; t.z = nz;
     }
   }
   const dist = camera.position.distanceTo(controls.target);
   camera.near = Math.max(2, dist * 0.01); camera.far = dist * 40 + 20000; camera.updateProjectionMatrix();
   scene.fog.near = dist * 3; scene.fog.far = dist * 12;
-  veil.material.uniforms.hatch.value = dist * 0.03;
   veil.material.uniforms.amount.value = Math.min(1, Math.max(0, (dist - 20000) / 40000));
   for (const t of tiles) t.mesh.visible = dist < (t.tall ? 120000 : 22000);
   for (const t of trees) t.visible = dist < 4500;
+  for (const t of roofThings) t.visible = dist < 3500;
+  if (streetLabels) { streetLabels.visible = dist < 2600; streetLabels.material.uniforms.fade.value = 1 - Math.max(0, (dist - 1800) / 800); }
+  if (borders) {
+    renderer.getDrawingBufferSize(borders.material.uniforms.res.value);
+    borders.material.uniforms.width.value = 2.4 * renderer.getPixelRatio();
+    borders.material.uniforms.alpha.value = Math.min(1, Math.max(0, (dist - 60000) / 200000));
+    borders.visible = dist > 60000;
+  }
   sky.position.copy(camera.position); sky.scale.setScalar(camera.far * 0.9);
   { // the sun's shadow box follows what you are looking at
     const t = controls.target, S = Math.min(6000, Math.max(450, dist * 1.25)), cam = sunLight.shadow.camera;
@@ -482,9 +687,9 @@ function frame(now) {
   if (manhattanLand) manhattanLand.material.color.lerpColors(cityGrey, cityGreen, Math.min(1, Math.max(0, (dist - 15000) / 60000)));
   if (pin) {
     pin.visible = dist < 60000;
-    pin.scale.setScalar(Math.max(1, Math.min(30, dist / 700)));
-    pin.position.y = homeTop + (4 + Math.sin(clock * 3) * 4) * pin.scale.x;
-    homeLabel.p.y = pin.position.y + 50 * pin.scale.x;
+    pin.scale.setScalar(Math.max(0.3, Math.min(30, dist / 900)));
+    pin.position.y = homeTop + 3 + (4 + Math.sin(clock * 3) * 4) * pin.scale.x;
+    homeLabel.p.y = pin.position.y + 46 * pin.scale.x;
   }
   if ((whereT += dt) > 0.4) { whereT = 0; updateWhere(dist); }
   for (const l of labels) {
@@ -507,11 +712,23 @@ const touch = matchMedia('(pointer: coarse)').matches;
 document.getElementById('hint').textContent = touch ? 'Drag to move · Pinch to zoom · Twist with two fingers' : 'Drag to move · Scroll to zoom · Right-drag to turn';
 document.getElementById('bHome').onclick = () => flyTo(V.home());
 document.getElementById('bWall').onclick = () => flyTo(V.wall());
-document.getElementById('bCity').onclick = () => flyTo(V.city());
+document.getElementById('bStaff').onclick = () => toast('Locked', 'Hire brokers, employees and interns once you own a building.');
+document.getElementById('bShop').onclick = () => toast('Locked', 'The shop opens in a later update.');
+// price ticker along the bottom, as in the reference (prices drift for now; trading comes in a later goal)
+const TICKS = [['WHEAT', 6.12], ['CORN', 4.38], ['COFFEE', 2.31], ['SUGAR', 0.21], ['BEEF', 3.0], ['PORK', 0.92], ['SALMON', 1.2], ['OIL', 78.4],
+  ['GOLD', 2418.3], ['SILVER', 29.12], ['STEEL', 0.42], ['NYCX', 41.2], ['BRKL', 18.75], ['HDSN', 102.4], ['WLST', 64.05]].map(([s, p]) => ({ s, p, o: p }));
+const tape = document.getElementById('tape');
+const money = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function drawTape() {
+  const one = TICKS.map(t => { const ch = (t.p / t.o - 1) * 100; return `<span>${t.s} ${money(t.p)} <i class="${ch >= 0 ? 'up' : 'dn'}">${ch >= 0 ? '▲' : '▼'}${Math.abs(ch).toFixed(1)}%</i></span>`; }).join('');
+  tape.innerHTML = one + one;
+}
+drawTape();
+setInterval(() => { for (const t of TICKS) t.p = Math.max(0.01, t.p * (1 + (Math.random() - 0.5) * 0.01)); drawTape(); }, 3000);
 document.getElementById('bWorld').onclick = () => flyTo(V.world(), 3);
 document.getElementById('play').onclick = () => {
   document.getElementById('title').hidden = true;
-  flyTo(view(PLACE.home, 650, 0.95, AZ), 5, () => {
+  flyTo(view(PLACE.home, 210, 0.38, AZ, homeTop), 5, () => {
     shout('WHERE YOU START');
     document.getElementById('hud').hidden = false;
     setTimeout(() => { document.getElementById('hint').style.opacity = 0; }, 6000);
@@ -521,28 +738,38 @@ document.getElementById('play').onclick = () => {
 
 (async () => {
   try {
-    const [world, nyc, countries] = await Promise.all([loadBin('data/world.bin'), loadBin('data/nyc.bin'), fetch('data/countries.json').then(r => r.json())]);
+    const [world, nyc, countries, streets] = await Promise.all([loadBin('data/world.bin'), loadBin('data/nyc.bin'), fetch('data/countries.json').then(r => r.json()), fetch('data/streets.json').then(r => r.json())]);
     loadMsg.textContent = 'Building Manhattan';
     await new Promise(r => setTimeout(r, 30));
-    flat(polyGeo(world, 'world'), LAND, 1).receiveShadow = false;
-    flat(polyGeo(world, 'region'), LAND, 2).receiveShadow = false;
+    flat(polyGeo(world, 'world'), LAND, 1, null, true);
+    flat(polyGeo(world, 'region'), LAND, 2, null, true);
     {
       const r = world['border.r'], xy = world['border.xy'], seg = [];
       let p = 0;
-      for (let i = 1; i <= r[0]; i++) { for (let j = 0; j < r[i] - 1; j++) seg.push(xy[p + 2 * j], 0, xy[p + 2 * j + 1], xy[p + 2 * j + 2], 0, xy[p + 2 * j + 3]); p += 2 * r[i]; }
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(seg, 3));
-      const m = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x1b1f1b, depthWrite: false }));
-      m.renderOrder = 7; m.frustumCulled = false; scene.add(m);
+      for (let i = 1; i <= r[0]; i++) { for (let j = 0; j < r[i] - 1; j++) seg.push(xy[p + 2 * j], xy[p + 2 * j + 1], xy[p + 2 * j + 2], xy[p + 2 * j + 3]); p += 2 * r[i]; }
+      borders = thickLines(seg, 2.4, 0x111111, 7);
     }
-    manhattanLand = flat(polyGeo(nyc, 'land'), 0x6c6f75, 3);
+    manhattanLand = flat(polyGeo(nyc, 'land'), PAVEMENT, 3);
     flat(polyGeo(nyc, 'park'), 0x5e9a4a, 4);
-    flat(polyGeo(nyc, 'lake'), OCEAN, 5, { roughness: 0.22, envMapIntensity: 0.7 });
+    flat(polyGeo(nyc, 'road'), ASPHALT, 4.5);
+    flat(polyGeo(nyc, 'lake'), OCEAN, 5, null, true);
     buildCity(nyc);
+    buildRoofs(nyc);
     buildTrees(nyc);
+    await buildStreetLabels(nyc, streets);
+    { // the student's rooftop room: white walls seen from above, like the reference
+      const room = new THREE.Group(), wallMat = new THREE.MeshStandardMaterial({ color: lin(0xf2efe8), roughness: 0.7 });
+      const W = [[0, -6, 18, 0.4], [0, 6, 18, 0.4], [-9, 0, 0.4, 12], [9, -2.5, 0.4, 7], [-3, -1.5, 0.4, 9], [3, 2, 0.4, 8], [6, -1, 6, 0.4], [-6, 2, 6, 0.4]];
+      for (const [x, z, w, d] of W) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 2.8, d).translate(x, 1.4, z), wallMat); m.castShadow = m.receiveShadow = true; room.add(m); }
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(18, 12).rotateX(-Math.PI / 2).translate(0, 0.05, 0), new THREE.MeshStandardMaterial({ color: lin(0x8d8a84), roughness: 0.9 }));
+      floor.receiveShadow = true; room.add(floor);
+      room.position.set(PLACE.home[0], homeTop, PLACE.home[1]); room.rotation.y = -homeAngle;
+      scene.add(room);
+    }
     pin = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({ color: lin(0xffcc4d), emissive: lin(0x885500), roughness: 0.35, metalness: 0.3 });
     pin.add(new THREE.Mesh(new THREE.ConeGeometry(9, 26, 16).rotateX(Math.PI).translate(0, 13, 0), mat), new THREE.Mesh(new THREE.SphereGeometry(10, 16, 12).translate(0, 30, 0), mat));
-    pin.position.set(PLACE.home[0], homeTop, PLACE.home[1]); pin.renderOrder = 11;
+    pin.position.set(PLACE.home[0], homeTop + 3, PLACE.home[1]); pin.renderOrder = 11;
     scene.add(pin);
     homeLabel = label('<svg class="i"><use href="#i-home"/></svg>YOU START HERE', 'home', PLACE.home, 70, 0, 60000);
     homeLabel.hidden = true;
@@ -556,7 +783,7 @@ document.getElementById('play').onclick = () => {
   controls.update();
   document.getElementById('load').hidden = true;
   document.getElementById('title').hidden = false;
-  window.CS = { scene, renderer, tiles, flyTo, view, V, PLACE, current, place, ll }; // handy for testing in the console
+  window.CS = { scene, renderer, tiles, flyTo, view, V, PLACE, current, place, ll, borders, home: () => [homeTop, homeAngle] }; // handy for testing in the console
   requestAnimationFrame(frame);
 })();
 </script>
