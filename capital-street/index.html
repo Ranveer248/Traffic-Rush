@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Capital Street</title>
+<meta name="theme-color" content="#0b1220">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* Capital Street, goal 1: the map. Zoomed out it's the world (only New York unlocked), zoomed in it's real Manhattan.
+   UI tokens and components follow the Figma file "Capital Street — Game UI". */
+:root {
+  --bg: #0b1220; --panel: rgba(15, 26, 46, 0.86); --edge: rgba(255, 255, 255, 0.14); --ink: #fff; --dim: #a9b4cc;
+  --green: #2fd47a; --green-deep: #138a4a; --gold: #ffcc4d; --gold-ink: #1a1300; --locked: #ff5a5f; --blue: #3b82f6;
+  --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --shadow: 0 6px 18px rgba(0, 0, 0, .28);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #2f87c8; color: var(--ink); font: 600 15px/1.3 Inter, system-ui, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.glass { background: var(--panel); border: 1px solid var(--edge); box-shadow: var(--shadow); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+button { font: inherit; color: inherit; cursor: pointer; }
+/* map labels */
+#labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.lab { position: absolute; left: 0; top: 0; white-space: nowrap; display: none; will-change: transform; }
+.lab.country { font: 600 12px/1 Inter, sans-serif; color: #f4f7ee; opacity: .85; text-shadow: 0 1px 2px rgba(0, 0, 0, .55); }
+.lab.district { font: 400 13px/1 'Archivo Black', sans-serif; letter-spacing: .12em; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+.lab.water { font: italic 600 12px/1 Inter, sans-serif; letter-spacing: .25em; color: #e2f1ff; text-shadow: 0 1px 2px rgba(0, 40, 80, .7); }
+.lab.place { font: 800 12px/1 Inter, sans-serif; padding: 5px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--edge); }
+.lab.street { font: 800 11px/1 Inter, sans-serif; color: #f4f4f4; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
+.lab.home { display: none; align-items: center; gap: 6px; font: 800 12px/1 Inter, sans-serif; background: var(--gold); color: var(--gold-ink); padding: 6px 12px 6px 8px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0, 0, 0, .4); }
+.lab.home svg.i { width: 16px; height: 16px; stroke-width: 2.4; }
+.lab.city { text-align: center; pointer-events: auto; cursor: pointer; }
+.lab.city .disc { display: grid; place-content: center; width: 44px; height: 44px; margin: 0 auto 6px; border-radius: 50%; background: var(--bg); border: 3px solid var(--gold); box-shadow: 0 3px 10px rgba(0, 0, 0, .35); position: relative; }
+.lab.city .disc::before { content: ''; position: absolute; inset: -40px; border-radius: 50%; background: radial-gradient(rgba(255, 204, 77, .35), rgba(255, 204, 77, 0) 70%); z-index: -1; }
+.lab.city .tag { display: inline-block; font: 400 11px/1 'Archivo Black', sans-serif; letter-spacing: .06em; color: var(--gold-ink); background: var(--gold); padding: 4px 8px; border-radius: 999px; }
+/* HUD */
+#hud { position: fixed; inset: 0; pointer-events: none; }
+#hud[hidden] { display: none; }
+#where { position: absolute; left: max(16px, env(safe-area-inset-left)); top: max(16px, env(safe-area-inset-top)); display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--r-md); }
+#where b { display: block; font: 400 15px/1.15 'Archivo Black', sans-serif; }
+#where span { display: block; font-size: 12px; color: var(--dim); }
+#nav { position: absolute; right: max(16px, env(safe-area-inset-right)); top: max(16px, env(safe-area-inset-top)); display: grid; gap: 8px; pointer-events: auto; }
+#nav button { width: 64px; height: 64px; border-radius: var(--r-md); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: 700 11px/1 Inter, sans-serif; padding: 0; }
+#nav button:active { transform: translateY(1px); }
+#nav button.on { border-color: var(--gold); color: var(--gold); }
+#hint { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); border-radius: 999px; padding: 8px 14px; font-size: 13px; white-space: nowrap; transition: opacity .6s; }
+#toast { position: fixed; left: 50%; bottom: max(66px, calc(env(safe-area-inset-bottom) + 54px)); transform: translate(-50%, 12px); width: min(342px, calc(100vw - 32px)); display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--r-lg); opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; }
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+#toast .badge { width: 36px; height: 36px; flex: none; display: grid; place-content: center; border-radius: var(--r-sm); background: rgba(255, 90, 95, .18); color: var(--locked); }
+#toast .badge svg.i { width: 20px; height: 20px; }
+#toast b { display: block; font: 800 14px/1.2 Inter, sans-serif; }
+#toast span { display: block; font-size: 12px; color: var(--dim); }
+/* big centre text, like "WHERE YOU START" */
+#big { position: fixed; left: 50%; top: 56%; transform: translate(-50%, 10px); font: 400 clamp(34px, 11vw, 64px)/.95 'Archivo Black', sans-serif; text-align: center; color: #fff; text-shadow: 0 4px 0 rgba(0, 0, 0, .35), 0 0 24px rgba(0, 0, 0, .35); opacity: 0; transition: opacity .5s, transform .5s; pointer-events: none; width: 92vw; }
+#big.on { opacity: 1; transform: translate(-50%, 0); }
+/* title card */
+.ov { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 16px; padding-bottom: max(24px, env(safe-area-inset-bottom)); background: linear-gradient(to top, rgba(11, 18, 32, .94), rgba(11, 18, 32, 0) 62%); }
+.ov[hidden] { display: none; }
+.card { width: min(360px, 100%); display: grid; gap: 14px; justify-items: center; text-align: center; }
+.over { font: 800 12px/1 Inter, sans-serif; letter-spacing: .24em; color: var(--green); }
+h1 { margin: 0; font: 400 clamp(44px, 15vw, 58px)/.92 'Archivo Black', sans-serif; text-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+h1 em { font-style: normal; color: var(--green); }
+.card p { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.4; }
+#play { width: 100%; background: var(--green); color: var(--bg); border: 0; font: 400 24px/1 'Archivo Black', sans-serif; letter-spacing: .04em; padding: 18px; border-radius: var(--r-lg); box-shadow: 0 5px 0 var(--green-deep); }
+#play:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--green-deep); }
+.card small { font-size: 12px; color: var(--dim); }
+#load { position: fixed; inset: 0; display: grid; place-content: center; gap: 8px; text-align: center; background: var(--bg); font: 400 22px/1.2 'Archivo Black', sans-serif; }
+#load[hidden] { display: none; }
+#load small { font: 600 13px/1.3 Inter, sans-serif; color: var(--dim); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></symbol>
+  <symbol id="i-bank" viewBox="0 0 24 24"><path d="M3 9 12 4l9 5"/><path d="M4 9h16"/><path d="M6 9v9M10 9v9M14 9v9M18 9v9"/><path d="M3 20h18"/></symbol>
+  <symbol id="i-city" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V9h5v12"/><path d="M10 21V4h6v17"/><path d="M16 21v-9h4v9"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+</svg>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+<div id="hud" hidden>
+  <div id="where" class="glass"><svg class="i"><use href="#i-pin"/></svg><div><b id="whereCity">New York</b><span id="whereArea">Manhattan</span></div></div>
+  <div id="nav">
+    <button id="bHome" class="glass"><svg class="i"><use href="#i-home"/></svg>Home</button>
+    <button id="bWall" class="glass"><svg class="i"><use href="#i-bank"/></svg>Wall St</button>
+    <button id="bCity" class="glass"><svg class="i"><use href="#i-city"/></svg>City</button>
+    <button id="bWorld" class="glass"><svg class="i"><use href="#i-globe"/></svg>World</button>
+  </div>
+  <div id="hint" class="glass"></div>
+</div>
+<div id="toast" class="glass"><div class="badge"><svg class="i"><use href="#i-lock"/></svg></div><div><b>Locked</b><span>Only New York is open. More cities in a future update.</span></div></div>
+<div id="big"></div>
+<div id="title" class="ov" hidden>
+  <div class="card">
+    <div class="over">A WALL STREET STORY</div>
+    <h1>CAPITAL<br><em>STREET</em></h1>
+    <p>You're a broke student in New York. Borrow a little, trade smart, and buy your own tower on Wall Street.</p>
+    <button id="play">PLAY</button>
+    <small>Only New York is open in this version</small>
+  </div>
+</div>
+<div id="load">Loading New York…<small id="loadMsg">Fetching 56,000 real buildings</small></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+'use strict';
+const loadMsg = document.getElementById('loadMsg');
+if (!window.THREE || !THREE.MapControls) { loadMsg.textContent = 'Could not load the 3D engine. Check your connection and reload.'; throw new Error('three.js missing'); }
+
+// ---------- projection (same as tools/build_map.py): Web Mercator, 1 unit = 1 m at New York, origin Times Square ----------
+const LAT0 = 40.7580, LON0 = -73.9855, R = 6378137, K = Math.cos(LAT0 * Math.PI / 180);
+const mercY = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+const Y0 = mercY(LAT0);
+const ll = (lat, lon) => [R * K * (lon - LON0) * Math.PI / 180, -R * K * (mercY(lat) - Y0)];
+
+// ---------- places ----------
+const PLACE = {
+  home: ll(40.7262, -73.9818),            // the student's walk-up in the East Village
+  wall: ll(40.7064, -74.0094),
+  manhattan: ll(40.7680, -73.9750),
+  world: ll(36.0, -82.0)
+};
+const UNLOCKED_R = 45000; // metres around Times Square that are playable; the rest of the world is locked for now
+
+// ---------- binary map files written by tools/build_map.py ----------
+async function loadBin(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(url + ' ' + res.status);
+  const buf = await res.arrayBuffer();
+  const hl = new DataView(buf).getUint32(0, true);
+  const head = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, hl)));
+  const T = { uint8: Uint8Array, uint16: Uint16Array, int16: Int16Array, uint32: Uint32Array, float32: Float32Array };
+  const out = {};
+  for (const [name, [type, off, n]] of Object.entries(head)) out[name] = new T[type](buf, 4 + hl + off, n);
+  return out;
+}
+// polygon layer → one flat geometry on the ground
+function polyGeo(d, name) {
+  const r = d[name + '.r'], xy = d[name + '.xy'], shapes = [];
+  let ri = 1, p = 0;
+  const ring = n => { const pts = []; for (let i = 0; i < n; i++, p += 2) pts.push(new THREE.Vector2(xy[p], -xy[p + 1])); return pts; };
+  for (let k = 0; k < r[0]; k++) {
+    const rings = r[ri++];
+    const s = new THREE.Shape(ring(r[ri++]));
+    for (let h = 1; h < rings; h++) s.holes.push(new THREE.Path(ring(r[ri++])));
+    shapes.push(s);
+  }
+  return new THREE.ShapeGeometry(shapes).rotateX(-Math.PI / 2);
+}
+
+// ---------- renderer, scene, camera ----------
+const canvas = document.getElementById('c');
+// High-end graphics: physically based materials, filmic tone mapping, sky reflections and real-time sun shadows.
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.82;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
+const OCEAN = 0x2f87c8, LAND = 0x7cb05c, HORIZON = 0xd4e4f1, ZENITH = 0x5d9bd6;
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(lin(HORIZON), 1e9, 2e9);
+const camera = new THREE.PerspectiveCamera(50, 1, 1, 1e5);
+// sky: a gradient dome that follows the camera, also baked into an environment map for reflections
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  uniforms: { top: { value: lin(ZENITH) }, bottom: { value: lin(HORIZON) } },
+  vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform vec3 top, bottom; varying vec3 vD;
+    void main(){
+      gl_FragColor = vec4(mix(bottom, top, pow(clamp(vD.y, 0.0, 1.0), 0.45)), 1.0);
+      #include <tonemapping_fragment>
+      #include <encodings_fragment>
+    }`
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), skyMat);
+sky.renderOrder = -1; sky.frustumCulled = false;
+scene.add(sky);
+{
+  const envScene = new THREE.Scene(), pm = new THREE.PMREMGenerator(renderer);
+  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), skyMat));
+  envScene.add(new THREE.Mesh(new THREE.CircleGeometry(9.9, 32).rotateX(-Math.PI / 2).translate(0, -1, 0), new THREE.MeshBasicMaterial({ color: lin(0x5d5a55) })));
+  scene.environment = pm.fromScene(envScene, 0.02).texture;
+}
+scene.add(new THREE.HemisphereLight(lin(0xdfeaff), lin(0x4d463e), 0.38));
+const SUN_DIR = new THREE.Vector3(-0.55, 0.72, 0.42).normalize();
+const sunLight = new THREE.DirectionalLight(lin(0xffeccc), 2.6);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(4096, 4096);
+sunLight.shadow.bias = -0.0004;
+sunLight.shadow.camera.near = 10; sunLight.shadow.camera.far = 12000;
+scene.add(sunLight, sunLight.target);
+
+// Flat ground layers are drawn bottom-up without writing depth, so they never flicker against each other.
+function flat(geo, color, order, extra) {
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(Object.assign({ color: lin(color), roughness: 1, metalness: 0, depthWrite: false }, extra)));
+  m.renderOrder = order; m.frustumCulled = false; m.receiveShadow = true;
+  scene.add(m);
+  return m;
+}
+flat(new THREE.PlaneGeometry(1e8, 1e8).rotateX(-Math.PI / 2), OCEAN, 0, { roughness: 0.22, envMapIntensity: 0.7 }).receiveShadow = false; // shadows only land on Manhattan
+
+// The locked world: a dark hatched veil everywhere except around New York.
+const veil = new THREE.Mesh(new THREE.PlaneGeometry(1e8, 1e8).rotateX(-Math.PI / 2), new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false,
+  uniforms: { r0: { value: UNLOCKED_R }, r1: { value: UNLOCKED_R * 1.6 }, hatch: { value: 1 }, amount: { value: 1 } },
+  vertexShader: 'varying vec2 vP; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vP = w.xz; gl_Position = projectionMatrix * viewMatrix * w; }',
+  fragmentShader: `uniform float r0, r1, hatch, amount; varying vec2 vP;
+    void main(){
+      float a = smoothstep(r0, r1, length(vP));
+      float stripe = step(0.5, fract((vP.x + vP.y) / hatch));
+      gl_FragColor = vec4(0.05, 0.08, 0.16, a * amount * (0.16 + 0.07 * stripe));
+    }`
+}));
+veil.renderOrder = 6; veil.frustumCulled = false;
+scene.add(veil);
+
+// ---------- buildings: real footprints and heights, extruded here ----------
+// Flat normals come from screen derivatives, so walls and roofs share vertices. The shader darkens roofs and draws floor lines.
+const buildingMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.78, metalness: 0.05, envMapIntensity: 0.55 });
+buildingMat.onBeforeCompile = sh => {
+  sh.vertexShader = sh.vertexShader
+    .replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
+    .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+  sh.fragmentShader = sh.fragmentShader
+    .replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
+    .replace('#include <color_fragment>', `#include <color_fragment>
+      diffuseColor.rgb = pow(diffuseColor.rgb, vec3(2.2)); // the colours are stored as sRGB bytes
+      vec3 wn = normalize(cross(dFdx(vWP), dFdy(vWP)));
+      if (abs(wn.y) > 0.6) diffuseColor.rgb *= 0.42;
+      else {
+        float f = vWP.y / 3.8, w = fwidth(f);
+        float line = smoothstep(0.62 - w, 0.62 + w, fract(f)) - smoothstep(0.98 - w, 0.98 + w, fract(f));
+        diffuseColor.rgb *= 1.0 - line * 0.3 * (1.0 - smoothstep(0.12, 0.35, w));
+      }`);
+};
+const TILE = 1500, TALL = 45;
+const tiles = []; // { mesh, tall }
+let homeTop = 20;
+function buildCity(d) {
+  const n = d['b.n'], H = d['b.h'], MH = d['b.mh'], C = d['b.c'], XY = d['b.xy'];
+  const bins = new Map(); // tile key → { tall, pos: [], col: [], idx: [] }
+  let p = 0, best = Infinity;
+  for (let i = 0; i < n.length; i++) {
+    const k = n[i], h = H[i] / 10, mh = MH[i] / 10, x0 = XY[p] / 2, z0 = XY[p + 1] / 2, tall = h >= TALL;
+    // the walk-up: the closest low building to the home spot
+    const dh = (x0 - PLACE.home[0]) ** 2 + (z0 - PLACE.home[1]) ** 2;
+    if (h > 10 && h < 30 && dh < best) { best = dh; homeTop = h; PLACE.homeSnap = [x0, z0]; }
+    const key = Math.floor(x0 / TILE) + ',' + Math.floor(z0 / TILE) + (tall ? 'T' : 'L');
+    let b = bins.get(key);
+    if (!b) bins.set(key, b = { tall, pos: [], col: [], idx: [] });
+    const base = b.pos.length / 3, contour = [];
+    for (let j = 0; j < k; j++) {
+      const x = XY[p + 2 * j] / 2, z = XY[p + 2 * j + 1] / 2;
+      b.pos.push(x, mh, z); contour.push(new THREE.Vector2(x, z));
+    }
+    for (let j = 0; j < k; j++) { b.pos.push(contour[j].x, h, contour[j].y); }
+    for (let j = 0; j < 2 * k; j++) b.col.push(C[3 * i], C[3 * i + 1], C[3 * i + 2]);
+    for (let j = 0; j < k; j++) { // walls
+      const a = base + j, c = base + (j + 1) % k;
+      b.idx.push(a, c + k, c, a, a + k, c + k);
+    }
+    for (const t of THREE.ShapeUtils.triangulateShape(contour, [])) { // roof, wound to face up
+      const p0 = contour[t[0]], p1 = contour[t[1]], p2 = contour[t[2]];
+      const up = (p1.y - p0.y) * (p2.x - p0.x) - (p1.x - p0.x) * (p2.y - p0.y) > 0;
+      b.idx.push(base + k + t[0], base + k + t[up ? 1 : 2], base + k + t[up ? 2 : 1]);
+    }
+    p += 2 * k;
+  }
+  for (const b of bins.values()) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(b.col), 3, true));
+    g.setIndex(b.idx);
+    g.computeVertexNormals(); // only used to offset shadow lookups; lighting uses the flat derivative normals
+    g.computeBoundingSphere();
+    const m = new THREE.Mesh(g, buildingMat);
+    m.renderOrder = 10; m.castShadow = m.receiveShadow = true;
+    scene.add(m);
+    tiles.push({ mesh: m, tall: b.tall });
+  }
+  if (PLACE.homeSnap) PLACE.home = PLACE.homeSnap;
+}
+
+// ---------- trees: every mapped tree in Manhattan, plus the woods ----------
+const trees = []; // tiles of instanced trees, so off-screen ones are culled
+function buildTrees(d) {
+  const xy = d['t.xy'], sz = d['t.s'], bins = new Map();
+  for (let i = 0; i < sz.length; i++) {
+    const key = Math.floor(xy[2 * i] / 2 / 800) + ',' + Math.floor(xy[2 * i + 1] / 2 / 800);
+    if (!bins.has(key)) bins.set(key, []);
+    bins.get(key).push(i);
+  }
+  const crownGeo = new THREE.IcosahedronGeometry(1, 0), trunkGeo = new THREE.CylinderGeometry(0.25, 0.35, 1, 5).translate(0, 0.5, 0);
+  const crownMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true }), trunkMat = new THREE.MeshStandardMaterial({ color: lin(0x5b4330), roughness: 1 });
+  const o = new THREE.Object3D(), tint = new THREE.Color();
+  for (const list of bins.values()) {
+    const crown = new THREE.InstancedMesh(crownGeo, crownMat, list.length), trunk = new THREE.InstancedMesh(trunkGeo, trunkMat, list.length);
+    list.forEach((i, j) => {
+      const x = xy[2 * i] / 2, z = xy[2 * i + 1] / 2, s = 0.7 + sz[i] / 255 * 0.8, r = 3.2 * s, h = 3.5 * s;
+      o.position.set(x, 0, z); o.rotation.set(0, sz[i], 0); o.scale.set(1.2 * s, h, 1.2 * s); o.updateMatrix(); trunk.setMatrixAt(j, o.matrix);
+      o.position.set(x, h + r * 0.75, z); o.scale.set(r, r * 1.15, r); o.updateMatrix(); crown.setMatrixAt(j, o.matrix);
+      crown.setColorAt(j, tint.setHSL(0.27 + (sz[i] % 7) * 0.008, 0.5, 0.26 + (sz[i] % 5) * 0.02).convertSRGBToLinear());
+    });
+    const box = new THREE.Box3();
+    for (const i of list) box.expandByPoint(o.position.set(xy[2 * i] / 2, 0, xy[2 * i + 1] / 2));
+    box.max.y = 25;
+    const sphere = box.getBoundingSphere(new THREE.Sphere());
+    sphere.radius += 10;
+    for (const m of [crown, trunk]) {
+      m.castShadow = m.receiveShadow = true; m.renderOrder = 10;
+      m.geometry = m.geometry.clone(); m.geometry.boundingSphere = sphere; // r128 culls instances by the geometry's sphere: make it cover the tile
+      scene.add(m); trees.push(m);
+    }
+  }
+}
+
+// ---------- labels ----------
+const labelsEl = document.getElementById('labels');
+const labels = [];
+function label(html, cls, p, y, min, max) {
+  const el = document.createElement('div');
+  el.className = 'lab ' + cls; el.innerHTML = html;
+  labelsEl.appendChild(el);
+  const l = { el, p: new THREE.Vector3(p[0], y, p[1]), min, max, on: false };
+  labels.push(l);
+  return l;
+}
+const CITY = 9000; // below this camera distance we are "in the city"
+const DISTRICTS = []; // [name, x, z] for the location chip
+function cityLabels() {
+  [['INWOOD', 40.8680, -73.9230], ['WASHINGTON HEIGHTS', 40.8450, -73.9380], ['HARLEM', 40.8110, -73.9460], ['UPPER WEST SIDE', 40.7870, -73.9750],
+   ['UPPER EAST SIDE', 40.7735, -73.9560], ['MIDTOWN', 40.7540, -73.9840], ['CHELSEA', 40.7465, -74.0010], ['GREENWICH VILLAGE', 40.7330, -74.0020],
+   ['EAST VILLAGE', 40.7280, -73.9840], ['SOHO', 40.7233, -74.0030], ['FINANCIAL DISTRICT', 40.7075, -74.0090]]
+    .forEach(([t, a, b]) => { label(t, 'district', ll(a, b), 0, 2800, 30000); DISTRICTS.push([t.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()), ...ll(a, b)]); });
+  [['NEW JERSEY', 40.7400, -74.0600], ['BROOKLYN', 40.6850, -73.9700], ['QUEENS', 40.7550, -73.9200], ['THE BRONX', 40.8450, -73.9000]]
+    .forEach(([t, a, b]) => { label(t, 'district', ll(a, b), 0, 1500, 30000).el.style.color = '#e9f2e0'; });
+  [['HUDSON RIVER', 40.7750, -74.0080], ['EAST RIVER', 40.7350, -73.9660], ['UPPER BAY', 40.6750, -74.0380]]
+    .forEach(([t, a, b]) => label(t, 'water', ll(a, b), 0, 1200, 30000));
+  label('CENTRAL PARK', 'district', ll(40.7812, -73.9665), 0, 1200, 30000);
+  [['Empire State Building', 40.7484, -73.9857, 460], ['One World Trade', 40.7130, -74.0132, 560], ['Chrysler Building', 40.7516, -73.9755, 330],
+   ['Statue of Liberty', 40.6892, -74.0445, 110], ['Stock Exchange', 40.7069, -74.0113, 50], ['Times Square', 40.7580, -73.9855, 40]]
+    .forEach(([t, a, b, y]) => label(t, 'place', ll(a, b), y, 0, 7000));
+  [['Wall St', 40.7064, -74.0094], ['Broadway', 40.7150, -74.0060], ['5th Ave', 40.7400, -73.9900], ['Park Ave', 40.7560, -73.9750],
+   ['Lexington Ave', 40.7700, -73.9600], ['42nd St', 40.7540, -73.9800], ['34th St', 40.7500, -73.9930], ['57th St', 40.7640, -73.9770],
+   ['14th St', 40.7370, -73.9930], ['Houston St', 40.7250, -73.9930], ['Canal St', 40.7190, -74.0010]]
+    .forEach(([t, a, b]) => label(t, 'street', ll(a, b), 3, 0, 1800));
+}
+function countryLabels(list) {
+  for (const [name, x, z, km2] of list) {
+    if (name === 'United States of America') continue; // we put New York there instead
+    const min = Math.max(150000, 2.2e6 - Math.sqrt(km2) * 1500); // big countries stay readable from further out
+    label(name, 'country', [x, z], 0, Math.min(min, 2.0e6), 3e7);
+  }
+  label('United States', 'country', ll(39.5, -98.5), 0, 6e5, 3e7);
+}
+const nycMarker = label('<div class="disc"><svg class="i"><use href="#i-city"/></svg></div><span class="tag">NEW YORK</span>', 'city', PLACE.manhattan, 0, 30000, 3e7);
+let homeLabel;
+
+// ---------- camera: everything is driven by target + distance + polar + azimuth ----------
+const controls = new THREE.MapControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.12;
+controls.screenSpacePanning = false;
+controls.minDistance = 160; controls.maxDistance = 9e6;
+controls.zoomSpeed = 2.2;
+const tiltFor = dist => dist > 3e5 ? 0.02 : dist > 25000 ? 0.02 + 0.6 * (1 - Math.log(dist / 25000) / Math.log(12)) : dist > 6000 ? 0.62 + 0.6 * (1 - Math.log(dist / 6000) / Math.log(25000 / 6000)) : 1.25;
+function view(target, dist, polar, az) { return { t: new THREE.Vector3(target[0], 0, target[1]), dist, polar, az }; }
+function place(v) {
+  const s = Math.sin(v.polar) * v.dist;
+  controls.target.copy(v.t);
+  camera.position.set(v.t.x + Math.sin(v.az) * s, Math.cos(v.polar) * v.dist, v.t.z + Math.cos(v.az) * s);
+  camera.lookAt(v.t);
+}
+function current() {
+  const d = camera.position.clone().sub(controls.target), dist = d.length();
+  return { t: controls.target.clone(), dist, polar: Math.acos(Math.min(1, d.y / dist)), az: Math.atan2(d.x, d.z) };
+}
+let fly = null;
+function flyTo(v, secs = 2.6, done) { fly = { a: current(), b: v, t: 0, secs, done }; controls.enabled = false; }
+const ease = t => t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+function flyStep(dt) {
+  fly.t = Math.min(1, fly.t + dt / fly.secs);
+  const k = ease(fly.t), a = fly.a, b = fly.b;
+  let daz = b.az - a.az; daz = Math.atan2(Math.sin(daz), Math.cos(daz));
+  // fly out and back in again over long distances, so the camera never skims the ground
+  const hop = Math.min(1, a.t.distanceTo(b.t) / Math.max(a.dist, b.dist));
+  const dist = Math.exp(Math.log(a.dist) * (1 - k) + Math.log(b.dist) * k) * (1 + hop * 1.5 * Math.sin(Math.PI * k));
+  place({ t: a.t.clone().lerp(b.t, k), dist, polar: a.polar + (b.polar - a.polar) * k, az: a.az + daz * k });
+  if (fly.t >= 1) { const d = fly.done; fly = null; controls.enabled = true; controls.update(); if (d) d(); }
+}
+const AZ = -0.5; // looking up the island
+const V = {
+  world: () => view(PLACE.world, 6.5e6, 0.02, 0),
+  city: () => view(PLACE.manhattan, 16000, 0.7, AZ),
+  home: () => view(PLACE.home, 650, 0.95, current().az),
+  wall: () => view(PLACE.wall, 900, 0.95, current().az)
+};
+
+// ---------- taps: locked places ----------
+const toastEl = document.getElementById('toast');
+let toastT = 0;
+function toast() { toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('on'), 2200); }
+const ray = new THREE.Raycaster(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), ndc = new THREE.Vector2();
+let down = null;
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+canvas.addEventListener('pointerup', e => {
+  if (!down || fly || !document.getElementById('title').hidden) return;
+  const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), quick = performance.now() - down.t < 500;
+  down = null;
+  if (moved > 8 || !quick) return;
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.ray.intersectPlane(ground, new THREE.Vector3());
+  if (!hit) return;
+  const r = Math.hypot(hit.x, hit.z), dist = current().dist;
+  if (r > UNLOCKED_R) toast();
+  else if (dist > 60000) flyTo(V.city());
+});
+nycMarker.el.onclick = () => { if (!fly && document.getElementById('title').hidden) flyTo(V.city()); };
+
+// ---------- frame loop ----------
+const tmp = new THREE.Vector3();
+let last = performance.now(), clock = 0, w0 = 0, h0 = 0, pin, manhattanLand;
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  if (w === w0 && h === h0) return;
+  w0 = w; h0 = h;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+const cityGrey = lin(0x6c6f75), cityGreen = lin(LAND);
+// location chip: the neighbourhood under the camera, or the world when zoomed out
+const whereCity = document.getElementById('whereCity'), whereArea = document.getElementById('whereArea');
+let whereT = 0;
+function updateWhere(dist) {
+  const t = controls.target;
+  let city = 'World', area = '1 of 1 cities unlocked';
+  if (dist < 60000) {
+    let best = null, bd = Infinity;
+    for (const d of DISTRICTS) { const dd = (d[1] - t.x) ** 2 + (d[2] - t.z) ** 2; if (dd < bd) { bd = dd; best = d; } }
+    city = 'New York'; area = best && bd < 3500 ** 2 ? 'Manhattan · ' + best[0] : 'Manhattan';
+  }
+  if (whereCity.textContent !== city) whereCity.textContent = city;
+  if (whereArea.textContent !== area) whereArea.textContent = area;
+}
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
+  resize();
+  if (fly) flyStep(dt);
+  else {
+    controls.maxPolarAngle = tiltFor(current().dist);
+    controls.update();
+    // keep the camera over New York when zoomed in; the further out, the further you may roam
+    const c = current(), t = controls.target, r = Math.hypot(t.x, t.z), lim = Math.max(18000, c.dist * 1.2);
+    if (r > lim || t.y) {
+      const k = r > lim ? lim / r : 1, nx = t.x * k, nz = t.z * k;
+      camera.position.x += nx - t.x; camera.position.z += nz - t.z; camera.position.y -= t.y;
+      t.set(nx, 0, nz);
+    }
+  }
+  const dist = camera.position.distanceTo(controls.target);
+  camera.near = Math.max(2, dist * 0.01); camera.far = dist * 40 + 20000; camera.updateProjectionMatrix();
+  scene.fog.near = dist * 3; scene.fog.far = dist * 12;
+  veil.material.uniforms.hatch.value = dist * 0.03;
+  veil.material.uniforms.amount.value = Math.min(1, Math.max(0, (dist - 20000) / 40000));
+  for (const t of tiles) t.mesh.visible = dist < (t.tall ? 120000 : 22000);
+  for (const t of trees) t.visible = dist < 4500;
+  sky.position.copy(camera.position); sky.scale.setScalar(camera.far * 0.9);
+  { // the sun's shadow box follows what you are looking at
+    const t = controls.target, S = Math.min(6000, Math.max(450, dist * 1.25)), cam = sunLight.shadow.camera;
+    sunLight.target.position.copy(t);
+    sunLight.position.copy(t).addScaledVector(SUN_DIR, 6000);
+    if (cam.right !== S) { cam.left = cam.bottom = -S; cam.right = cam.top = S; cam.updateProjectionMatrix(); }
+  }
+  if (manhattanLand) manhattanLand.material.color.lerpColors(cityGrey, cityGreen, Math.min(1, Math.max(0, (dist - 15000) / 60000)));
+  if (pin) {
+    pin.visible = dist < 60000;
+    pin.scale.setScalar(Math.max(1, Math.min(30, dist / 700)));
+    pin.position.y = homeTop + (4 + Math.sin(clock * 3) * 4) * pin.scale.x;
+    homeLabel.p.y = pin.position.y + 50 * pin.scale.x;
+  }
+  if ((whereT += dt) > 0.4) { whereT = 0; updateWhere(dist); }
+  for (const l of labels) {
+    let on = !l.hidden && dist >= l.min && dist <= l.max;
+    if (on) {
+      tmp.copy(l.p).project(camera);
+      on = tmp.z < 1 && tmp.x > -1.2 && tmp.x < 1.2 && tmp.y > -1.2 && tmp.y < 1.2;
+      if (on) l.el.style.transform = `translate(${(tmp.x + 1) / 2 * w0}px, ${(1 - tmp.y) / 2 * h0}px) translate(-50%, -50%)`;
+    }
+    if (on !== l.on) { l.on = on; l.el.style.display = on ? (l.el.classList.contains('home') ? 'flex' : 'block') : 'none'; }
+  }
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+// ---------- intro and HUD ----------
+const big = document.getElementById('big');
+function shout(text, ms = 2600) { big.textContent = text; big.classList.add('on'); setTimeout(() => big.classList.remove('on'), ms); }
+const touch = matchMedia('(pointer: coarse)').matches;
+document.getElementById('hint').textContent = touch ? 'Drag to move · Pinch to zoom · Twist with two fingers' : 'Drag to move · Scroll to zoom · Right-drag to turn';
+document.getElementById('bHome').onclick = () => flyTo(V.home());
+document.getElementById('bWall').onclick = () => flyTo(V.wall());
+document.getElementById('bCity').onclick = () => flyTo(V.city());
+document.getElementById('bWorld').onclick = () => flyTo(V.world(), 3);
+document.getElementById('play').onclick = () => {
+  document.getElementById('title').hidden = true;
+  flyTo(view(PLACE.home, 650, 0.95, AZ), 5, () => {
+    shout('WHERE YOU START');
+    document.getElementById('hud').hidden = false;
+    setTimeout(() => { document.getElementById('hint').style.opacity = 0; }, 6000);
+  });
+  homeLabel.hidden = false;
+};
+
+(async () => {
+  try {
+    const [world, nyc, countries] = await Promise.all([loadBin('data/world.bin'), loadBin('data/nyc.bin'), fetch('data/countries.json').then(r => r.json())]);
+    loadMsg.textContent = 'Building Manhattan';
+    await new Promise(r => setTimeout(r, 30));
+    flat(polyGeo(world, 'world'), LAND, 1).receiveShadow = false;
+    flat(polyGeo(world, 'region'), LAND, 2).receiveShadow = false;
+    {
+      const r = world['border.r'], xy = world['border.xy'], seg = [];
+      let p = 0;
+      for (let i = 1; i <= r[0]; i++) { for (let j = 0; j < r[i] - 1; j++) seg.push(xy[p + 2 * j], 0, xy[p + 2 * j + 1], xy[p + 2 * j + 2], 0, xy[p + 2 * j + 3]); p += 2 * r[i]; }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(seg, 3));
+      const m = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x1b1f1b, depthWrite: false }));
+      m.renderOrder = 7; m.frustumCulled = false; scene.add(m);
+    }
+    manhattanLand = flat(polyGeo(nyc, 'land'), 0x6c6f75, 3);
+    flat(polyGeo(nyc, 'park'), 0x5e9a4a, 4);
+    flat(polyGeo(nyc, 'lake'), OCEAN, 5, { roughness: 0.22, envMapIntensity: 0.7 });
+    buildCity(nyc);
+    buildTrees(nyc);
+    pin = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: lin(0xffcc4d), emissive: lin(0x885500), roughness: 0.35, metalness: 0.3 });
+    pin.add(new THREE.Mesh(new THREE.ConeGeometry(9, 26, 16).rotateX(Math.PI).translate(0, 13, 0), mat), new THREE.Mesh(new THREE.SphereGeometry(10, 16, 12).translate(0, 30, 0), mat));
+    pin.position.set(PLACE.home[0], homeTop, PLACE.home[1]); pin.renderOrder = 11;
+    scene.add(pin);
+    homeLabel = label('<svg class="i"><use href="#i-home"/></svg>YOU START HERE', 'home', PLACE.home, 70, 0, 60000);
+    homeLabel.hidden = true;
+    cityLabels();
+    countryLabels(countries);
+  } catch (e) {
+    loadMsg.textContent = 'Could not load the map (' + e.message + '). Reload to try again.';
+    throw e;
+  }
+  place(V.world());
+  controls.update();
+  document.getElementById('load').hidden = true;
+  document.getElementById('title').hidden = false;
+  window.CS = { scene, renderer, tiles, flyTo, view, V, PLACE, current, place, ll }; // handy for testing in the console
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
