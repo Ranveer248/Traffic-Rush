@@ -1,6 +1,6 @@
 // Offline support for the 2D game. Increment this cache name with each asset release.
 // Online accounts, saves and leaderboards always go directly to their own server.
-var CACHE = 'cargo-run-2d-2026-10-25.3';
+var CACHE = 'traffic-rush-2026-10-27.5';
 self.addEventListener('install', function(e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function(c) {
@@ -9,7 +9,7 @@ self.addEventListener('install', function(e) {
 });
 self.addEventListener('activate', function(e) {
   e.waitUntil(caches.keys().then(function(keys) {
-    return Promise.all(keys.filter(function(k) { return k.indexOf('cargo-run-') === 0 && k !== CACHE; }).map(function(k) { return caches.delete(k); }));
+    return Promise.all(keys.filter(function(k) { return (k.indexOf('cargo-run-') === 0 || k.indexOf('traffic-rush-') === 0) && k !== CACHE; }).map(function(k) { return caches.delete(k); }));
   }).then(function() { return self.clients.claim(); }));
 });
 self.addEventListener('fetch', function(e) {
