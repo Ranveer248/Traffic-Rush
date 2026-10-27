@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Capital Street</title>
 <meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Capital St">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@600;800&display=swap" rel="stylesheet">
 <style>
@@ -38,11 +45,65 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* HUD */
 #hud { position: fixed; inset: 0; pointer-events: none; }
 #hud[hidden] { display: none; }
-#where { position: absolute; left: max(16px, env(safe-area-inset-left)); top: max(16px, env(safe-area-inset-top)); display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--r-md); }
-#where b { display: block; font: 400 15px/1.15 'Archivo Black', sans-serif; }
-#where span { display: block; font-size: 12px; color: var(--dim); }
+/* city-builder HUD (Figma "04 City — builder HUD"): level and XP top-left, population centre, money top-right */
+#top { position: absolute; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top)); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+#lvl { display: flex; align-items: center; pointer-events: auto; }
+#lvl .star { position: relative; width: 46px; height: 46px; z-index: 1; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .35)); }
+#lvl .star svg { width: 46px; height: 46px; display: block; }
+#lvl .star b { position: absolute; inset: 0; display: grid; place-content: center; padding-top: 3px; font: 400 16px/1 'Archivo Black', sans-serif; color: #5a3a00; }
+#lvl .xp { margin-left: -12px; padding: 4px 10px 4px 16px; border-radius: 14px; background: rgba(18, 32, 58, .86); border: 1.5px solid rgba(255, 255, 255, .18); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
+#lvl .track { width: 96px; height: 10px; border-radius: 5px; background: rgba(0, 0, 0, .45); overflow: hidden; }
+#lvl .track i { display: block; height: 100%; width: 0; border-radius: 5px; background: linear-gradient(#7cf29c, #22b455); transition: width .6s; }
+#lvl .xp span { display: block; font: 700 10px/1.3 Inter, sans-serif; color: #dde6f7; }
+.pill { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 4px; border-radius: 16px; background: rgba(18, 32, 58, .86); border: 1.5px solid rgba(255, 255, 255, .18); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); font: 800 14px/1 Inter, sans-serif; }
+.pill svg { width: 24px; height: 24px; flex: none; }
+.pill b { padding-right: 4px; font-weight: 800; }
+.pill .plus { width: 24px; height: 24px; border-radius: 12px; border: 0; padding: 0; background: linear-gradient(#7cf29c, #22b455); color: #0b3b1c; font: 400 15px/24px 'Archivo Black', sans-serif; pointer-events: auto; }
+#money { display: grid; gap: 6px; justify-items: end; }
+#task { position: absolute; left: max(12px, env(safe-area-inset-left)); top: calc(max(12px, env(safe-area-inset-top)) + 56px); max-width: 220px; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 12px; font: 700 12px/1.25 Inter, sans-serif; transition: opacity .4s; }
+#task[hidden] { display: none; }
+#task .chk { width: 22px; height: 22px; flex: none; border-radius: 6px; border: 2px solid rgba(255, 255, 255, .5); }
+#task em { display: block; font-style: normal; color: var(--green); font-size: 11px; }
+/* big round buttons either side of the dock */
+.bigbtn { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 36px); width: 68px; height: 68px; border-radius: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; pointer-events: auto; font: 400 10px/1 'Archivo Black', sans-serif; }
+.bigbtn svg { width: 32px; height: 32px; fill: none; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+.bigbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
+#bBuild { right: max(14px, env(safe-area-inset-right)); background: linear-gradient(#ffd25a, #f59e0b); border: 3px solid #7a4a00; color: #3b2400; box-shadow: 0 5px 0 #7a4a00; }
+#bBuild svg { stroke: #3b2400; }
+#bMarket { left: max(14px, env(safe-area-inset-left)); background: linear-gradient(#4f8bff, #1d4ed8); border: 3px solid #0b2a7a; color: #fff; box-shadow: 0 5px 0 #0b2a7a; }
+#bMarket svg { stroke: #fff; }
+/* build menu (Figma "05 Build menu"): building cards above a row of category tabs */
+#sheet { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 30px); padding: 0 12px; pointer-events: auto; transition: transform .25s, opacity .25s; }
+#sheet[hidden] { display: block; transform: translateY(30px); opacity: 0; pointer-events: none; }
+#sheet h3 { margin: 0 4px 8px; font: 400 16px/1 'Archivo Black', sans-serif; text-shadow: 0 2px 0 rgba(0, 0, 0, .6); display: flex; align-items: center; justify-content: space-between; }
+#sheet h3 button { width: 32px; height: 32px; border-radius: 16px; border: 2px solid #fff; background: #e0444c; color: #fff; font: 400 14px/1 'Archivo Black', sans-serif; padding: 0; }
+#cards { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 10px; scrollbar-width: none; touch-action: pan-x; }
+#cards::-webkit-scrollbar { display: none; }
+.bcard { flex: 0 0 112px; height: 156px; border-radius: 16px; border: 2px solid #fff; background: linear-gradient(#fff, #e7eef9); box-shadow: 0 4px 0 rgba(0, 0, 0, .3); color: #1f2a44; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px; position: relative; }
+.bcard svg { width: 76px; height: 70px; }
+.bcard b { font: 800 12px/1.15 Inter, sans-serif; text-align: center; min-height: 28px; display: grid; place-content: center; }
+.bcard .price { padding: 3px 8px; border-radius: 10px; background: #22b455; color: #fff; font: 800 12px/1 Inter, sans-serif; }
+.bcard.locked { filter: grayscale(.9); opacity: .75; }
+.bcard.locked .price { background: #5b6476; }
+#cats { display: flex; gap: 6px; justify-content: center; padding: 6px; border-radius: 30px; background: rgba(18, 32, 58, .86); width: fit-content; margin: 0 auto; }
+#cats button { width: 44px; height: 44px; border-radius: 22px; border: 2.5px solid rgba(255, 255, 255, .6); padding: 0; display: grid; place-content: center; box-shadow: 0 3px 0 rgba(0, 0, 0, .45); }
+#cats button.on { border-color: #fff; transform: translateY(-4px); }
+#cats svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#hud.sheet-open .bigbtn, #hud.sheet-open #dock, #hud.sheet-open #hint, #hud.sheet-open #task { opacity: 0; pointer-events: none; }
+.bigbtn, #dock, #hint { transition: opacity .25s; }
+/* level up */
+#lvlup { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(5, 10, 22, .6); z-index: 5; pointer-events: auto; }
+#lvlup[hidden] { display: none; }
+#lvlup .box { width: min(340px, calc(100vw - 32px)); padding: 22px 18px 18px; border-radius: 22px; background: linear-gradient(#fff, #e7eef9); color: #1f2a44; text-align: center; box-shadow: 0 8px 0 rgba(0, 0, 0, .35); animation: pop .45s cubic-bezier(.2, 1.6, .4, 1); }
+#lvlup .box > b { display: block; font: 400 34px/1 'Archivo Black', sans-serif; color: #f59e0b; -webkit-text-stroke: 1.5px #7a4a00; paint-order: stroke fill; }
+#lvlup .box p { margin: 8px 0 12px; font: 700 14px/1.35 Inter, sans-serif; color: #44506a; }
+#lvlup .unl { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+#lvlup .unl div { width: 76px; font: 800 10px/1.2 Inter, sans-serif; }
+#lvlup .unl svg { width: 60px; height: 56px; display: block; margin: 0 auto; }
+#lvlup button { width: 100%; padding: 14px; border: 0; border-radius: 16px; background: var(--green); color: var(--bg); font: 400 20px/1 'Archivo Black', sans-serif; box-shadow: 0 5px 0 var(--green-deep); }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 /* bottom dock, like the reference: the player in the middle, two round buttons each side, a price ticker underneath */
-#dock { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 30px); transform: translateX(-50%); display: flex; align-items: flex-end; gap: 10px; pointer-events: auto; }
+#dock { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 30px); z-index: 1; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 10px; pointer-events: auto; }
 .dk { width: 40px; height: 40px; margin-bottom: 8px; border-radius: 50%; display: grid; place-content: center; padding: 0; background: rgba(38, 42, 50, .72); border: 1px solid rgba(255, 255, 255, .2); color: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .3); }
 .dk svg.i { width: 20px; height: 20px; }
 .dk.locked { opacity: .6; }
@@ -96,19 +157,29 @@ h1 em { font-style: normal; color: var(--green); }
 <canvas id="c"></canvas>
 <div id="labels"></div>
 <div id="hud" hidden>
-  <div id="where" class="glass"><svg class="i"><use href="#i-pin"/></svg><div><b id="whereCity">New York</b><span id="whereArea">Manhattan</span></div></div>
+  <div id="top">
+    <div id="lvl"><div class="star"><svg viewBox="0 0 46 46"><path d="M23 2l6.2 13.3 14.5 1.6-10.8 9.9 3 14.3L23 33.8 10.1 41.1l3-14.3L2.3 16.9l14.5-1.6z" fill="#FFC531" stroke="#8A5A00" stroke-width="2.5" stroke-linejoin="round"/><path d="M23 7l4.6 9.8 10.6 1.2-7.9 7.2" fill="none" stroke="#FFE9A3" stroke-width="2" stroke-linecap="round"/></svg><b id="lvlN">1</b></div><div class="xp"><div class="track"><i id="xpFill"></i></div><span id="xpT">0 / 40 XP</span></div></div>
+    <div class="pill" id="popP"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#3B82F6"/><circle cx="12" cy="9" r="3.4" fill="#fff"/><path d="M5.5 19c.8-3.4 3.4-5.2 6.5-5.2s5.7 1.8 6.5 5.2" fill="#fff"/></svg><b id="popN">0</b></div>
+    <div id="money">
+      <div class="pill"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#22B455"/><circle cx="12" cy="12" r="9" fill="#2FD47A" stroke="#14823F" stroke-width="1.5"/><path d="M14.5 8.8c-.6-.8-1.5-1.1-2.5-1.1-1.5 0-2.6.8-2.6 2s1.1 1.6 2.6 2 2.7.8 2.7 2.1-1.2 2.1-2.7 2.1c-1.2 0-2.2-.4-2.8-1.3M12 6v12" fill="none" stroke="#0B3B1C" stroke-width="1.8" stroke-linecap="round"/></svg><b id="cashN">$2,500</b><button class="plus" id="cashPlus" aria-label="Get cash">+</button></div>
+      <div class="pill"><svg viewBox="0 0 24 24"><path d="M3 17l3-8h12l3 8z" fill="#FFC531" stroke="#8A5A00" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 10h10l1.6 4" fill="none" stroke="#FFE9A3" stroke-width="1.5"/></svg><b id="goldN">10</b><button class="plus" id="goldPlus" aria-label="Get gold">+</button></div>
+    </div>
+  </div>
+  <div id="task" class="glass" hidden><div class="chk"></div><div><span id="taskT"></span><em id="taskR"></em></div></div>
+  <button id="bMarket" class="bigbtn" aria-label="Market"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 3 7-8"/><path d="M15 7h4v4"/></svg>MARKET</button>
+  <button id="bBuild" class="bigbtn" aria-label="Build"><svg viewBox="0 0 24 24"><path d="M4 14a8 8 0 0 1 16 0"/><path d="M2.5 14h19v2.5h-19z" fill="#3B2400"/><path d="M12 6v4M9 7l1 3M15 7l-1 3"/></svg>BUILD</button>
+  <div id="sheet" hidden><h3><span id="sheetT">HOMES</span><button id="sheetX" aria-label="Close">✕</button></h3><div id="cards"></div><div id="cats"></div></div>
   <div id="dock">
     <button id="bWorld" class="dk" aria-label="World map"><svg class="i"><use href="#i-globe"/></svg></button>
-    <button id="bWall" class="dk" aria-label="Wall Street"><svg class="i"><use href="#i-bank"/></svg></button>
     <button id="bHome" class="avatar" aria-label="Home"><svg viewBox="0 0 40 64"><use href="#i-avatar"/></svg></button>
-    <button id="bStaff" class="dk locked" aria-label="Staff"><svg class="i"><use href="#i-people"/></svg></button>
-    <button id="bShop" class="dk locked" aria-label="Shop"><svg class="i"><use href="#i-store"/></svg></button>
+    <button id="bWall" class="dk" aria-label="Wall Street"><svg class="i"><use href="#i-bank"/></svg></button>
   </div>
   <div id="ticker"><div id="tape"></div></div>
   <div id="hint" class="glass"></div>
 </div>
 <div id="toast" class="glass"><div class="badge"><svg class="i"><use href="#i-lock"/></svg></div><div><b id="toastT">Locked</b><span id="toastB">Only New York is open. More cities in a future update.</span></div></div>
 <div id="big"></div>
+<div id="lvlup" hidden><div class="box"><b id="lvlupT">LEVEL 2!</b><p>New buildings unlocked:</p><div class="unl" id="lvlupU"></div><button id="lvlupOk">GREAT!</button></div></div>
 <div id="title" class="ov" hidden>
   <div class="card">
     <div class="over">A WALL STREET STORY</div>
@@ -306,6 +377,7 @@ buildingMat.onBeforeCompile = sh => {
         c = mix(c, sty > 2.5 ? base * 0.7 : vec3(0.05, 0.12, 0.30), win);
         c *= mix(0.62, 1.0, smoothstep(0.0, 16.0, y)); // a little ambient occlusion near the street
       }
+      c = max(mix(vec3(dot(c, vec3(0.299, 0.587, 0.114))), c, 1.3), 0.0); // a little extra colour, toy-city style
       diffuseColor.rgb = c;`)
     .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.3, gMask);')
     .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.25, gMask);');
@@ -532,12 +604,11 @@ function label(html, cls, p, y, min, max) {
   return l;
 }
 const CITY = 9000; // below this camera distance we are "in the city"
-const DISTRICTS = []; // [name, x, z] for the location chip
 function cityLabels() {
   [['INWOOD', 40.8680, -73.9230], ['WASHINGTON HEIGHTS', 40.8450, -73.9380], ['HARLEM', 40.8110, -73.9460], ['UPPER WEST SIDE', 40.7870, -73.9750],
    ['UPPER EAST SIDE', 40.7735, -73.9560], ['MIDTOWN', 40.7540, -73.9840], ['CHELSEA', 40.7465, -74.0010], ['GREENWICH VILLAGE', 40.7330, -74.0020],
    ['EAST VILLAGE', 40.7280, -73.9840], ['SOHO', 40.7233, -74.0030], ['FINANCIAL DISTRICT', 40.7075, -74.0090]]
-    .forEach(([t, a, b]) => { label(t, 'district', ll(a, b), 0, 2800, 30000); DISTRICTS.push([t.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()), ...ll(a, b)]); });
+    .forEach(([t, a, b]) => label(t, 'district', ll(a, b), 0, 2800, 30000));
   [['NEW JERSEY', 40.7400, -74.0600], ['BROOKLYN', 40.6850, -73.9700], ['QUEENS', 40.7550, -73.9200], ['THE BRONX', 40.8450, -73.9000]]
     .forEach(([t, a, b]) => { label(t, 'district', ll(a, b), 0, 1500, 30000).el.style.color = '#e9f2e0'; });
   [['HUDSON RIVER', 40.7750, -74.0080], ['EAST RIVER', 40.7350, -73.9660], ['UPPER BAY', 40.6750, -74.0380]]
@@ -625,7 +696,7 @@ nycMarker.el.onclick = () => { if (!fly && document.getElementById('title').hidd
 
 // ---------- frame loop ----------
 const tmp = new THREE.Vector3();
-let last = performance.now(), clock = 0, w0 = 0, h0 = 0, pin, manhattanLand, borders;
+let last = performance.now(), clock = 0, w0 = 0, h0 = 0, checkT = 0, pin, manhattanLand, borders;
 function resize() {
   const w = innerWidth, h = innerHeight;
   if (w === w0 && h === h0) return;
@@ -634,20 +705,6 @@ function resize() {
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }
 const cityGrey = lin(PAVEMENT), cityGreen = lin(LAND);
-// location chip: the neighbourhood under the camera, or the world when zoomed out
-const whereCity = document.getElementById('whereCity'), whereArea = document.getElementById('whereArea');
-let whereT = 0;
-function updateWhere(dist) {
-  const t = controls.target;
-  let city = 'World', area = '1 of 1 cities unlocked';
-  if (dist < 60000) {
-    let best = null, bd = Infinity;
-    for (const d of DISTRICTS) { const dd = (d[1] - t.x) ** 2 + (d[2] - t.z) ** 2; if (dd < bd) { bd = dd; best = d; } }
-    city = 'New York'; area = best && bd < 3500 ** 2 ? 'Manhattan · ' + best[0] : 'Manhattan';
-  }
-  if (whereCity.textContent !== city) whereCity.textContent = city;
-  if (whereArea.textContent !== area) whereArea.textContent = area;
-}
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
   resize();
@@ -667,7 +724,10 @@ function frame(now) {
   camera.near = Math.max(2, dist * 0.01); camera.far = dist * 40 + 20000; camera.updateProjectionMatrix();
   scene.fog.near = dist * 3; scene.fog.far = dist * 12;
   veil.material.uniforms.amount.value = Math.min(1, Math.max(0, (dist - 20000) / 40000));
-  for (const t of tiles) t.mesh.visible = dist < (t.tall ? 120000 : 22000);
+  // zooming out, the city shrinks into the map: heights ease down to nothing between 6 km and 70 km
+  const sink = 1 - Math.min(1, Math.max(0, Math.log(dist / 6000) / Math.log(70000 / 6000)));
+  const hs = Math.max(0.01, sink * sink * (3 - 2 * sink));
+  for (const t of tiles) { t.mesh.visible = dist < (t.tall ? 120000 : 40000); t.mesh.scale.y = hs; }
   for (const t of trees) t.visible = dist < 4500;
   for (const t of roofThings) t.visible = dist < 3500;
   if (streetLabels) { streetLabels.visible = dist < 2600; streetLabels.material.uniforms.fade.value = 1 - Math.max(0, (dist - 1800) / 800); }
@@ -691,7 +751,7 @@ function frame(now) {
     pin.position.y = homeTop + 3 + (4 + Math.sin(clock * 3) * 4) * pin.scale.x;
     homeLabel.p.y = pin.position.y + 46 * pin.scale.x;
   }
-  if ((whereT += dt) > 0.4) { whereT = 0; updateWhere(dist); }
+  if ((checkT += dt) > 0.5) { checkT = 0; checkPlaces(dist); }
   for (const l of labels) {
     let on = !l.hidden && dist >= l.min && dist <= l.max;
     if (on) {
@@ -705,15 +765,137 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// ---------- city-builder progression: levels, XP, money (systems modelled on mobile city builders, names and art our own) ----------
+const xpFor = level => Math.round(40 * level ** 1.8); // XP needed to go from this level to the next
+const CATS = [
+  { id: 'homes', name: 'HOMES', color: '#3b82f6', icon: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>' },
+  { id: 'shops', name: 'SHOPS', color: '#f59e0b', icon: '<path d="M4 9 5.5 4h13L20 9"/><path d="M4 9h16v1.5a2.7 2.7 0 0 1-5.3.8 2.7 2.7 0 0 1-5.4 0 2.7 2.7 0 0 1-5.3-.8z"/><path d="M5 13v7h14v-7"/>' },
+  { id: 'industry', name: 'INDUSTRY', color: '#ef6c3a', icon: '<path d="M3 21V11l5 3V11l5 3V7h3l1-4h2l1 4v14z"/>' },
+  { id: 'finance', name: 'FINANCE', color: '#22b455', icon: '<path d="M3 17l5-5 4 3 7-8"/><path d="M15 7h4v4"/>' },
+  { id: 'services', name: 'SERVICES', color: '#e0444c', icon: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="M9 12h6M12 9v6"/>' },
+  { id: 'parks', name: 'PARKS', color: '#4caf50', icon: '<path d="M12 3 6 13h3l-3 5h12l-3-5h3z"/><path d="M12 18v3"/>' },
+  { id: 'landmarks', name: 'LANDMARKS', color: '#a855f7', icon: '<path d="M12 2l2.6 6.2 6.4.5-4.9 4.2 1.5 6.4L12 15.9 6.4 19.3l1.5-6.4L3 8.7l6.4-.5z"/>' }
+];
+// [name, unlock level, cost, wall colour, roof colour, floors, footprint]
+const CATALOG = {
+  homes: [['Studio Walk-up', 1, 1200, '#c08f6e', '#5e5a55', 3, 1], ['Brownstone', 2, 2500, '#8c4a3a', '#4a4440', 4, 1], ['Mid-rise Flats', 4, 6000, '#d8cbb0', '#55524d', 7, 1.2], ['Luxury Condos', 9, 25000, '#9fb6cc', '#45505c', 12, 1.1], ['Penthouse Tower', 18, 120000, '#6d8aa8', '#3d4652', 20, 1]],
+  shops: [['Coffee Cart', 1, 800, '#e8c48a', '#b8442e', 1, 0.8], ['Corner Deli', 2, 1500, '#d9a066', '#2f6b4f', 2, 1], ['Hardware Store', 3, 3000, '#c9b79c', '#8a3b2e', 2, 1.2], ['Fashion Boutique', 7, 9000, '#f2e6e9', '#3a3540', 3, 1], ['Department Store', 13, 40000, '#e0d8c6', '#4a5866', 6, 1.4]],
+  industry: [['Steel Works', 1, 1000, '#9aa3ab', '#6b4a3a', 2, 1.3], ['Lumber Yard', 2, 1800, '#b07a5a', '#5b4330', 2, 1.3], ['Plastics Plant', 5, 5000, '#d2dae2', '#4f8bff', 3, 1.3], ['Textile Mill', 11, 14000, '#a86b4f', '#55524d', 4, 1.4], ['Electronics Factory', 17, 60000, '#cfd3d6', '#2f6fb0', 4, 1.4]],
+  finance: [['Trading Desk', 1, 1500, '#e6e2d8', '#2f8f5a', 2, 0.9], ['Brokerage Office', 4, 8000, '#cbbd9f', '#3d4652', 6, 1], ['Community Bank', 8, 20000, '#f3efe6', '#7a8a96', 3, 1.2], ['Hedge Fund', 15, 90000, '#4d6f96', '#2d3b4a', 16, 1], ['Exchange Tower', 25, 500000, '#3f5d7c', '#ffc531', 26, 1.1]],
+  services: [['Fire Station', 3, 2000, '#c0392b', '#4a4440', 2, 1.1], ['Power Plant', 3, 2500, '#b9c0c8', '#f59e0b', 3, 1.3], ['Water Pumps', 3, 2500, '#a7c6e0', '#3b82f6', 2, 1.1], ['Police Precinct', 6, 6000, '#4a6078', '#2d3b4a', 3, 1.1], ['Sewage Works', 8, 9000, '#8f9aa5', '#55524d', 2, 1.3], ['Waste Depot', 10, 12000, '#7d8a6a', '#4a4440', 2, 1.3], ['Hospital', 14, 45000, '#f4f4f2', '#e0444c', 8, 1.3]],
+  parks: [['Pocket Park', 2, 600, '#6fae5a', '#4f8a3c', 0, 1], ['Plaza Fountain', 5, 3500, '#d9d6cf', '#3b82f6', 0, 1.1], ['Rooftop Garden', 8, 7000, '#cbbd9f', '#5e9a4a', 1, 1], ['Riverside Promenade', 12, 15000, '#9fd18a', '#2b84c4', 0, 1.3]],
+  landmarks: [['Bull Statue', 20, 150000, '#b8863b', '#8a5a00', 1, 0.8], ['Golden Ticker Tower', 30, 900000, '#ffd25a', '#8a5a00', 30, 1], ['Capital Street HQ', 40, 5000000, '#2fd47a', '#0b3b1c', 40, 1.2]]
+};
+// a small isometric building drawing for menu cards
+function isoArt(wall, roof, floors, foot = 1) {
+  const sh = c => { const n = parseInt(c.slice(1), 16), f = k => Math.round(((n >> k) & 255) * 0.78); return `rgb(${f(16)},${f(8)},${f(0)})`; };
+  const w = 26 * foot, d = 13 * foot, hgt = floors ? 6 + floors * 3.2 : 3, cx = 38, base = 60;
+  const top = base - d - hgt;
+  const L = `${cx - w},${base - d} ${cx},${base} ${cx},${base - hgt} ${cx - w},${base - d - hgt}`;
+  const R = `${cx},${base} ${cx + w},${base - d} ${cx + w},${base - d - hgt} ${cx},${base - hgt}`;
+  const T = `${cx - w},${top} ${cx},${top + d} ${cx + w},${top} ${cx},${top - d}`;
+  let win = '';
+  for (let f = 0; f < Math.min(floors, 12); f++) {
+    const y = base - d - 5 - f * (hgt - 6) / Math.max(1, Math.min(floors, 12));
+    win += `<path d="M${cx - w + 4} ${y - 1} L${cx - 4} ${y + d - 3}" stroke="#2f5b8a" stroke-width="2.4" opacity=".8"/><path d="M${cx + 4} ${y + d - 3} L${cx + w - 4} ${y - 1}" stroke="#244a73" stroke-width="2.4" opacity=".8"/>`;
+  }
+  return `<svg viewBox="0 0 76 70"><ellipse cx="38" cy="${base + 2}" rx="${w + 6}" ry="6" fill="#000" opacity=".14"/><polygon points="${L}" fill="${wall}"/><polygon points="${R}" fill="${sh(wall)}"/>${win}<polygon points="${T}" fill="${roof}"/></svg>`;
+}
+const SAVE_KEY = 'capital-street-save-v1';
+const state = (() => { try { return Object.assign({ level: 1, xp: 0, cash: 2500, gold: 10, pop: 0, tasks: 0 }, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) { return { level: 1, xp: 0, cash: 2500, gold: 10, pop: 0, tasks: 0 }; } })();
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { /* private mode: progress lasts this visit */ } }
+const fmt = n => '$' + Math.round(n).toLocaleString('en-US');
+function drawHud() {
+  document.getElementById('lvlN').textContent = state.level;
+  const need = xpFor(state.level);
+  document.getElementById('xpFill').style.width = Math.min(100, state.xp / need * 100) + '%';
+  document.getElementById('xpT').textContent = `${state.xp} / ${need} XP`;
+  document.getElementById('popN').textContent = state.pop.toLocaleString('en-US');
+  document.getElementById('cashN').textContent = fmt(state.cash);
+  document.getElementById('goldN').textContent = state.gold;
+}
+function gainXp(n) {
+  state.xp += n;
+  const ups = [];
+  while (state.xp >= xpFor(state.level)) { state.xp -= xpFor(state.level); state.level++; ups.push(state.level); }
+  save(); drawHud();
+  if (ups.length) showLevelUp(state.level);
+}
+function showLevelUp(level) {
+  document.getElementById('lvlupT').textContent = `LEVEL ${level}!`;
+  const unl = Object.values(CATALOG).flat().filter(b => b[1] === level);
+  document.getElementById('lvlupU').innerHTML = unl.length ? unl.map(b => `<div>${isoArt(b[3], b[4], b[5], b[6])}${b[0]}</div>`).join('') : '<div style="width:auto">Keep going: bigger buildings unlock at higher levels.</div>';
+  document.getElementById('lvlup').hidden = false;
+}
+document.getElementById('lvlupOk').onclick = () => { document.getElementById('lvlup').hidden = true; if (sheetCat) openSheet(sheetCat); };
+// build menu
+let sheetCat = null;
+const sheetEl = document.getElementById('sheet');
+document.getElementById('cats').innerHTML = CATS.map(c => `<button data-c="${c.id}" style="background:linear-gradient(${c.color}, ${c.color})" aria-label="${c.name}"><svg viewBox="0 0 24 24">${c.icon}</svg></button>`).join('');
+document.querySelectorAll('#cats button').forEach(b => b.onclick = () => openSheet(b.dataset.c));
+function openSheet(cat) {
+  sheetCat = cat;
+  const c = CATS.find(x => x.id === cat);
+  document.getElementById('sheetT').textContent = c.name;
+  document.querySelectorAll('#cats button').forEach(b => b.classList.toggle('on', b.dataset.c === cat));
+  document.getElementById('cards').innerHTML = CATALOG[cat].map(([name, lvl, cost, wall, roof, floors, foot], i) => {
+    const locked = state.level < lvl;
+    return `<button class="bcard${locked ? ' locked' : ''}" data-i="${i}">${isoArt(wall, roof, floors, foot)}<b>${name}</b><span class="price">${locked ? 'Level ' + lvl : fmt(cost)}</span></button>`;
+  }).join('');
+  document.querySelectorAll('#cards .bcard').forEach(b => b.onclick = () => {
+    const [name, lvl, cost] = CATALOG[cat][+b.dataset.i];
+    if (state.level < lvl) toast('Locked', `${name} unlocks at level ${lvl}.`);
+    else if (state.cash < cost) toast('Not enough cash', `${name} costs ${fmt(cost)}.`);
+    else toast(name, 'Next goal: pick a lot on the map and build it there.');
+  });
+  sheetEl.hidden = false;
+  document.getElementById('hud').classList.add('sheet-open');
+  taskEvent('build');
+}
+function closeSheet() { sheetEl.hidden = true; sheetCat = null; document.getElementById('hud').classList.remove('sheet-open'); }
+document.getElementById('bBuild').onclick = () => sheetEl.hidden ? openSheet('homes') : closeSheet();
+document.getElementById('sheetX').onclick = closeSheet;
+document.getElementById('bMarket').onclick = () => toast('Market', 'Trading opens once you get your first bank loan.');
+document.getElementById('cashPlus').onclick = () => toast('Cash', 'Earn cash from your businesses and trades.');
+document.getElementById('goldPlus').onclick = () => toast('Gold', 'Gold comes from level-ups and special deals.');
+// starter tasks, each worth XP, so the level system works from the first minute
+const TASKS = [
+  { text: 'Fly to Wall Street', xp: 20, cash: 200, on: 'wall' },
+  { text: 'Open the Build menu', xp: 15, cash: 0, on: 'build' },
+  { text: 'Zoom out to see the whole world', xp: 25, cash: 300, on: 'world' },
+  { text: 'Visit Central Park', xp: 30, cash: 300, on: 'park' },
+  { text: 'Find the Stock Exchange', xp: 40, cash: 500, on: 'nyse' }
+];
+function drawTask() {
+  const t = TASKS[state.tasks], el = document.getElementById('task');
+  el.hidden = !t;
+  if (!t) return;
+  document.getElementById('taskT').textContent = t.text;
+  document.getElementById('taskR').textContent = `+${t.xp} XP` + (t.cash ? ` · +${fmt(t.cash)}` : '');
+}
+function taskEvent(kind) {
+  const t = TASKS[state.tasks];
+  if (!t || t.on !== kind || document.getElementById('hud').hidden) return;
+  state.tasks++; state.cash += t.cash;
+  toast('Task done!', `${t.text}: +${t.xp} XP${t.cash ? ', +' + fmt(t.cash) : ''}`);
+  gainXp(t.xp); drawTask();
+}
+const PARK = ll(40.7812, -73.9665), NYSE = ll(40.7069, -74.0113);
+function checkPlaces(dist) {
+  const t = controls.target, near = (p, r) => (t.x - p[0]) ** 2 + (t.z - p[1]) ** 2 < r * r;
+  if (dist > 1.5e6) taskEvent('world');
+  if (dist < 6000 && near(PARK, 1500)) taskEvent('park');
+  if (dist < 1500 && near(NYSE, 350)) taskEvent('nyse');
+}
+drawHud(); drawTask();
+
 // ---------- intro and HUD ----------
 const big = document.getElementById('big');
 function shout(text, ms = 2600) { big.textContent = text; big.classList.add('on'); setTimeout(() => big.classList.remove('on'), ms); }
 const touch = matchMedia('(pointer: coarse)').matches;
 document.getElementById('hint').textContent = touch ? 'Drag to move · Pinch to zoom · Twist with two fingers' : 'Drag to move · Scroll to zoom · Right-drag to turn';
 document.getElementById('bHome').onclick = () => flyTo(V.home());
-document.getElementById('bWall').onclick = () => flyTo(V.wall());
-document.getElementById('bStaff').onclick = () => toast('Locked', 'Hire brokers, employees and interns once you own a building.');
-document.getElementById('bShop').onclick = () => toast('Locked', 'The shop opens in a later update.');
+document.getElementById('bWall').onclick = () => flyTo(V.wall(), 2.6, () => taskEvent('wall'));
 // price ticker along the bottom, as in the reference (prices drift for now; trading comes in a later goal)
 const TICKS = [['WHEAT', 6.12], ['CORN', 4.38], ['COFFEE', 2.31], ['SUGAR', 0.21], ['BEEF', 3.0], ['PORK', 0.92], ['SALMON', 1.2], ['OIL', 78.4],
   ['GOLD', 2418.3], ['SILVER', 29.12], ['STEEL', 0.42], ['NYCX', 41.2], ['BRKL', 18.75], ['HDSN', 102.4], ['WLST', 64.05]].map(([s, p]) => ({ s, p, o: p }));
@@ -785,6 +967,8 @@ document.getElementById('play').onclick = () => {
   document.getElementById('title').hidden = false;
   window.CS = { scene, renderer, tiles, flyTo, view, V, PLACE, current, place, ll, borders, home: () => [homeTop, homeAngle] }; // handy for testing in the console
   requestAnimationFrame(frame);
+  // installable app: works offline after the first visit
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 </script>
 </body>

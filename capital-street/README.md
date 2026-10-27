@@ -26,6 +26,42 @@ The target is the two reference images: a flat world map when zoomed out (image 
 
 Only Manhattan has buildings for now. Brooklyn, Queens, the Bronx and New Jersey are visible but flat. The Staff and Shop buttons and the ticker prices are placeholders until later goals.
 
+## Goal 2: city-builder foundation ✅
+
+Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our own names and art.
+
+| Check | Result |
+|---|---|
+| Level system like BuildIt | ✅ level star and XP bar; XP to the next level is 40 × level^1.8; a level-up screen shows what unlocked |
+| Same kinds of buildings | ✅ Build menu with 7 families (Homes, Shops, Industry, Finance, Services, Parks, Landmarks), 34 buildings, each locked until its level |
+| HUD like BuildIt | ✅ level and XP top-left, population centre, cash and gold top-right, big Build button bottom-right, Market bottom-left |
+| Earn XP from the start | ✅ five starter tasks (Wall Street, Build menu, the world, Central Park, the Stock Exchange) worth XP and cash; progress is saved on the device |
+| Zoom out and the city turns into the world map | ✅ buildings sink smoothly into the map between 6 km and 70 km, then the world map takes over |
+| Installable as an app | ✅ app manifest, icons and a service worker: "Add to Home Screen" gives a full-screen app that works offline after the first visit |
+| UI from Figma | ✅ screens "04 City — builder HUD" and "05 Build menu" |
+
+## Roadmap
+
+1. ✅ The New York map
+2. ✅ City-builder foundation (levels, Build menu, HUD, app install)
+3. **Lots and building:** tap a real building, buy the lot, build from the Build menu on it, with construction time and XP
+4. **Production loop:** Industry makes materials, Shops make goods, goods upgrade Homes for population and XP
+5. **Bank loan and the Market:** the student's first loan, then trading (the original idea)
+6. **Customise your building:** a room-by-room floor plan editor like the rooftop room; hire brokers, employees and interns
+7. **Services:** power, water, fire, police and health, with coverage and happiness
+8. **Events:** market crashes, booms and disasters
+9. **The world:** unlock new cities on the world map, like BuildIt's regions
+10. **App stores:** wrap the game for the App Store and Google Play
+
+## Putting it online
+
+The game is a static website, so it can be hosted anywhere that serves files:
+
+- **GitHub Pages (free, already used by this repo):** merge this branch into `main`, then in the repo go to Settings → Pages → Deploy from branch → `main` / root. The game is at `https://ranveer248.github.io/<repo-name>/capital-street/` (the repo is now named `Traffic-Rush`).
+- **Its own address:** a new repo just for Capital Street gives `https://ranveer248.github.io/capital-street/`. Netlify or Cloudflare Pages work too: drag in the `capital-street` folder.
+- **As an app:** open the site on a phone and choose "Add to Home Screen". It installs full-screen with its own icon.
+- **App Store / Google Play:** wrap the same files with Capacitor. This needs an Apple developer account ($99 a year) and a Google Play account ($25 once).
+
 ## Map data
 
 `data/` is baked by `tools/build_map.py` and is checked in, so the game needs no build step.
