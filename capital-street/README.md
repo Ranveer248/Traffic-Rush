@@ -26,9 +26,9 @@ The target is the two reference images: a flat world map when zoomed out (image 
 
 Only Manhattan has buildings for now. Brooklyn, Queens, the Bronx and New Jersey are visible but flat. The Staff and Shop buttons and the ticker prices are placeholders until later goals.
 
-## Goal 2: city-builder foundation ✅
+## Goal 2: city-builder foundation ✅ (replaced in goal 3)
 
-Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our own names and art.
+Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our own names and art. Goal 3 replaced this HUD with the trading UI from the reference videos.
 
 | Check | Result |
 |---|---|
@@ -40,18 +40,29 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 | Installable as an app | ✅ app manifest, icons and a service worker: "Add to Home Screen" gives a full-screen app that works offline after the first visit |
 | UI from Figma | ✅ screens "04 City — builder HUD" and "05 Build menu" |
 
+## Goal 3: the trading game, styled after the reference videos ✅
+
+| Check | Result |
+|---|---|
+| The story | ✅ you live alone in a rooftop studio; rent ($1,850) is due at the end of day 3; you have $340 and find a $2,000 envelope. Pay the rent or get evicted; it comes back every 7 days |
+| Paper trading simulator | ✅ 16 fictional New York companies with prices that move every game minute (market, sector and company moves); market and limit orders, positions, P&amp;L, trade history; saved on the device |
+| The market opens and closes | ✅ 09:30–16:00 game time, one game minute per second (1×, 5× or 20×); nights fast-forward; "Skip to open" |
+| Anything can happen | ✅ 12 kinds of surprise events, about three a day: crashes, rallies, a plane hitting a Midtown tower (with smoke you can fly to), blackouts that close the exchange, hacks and halts, rate hikes, scandals, earnings, meme squeezes, buyouts, hurricanes, sector booms and slumps |
+| UI like the videos | ✅ thin dark top banner, cash/worth/rent pills, avatar dock with four small round buttons, scrolling company ticker, dark Share Exchange panel (company list with sparklines, price and stats, line/candle chart with time ranges, order book, buy/sell ticket with 25/50/75/max) |
+| Buildings like the videos | ✅ 24,205 pitched tiled roofs (gables and hips) with chimneys on rectangular low-rise buildings, framed windows, cream, ochre and brick walls, green lots, beige sidewalks, asphalt with yellow centre lines, white lane dashes and 14,993 zebra crossings |
+| People and traffic | ✅ ball-headed people walking the sidewalks and boxy cars driving the streets wherever you look |
+| Zoom out like the videos | ✅ the city sinks into the map, then the map turns into a 3D globe with a glowing atmosphere in starry space, with countries, borders and New York marked |
+
 ## Roadmap
 
 1. ✅ The New York map
-2. ✅ City-builder foundation (levels, Build menu, HUD, app install)
-3. **Lots and building:** tap a real building, buy the lot, build from the Build menu on it, with construction time and XP
-4. **Production loop:** Industry makes materials, Shops make goods, goods upgrade Homes for population and XP
-5. **Bank loan and the Market:** the student's first loan, then trading (the original idea)
-6. **Customise your building:** a room-by-room floor plan editor like the rooftop room; hire brokers, employees and interns
-7. **Services:** power, water, fire, police and health, with coverage and happiness
-8. **Events:** market crashes, booms and disasters
-9. **The world:** unlock new cities on the world map, like BuildIt's regions
-10. **App stores:** wrap the game for the App Store and Google Play
+2. ✅ City-builder foundation (since replaced by the trading UI from the reference videos)
+3. ✅ The trading game and the reference style
+4. **Bank loan:** borrow to trade bigger; interest and due dates
+5. **Buy property:** buy real buildings in Manhattan, starting with an office on Wall Street
+6. **Customise your building:** rooms, desks and decor, seen from above with the roof off; hire brokers, employees and interns
+7. **More cities:** unlock cities on the globe
+8. **App stores:** wrap the game for the App Store and Google Play
 
 ## Putting it online
 

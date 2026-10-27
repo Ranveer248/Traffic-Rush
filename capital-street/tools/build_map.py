@@ -98,8 +98,8 @@ def hnum(key, salt=''):
 # Facade styles, drawn by the game's shader: 0 glass window bands, 1 stone with punched windows, 2 brick walk-up, 3 all-glass tower
 PALETTE = {
     0: ['#d9d6cf', '#c9ccd1', '#e6e2d8', '#b9c0c8', '#d4c7b0', '#cfd3d6'],
-    1: ['#d8cbb0', '#cbbd9f', '#e0d8c6', '#bfb4a0', '#d2c2a4', '#a9a49a', '#e8e1d0'],
-    2: ['#a0573f', '#9b6a55', '#b07a5a', '#8c4a3a', '#c08f6e', '#7d5b4a', '#a86b4f'],
+    1: ['#e8dcc0', '#ece4d2', '#d9c49a', '#e6e2da', '#d8b878', '#cfc6b4', '#e9e9e6'],  # cream, ochre and white, like the reference
+    2: ['#a3503c', '#9a4a38', '#b35e44', '#8c3f33', '#b8664a', '#a0573f', '#c9a15e'],
     3: ['#4d6f96', '#5a7fa6', '#3f5d7c', '#6b8fae', '#557a8c', '#46627e'],
 }
 def style_of(key, h, material):
@@ -124,7 +124,9 @@ def colour(key, style, given):
 
 rng = np.random.default_rng(7)
 recs = []   # outer ring, inner ring (parapet) or None, height, min height, colour, style
-roof = []   # rooftop things: type (0 plant room, 1 water tower), x, z, base y, w, d, h, angle
+roof = []   # rooftop things: type (0 plant room, 1 water tower, 2 chimney), x, z, base y, w, d, h, angle
+pitched = []  # pitched roofs: x, z, angle, length, width, base y, rise, ridge (1 gable, 0 hip), roof colour index, wall colour
+ROOF_COLS = ['#b5523b', '#4b4f57', '#7a4a33', '#8e3b2e', '#5d6168', '#4f8a6a']
 def axis_angle(poly):
     r = np.asarray(poly.minimum_rotated_rectangle.exterior.coords)
     e = r[1] - r[0] if np.hypot(*(r[1] - r[0])) >= np.hypot(*(r[2] - r[1])) else r[2] - r[1]
@@ -145,6 +147,25 @@ def add(geom, h, mh, key, given, material):
         for q in polys(p):
             q = shapely.geometry.polygon.orient(Polygon(q.exterior), 1.0)  # outline only, counter-clockwise
             inner = None
+            mrr = q.minimum_rotated_rectangle
+            r = hnum(key, 'p') % 100
+            if mh == 0 and h <= 40 and 50 < q.area < 1400 and (style in (1, 2) or h < 22) and q.area / max(mrr.area, 1) > 0.86 and r < 78:
+                # a pitched roof, like the reference's terraced houses: gable along the long side, hipped when squarish
+                rc = np.asarray(mrr.exterior.coords)[:4]
+                e1, e2 = rc[1] - rc[0], rc[2] - rc[1]
+                L, W = np.hypot(*e1), np.hypot(*e2)
+                ang = math.atan2(e1[1], e1[0])
+                if W > L: L, W, ang = W, L, math.atan2(e2[1], e2[0])
+                cx, cz = rc.mean(axis=0)
+                rise = min(6.0, max(1.6, W * 0.36))
+                gable = 1 if (L / W > 1.4 and r < 55) else 0
+                pitched.append((cx, cz, ang, L + 0.8, W + 0.8, h, rise, gable, hnum(key, 'c') % (len(ROOF_COLS) - (0 if r < 4 else 1)), col))
+                for k in range(1 + (L > 14)):  # chimneys on the ridge
+                    off = (k - 0.5 * (L > 14)) * L * 0.5 + (rng.uniform(-0.15, 0.15) * L)
+                    side = rng.uniform(-0.2, 0.2) * W
+                    roof.append((2, cx + math.cos(ang) * off - math.sin(ang) * side, cz + math.sin(ang) * off + math.cos(ang) * side, h + rise * 0.55, 0.9, 0.9, rise * 0.45 + 1.4, ang))
+                recs.append((np.asarray(q.exterior.coords)[:-1], None, h, mh, col, style))
+                continue
             if h - mh >= 10 and q.area >= 150:  # a parapet: a low rim around the roof
                 ib = q.buffer(-0.8, join_style=2)
                 ib = max(polys(ib), key=lambda g: g.area) if not ib.is_empty else None
@@ -191,7 +212,10 @@ nyc = {
     'r.xy': q16(roof_a[:, 1:3]),
     'r.y': np.round(roof_a[:, 3] * 10).astype(np.uint16),
     'r.s': np.round(roof_a[:, 4:7] * 10).clip(0, 255).astype(np.uint8).ravel(),
-    'r.a': np.round(roof_a[:, 7] / math.pi * 255).astype(np.uint8),
+    'r.a': np.round(roof_a[:, 7] % math.pi / math.pi * 255).astype(np.uint8),
+    'p.f': np.array([[x, z, a, L, W, y, rise] for x, z, a, L, W, y, rise, *_ in pitched], dtype=np.float32).ravel(),
+    'p.g': np.array([g for *_, g, _, _ in pitched], dtype=np.uint8),
+    'p.c': np.array([hex3(ROOF_COLS[c]) + hex3(wc) for *_, c, wc in pitched], dtype=np.uint8).ravel(),
 }
 
 # ---------- Manhattan ground: land, parks, lakes ----------
@@ -213,17 +237,46 @@ from shapely.ops import linemerge
 WIDTH = {'motorway': 20, 'trunk': 18, 'primary': 16, 'secondary': 14, 'tertiary': 12, 'residential': 10, 'unclassified': 9, 'living_street': 7, 'service': 5, 'unknown': 8}
 seg = pq.read_table(f'{RAW}/nyc-segments.parquet', columns=['geometry', 'subtype', 'class', 'names', 'road_flags']).to_pylist()
 def tunnel(r): return any('is_tunnel' in (f.get('values') or []) for f in (r['road_flags'] or []))
-roads, named = [], {}
+roads, named, centre = [], {}, []
 for r in seg:
     if r['subtype'] != 'road' or r['class'] not in WIDTH or tunnel(r): continue
     g = proj_geom(shapely.from_wkb(r['geometry']))
     roads.append(g.buffer(WIDTH[r['class']] / 2, quad_segs=2))
+    centre.append((g, r['class']))
     nm = (r['names'] or {}).get('primary')
     if nm and r['class'] != 'service': named.setdefault(nm, []).append(g)
 man_proj = proj_geom(manhattan)
 road = unary_union(roads).intersection(man_proj).simplify(0.5)
 road = [p for p in polys(road) if p.area > 30]
 poly_layer('road', road, nyc)
+walk = unary_union([g.buffer(WIDTH[c] / 2 + 3.2, quad_segs=2) for g, c in centre]).intersection(man_proj).simplify(0.6)
+poly_layer('walk', [p for p in polys(walk) if p.area > 30], nyc)
+# centre lines (for lane markings, cars and people) and zebra crossings where three or more streets meet
+CLASS_ID = {c: i for i, c in enumerate(WIDTH)}
+lr, lxy, lc = [], [], []
+ends = {}
+for g, c in centre:
+    for line in getattr(g, 'geoms', [g]):
+        line = line.simplify(1.0)
+        co = np.asarray(line.coords)
+        if len(co) < 2 or line.length < 8: continue
+        lr.append(len(co)); lxy.append(co); lc.append(CLASS_ID[c])
+        for a, b in ((co[0], co[1]), (co[-1], co[-2])):
+            ends.setdefault((round(a[0]), round(a[1])), []).append((a, b, WIDTH[c], c))
+nyc['l.n'] = np.array(lr, dtype=np.uint16)
+nyc['l.c'] = np.array(lc, dtype=np.uint8)
+nyc['l.xy'] = np.concatenate(lxy).astype(np.float32).ravel()
+cross = []
+for pts in ends.values():
+    if len(pts) < 3: continue
+    wmax = max(w for *_, w, _ in pts)
+    for a, b, w, c in pts:
+        if c in ('service', 'unknown'): continue
+        d = b - a; L = np.hypot(*d)
+        if L < wmax / 2 + 6: continue
+        u = d / L; p = a + u * (wmax / 2 + 2.5)
+        if man_proj.contains(shapely.geometry.Point(p)): cross.append((p[0], p[1], math.atan2(u[1], u[0]), w))
+nyc['x.f'] = np.array(cross, dtype=np.float32).ravel()
 names, sl = [], []
 for nm, gs in named.items():
     u = unary_union(gs)
@@ -256,8 +309,8 @@ for p in polys(wp):
 nyc['t.xy'] = np.round(np.array(pts) * 2).astype(np.int16).ravel()
 nyc['t.s'] = rng.integers(0, 256, len(pts)).astype(np.uint8)
 write_bin(f'{OUT}/nyc.bin', nyc)
-print('nyc.bin: %d building pieces (%d with parapets), %d points, %d rooftop items, %d road polygons, %d street labels (%d names), %d parks, %d lakes, %d trees' % (
-    len(recs), len(inner_xy), len(xy), len(roof), len(road), len(sl), len(names), len(green), len(lakes), len(pts)))
+print('nyc.bin: %d building pieces (%d with parapets, %d pitched roofs), %d points, %d rooftop items, %d road polygons, %d street lines, %d crossings, %d street labels (%d names), %d parks, %d lakes, %d trees' % (
+    len(recs), len(inner_xy), len(pitched), len(xy), len(roof), len(road), len(lr), len(cross), len(sl), len(names), len(green), len(lakes), len(pts)))
 
 # ---------- the world ----------
 CLIP = box(-180, -58, 180, 82)  # Mercator can't do the poles

@@ -45,63 +45,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* HUD */
 #hud { position: fixed; inset: 0; pointer-events: none; }
 #hud[hidden] { display: none; }
-/* city-builder HUD (Figma "04 City — builder HUD"): level and XP top-left, population centre, money top-right */
-#top { position: absolute; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top)); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-#lvl { display: flex; align-items: center; pointer-events: auto; }
-#lvl .star { position: relative; width: 46px; height: 46px; z-index: 1; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .35)); }
-#lvl .star svg { width: 46px; height: 46px; display: block; }
-#lvl .star b { position: absolute; inset: 0; display: grid; place-content: center; padding-top: 3px; font: 400 16px/1 'Archivo Black', sans-serif; color: #5a3a00; }
-#lvl .xp { margin-left: -12px; padding: 4px 10px 4px 16px; border-radius: 14px; background: rgba(18, 32, 58, .86); border: 1.5px solid rgba(255, 255, 255, .18); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
-#lvl .track { width: 96px; height: 10px; border-radius: 5px; background: rgba(0, 0, 0, .45); overflow: hidden; }
-#lvl .track i { display: block; height: 100%; width: 0; border-radius: 5px; background: linear-gradient(#7cf29c, #22b455); transition: width .6s; }
-#lvl .xp span { display: block; font: 700 10px/1.3 Inter, sans-serif; color: #dde6f7; }
-.pill { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 4px; border-radius: 16px; background: rgba(18, 32, 58, .86); border: 1.5px solid rgba(255, 255, 255, .18); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); font: 800 14px/1 Inter, sans-serif; }
-.pill svg { width: 24px; height: 24px; flex: none; }
-.pill b { padding-right: 4px; font-weight: 800; }
-.pill .plus { width: 24px; height: 24px; border-radius: 12px; border: 0; padding: 0; background: linear-gradient(#7cf29c, #22b455); color: #0b3b1c; font: 400 15px/24px 'Archivo Black', sans-serif; pointer-events: auto; }
-#money { display: grid; gap: 6px; justify-items: end; }
-#task { position: absolute; left: max(12px, env(safe-area-inset-left)); top: calc(max(12px, env(safe-area-inset-top)) + 56px); max-width: 220px; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 12px; font: 700 12px/1.25 Inter, sans-serif; transition: opacity .4s; }
-#task[hidden] { display: none; }
-#task .chk { width: 22px; height: 22px; flex: none; border-radius: 6px; border: 2px solid rgba(255, 255, 255, .5); }
-#task em { display: block; font-style: normal; color: var(--green); font-size: 11px; }
-/* big round buttons either side of the dock */
-.bigbtn { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 36px); width: 68px; height: 68px; border-radius: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; pointer-events: auto; font: 400 10px/1 'Archivo Black', sans-serif; }
-.bigbtn svg { width: 32px; height: 32px; fill: none; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
-.bigbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
-#bBuild { right: max(14px, env(safe-area-inset-right)); background: linear-gradient(#ffd25a, #f59e0b); border: 3px solid #7a4a00; color: #3b2400; box-shadow: 0 5px 0 #7a4a00; }
-#bBuild svg { stroke: #3b2400; }
-#bMarket { left: max(14px, env(safe-area-inset-left)); background: linear-gradient(#4f8bff, #1d4ed8); border: 3px solid #0b2a7a; color: #fff; box-shadow: 0 5px 0 #0b2a7a; }
-#bMarket svg { stroke: #fff; }
-/* build menu (Figma "05 Build menu"): building cards above a row of category tabs */
-#sheet { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 30px); padding: 0 12px; pointer-events: auto; transition: transform .25s, opacity .25s; }
-#sheet[hidden] { display: block; transform: translateY(30px); opacity: 0; pointer-events: none; }
-#sheet h3 { margin: 0 4px 8px; font: 400 16px/1 'Archivo Black', sans-serif; text-shadow: 0 2px 0 rgba(0, 0, 0, .6); display: flex; align-items: center; justify-content: space-between; }
-#sheet h3 button { width: 32px; height: 32px; border-radius: 16px; border: 2px solid #fff; background: #e0444c; color: #fff; font: 400 14px/1 'Archivo Black', sans-serif; padding: 0; }
-#cards { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 10px; scrollbar-width: none; touch-action: pan-x; }
-#cards::-webkit-scrollbar { display: none; }
-.bcard { flex: 0 0 112px; height: 156px; border-radius: 16px; border: 2px solid #fff; background: linear-gradient(#fff, #e7eef9); box-shadow: 0 4px 0 rgba(0, 0, 0, .3); color: #1f2a44; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px; position: relative; }
-.bcard svg { width: 76px; height: 70px; }
-.bcard b { font: 800 12px/1.15 Inter, sans-serif; text-align: center; min-height: 28px; display: grid; place-content: center; }
-.bcard .price { padding: 3px 8px; border-radius: 10px; background: #22b455; color: #fff; font: 800 12px/1 Inter, sans-serif; }
-.bcard.locked { filter: grayscale(.9); opacity: .75; }
-.bcard.locked .price { background: #5b6476; }
-#cats { display: flex; gap: 6px; justify-content: center; padding: 6px; border-radius: 30px; background: rgba(18, 32, 58, .86); width: fit-content; margin: 0 auto; }
-#cats button { width: 44px; height: 44px; border-radius: 22px; border: 2.5px solid rgba(255, 255, 255, .6); padding: 0; display: grid; place-content: center; box-shadow: 0 3px 0 rgba(0, 0, 0, .45); }
-#cats button.on { border-color: #fff; transform: translateY(-4px); }
-#cats svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-#hud.sheet-open .bigbtn, #hud.sheet-open #dock, #hud.sheet-open #hint, #hud.sheet-open #task { opacity: 0; pointer-events: none; }
-.bigbtn, #dock, #hint { transition: opacity .25s; }
-/* level up */
-#lvlup { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(5, 10, 22, .6); z-index: 5; pointer-events: auto; }
-#lvlup[hidden] { display: none; }
-#lvlup .box { width: min(340px, calc(100vw - 32px)); padding: 22px 18px 18px; border-radius: 22px; background: linear-gradient(#fff, #e7eef9); color: #1f2a44; text-align: center; box-shadow: 0 8px 0 rgba(0, 0, 0, .35); animation: pop .45s cubic-bezier(.2, 1.6, .4, 1); }
-#lvlup .box > b { display: block; font: 400 34px/1 'Archivo Black', sans-serif; color: #f59e0b; -webkit-text-stroke: 1.5px #7a4a00; paint-order: stroke fill; }
-#lvlup .box p { margin: 8px 0 12px; font: 700 14px/1.35 Inter, sans-serif; color: #44506a; }
-#lvlup .unl { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
-#lvlup .unl div { width: 76px; font: 800 10px/1.2 Inter, sans-serif; }
-#lvlup .unl svg { width: 60px; height: 56px; display: block; margin: 0 auto; }
-#lvlup button { width: 100%; padding: 14px; border: 0; border-radius: 16px; background: var(--green); color: var(--bg); font: 400 20px/1 'Archivo Black', sans-serif; box-shadow: 0 5px 0 var(--green-deep); }
-@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 /* bottom dock, like the reference: the player in the middle, two round buttons each side, a price ticker underneath */
 #dock { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 30px); z-index: 1; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 10px; pointer-events: auto; }
 .dk { width: 40px; height: 40px; margin-bottom: 8px; border-radius: 50%; display: grid; place-content: center; padding: 0; background: rgba(38, 42, 50, .72); border: 1px solid rgba(255, 255, 255, .2); color: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .3); }
@@ -122,6 +65,115 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #toast .badge svg.i { width: 20px; height: 20px; }
 #toast b { display: block; font: 800 14px/1.2 Inter, sans-serif; }
 #toast span { display: block; font-size: 12px; color: var(--dim); }
+
+/* ---------- trading UI, styled after the reference videos: thin dark banner, small round dock buttons, dark exchange panel ---------- */
+:root { --x-bg: rgba(20, 22, 27, .97); --x-panel: #1b1e24; --x-line: #2b2f37; --x-ink: #e6e8ec; --x-dim: #8b93a1; --x-up: #22c55e; --x-dn: #ef4444; --x-acc: #f5c518; }
+#bar { position: absolute; left: 50%; top: max(8px, env(safe-area-inset-top)); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 16px); padding: 6px 12px; border-radius: 8px; background: rgba(16, 18, 22, .82); border: 1px solid rgba(255, 255, 255, .08); font: 700 11px/1.2 Inter, sans-serif; letter-spacing: .04em; color: #cfd4dc; white-space: nowrap; pointer-events: auto; }
+#bar .dot { width: 8px; height: 8px; border-radius: 4px; background: var(--x-acc); box-shadow: 0 0 6px var(--x-acc); flex: none; }
+#bar .dot.open { background: var(--x-up); box-shadow: 0 0 6px var(--x-up); } #bar .dot.closed { background: #6b7280; box-shadow: none; } #bar .dot.halted, #bar .dot.evicted { background: var(--x-dn); box-shadow: 0 0 6px var(--x-dn); }
+#bar b { color: #fff; }
+#bar button { border: 1px solid rgba(255, 255, 255, .15); background: rgba(255, 255, 255, .06); color: #fff; border-radius: 5px; padding: 2px 6px; font: 800 10px/1.2 Inter, sans-serif; }
+#money { position: absolute; left: 50%; top: calc(max(8px, env(safe-area-inset-top)) + 34px); transform: translateX(-50%); display: flex; gap: 6px; pointer-events: auto; }
+#money div { padding: 5px 10px; border-radius: 8px; background: rgba(16, 18, 22, .82); border: 1px solid rgba(255, 255, 255, .08); font: 700 11px/1.2 Inter, sans-serif; color: var(--x-dim); white-space: nowrap; }
+#money b { color: #fff; font-size: 12px; } #money .rent b { color: var(--x-acc); } #money .rent.late b { color: var(--x-dn); }
+#breaking { position: fixed; left: 50%; top: calc(max(8px, env(safe-area-inset-top)) + 70px); transform: translate(-50%, -8px); width: min(420px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 10px; background: #b91c1c; border: 1px solid #f87171; box-shadow: 0 8px 24px rgba(0, 0, 0, .45); color: #fff; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 4; }
+#breaking.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#breaking.good { background: #15803d; border-color: #4ade80; }
+#breaking small { display: block; font: 800 10px/1.2 Inter, sans-serif; letter-spacing: .14em; opacity: .85; }
+#breaking b { display: block; font: 400 16px/1.15 'Archivo Black', sans-serif; margin: 3px 0; }
+#breaking span { display: block; font: 600 12px/1.3 Inter, sans-serif; }
+#breaking button { margin-top: 6px; border: 1px solid rgba(255, 255, 255, .5); background: rgba(0, 0, 0, .2); color: #fff; border-radius: 6px; padding: 4px 10px; font: 800 11px/1 Inter, sans-serif; }
+#dock .dk { width: 30px; height: 30px; margin-bottom: 10px; background: rgba(28, 30, 36, .85); border-color: rgba(255, 255, 255, .14); }
+#dock .dk svg.i { width: 16px; height: 16px; }
+#dock .avatar { width: 34px; height: 56px; }
+#tape .co { color: #7dd3fc; }
+/* exchange panel */
+#ex { position: fixed; inset: max(8px, env(safe-area-inset-top)) 8px calc(env(safe-area-inset-bottom) + 30px); display: flex; flex-direction: column; background: var(--x-bg); border: 1px solid var(--x-line); border-radius: 10px; color: var(--x-ink); font: 600 12px/1.35 Inter, sans-serif; z-index: 3; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); overflow: hidden; }
+#ex[hidden] { display: none; }
+.exh { display: flex; align-items: center; gap: 10px; padding: 10px 12px 6px; }
+.exh > b { font: 800 11px/1 Inter, sans-serif; letter-spacing: .12em; }
+.exh .st { font: 800 10px/1 Inter, sans-serif; letter-spacing: .08em; color: var(--x-dim); margin-left: auto; }
+.exh button, .back { border: 0; background: none; color: var(--x-dim); font: 700 16px/1 Inter, sans-serif; padding: 2px 4px; }
+.tabs { display: flex; gap: 14px; padding: 0 12px; border-bottom: 1px solid var(--x-line); }
+.tabs button { border: 0; background: none; color: var(--x-dim); font: 700 12px/1 Inter, sans-serif; padding: 8px 0; border-bottom: 2px solid transparent; }
+.tabs button.on { color: #fff; border-bottom-color: var(--x-acc); }
+.tabs i { font-style: normal; color: var(--x-acc); }
+#exBody { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; overflow: hidden; }
+#exBody[hidden] { display: none !important; }
+#exBody > div { overflow-y: auto; min-height: 0; }
+#list .row { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--x-line); cursor: pointer; }
+#list .row.on { background: #252a33; }
+#list .row canvas { width: 52px; height: 22px; }
+#list .row b { display: block; font: 800 12px/1.2 Inter, sans-serif; } #list .row span { color: var(--x-dim); font-size: 11px; }
+#list .row .px { text-align: right; } #list .row .px b { font-size: 12px; }
+.up { color: var(--x-up); } .dn { color: var(--x-dn); }
+#detail, #ticket { padding: 12px; }
+.dh { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.dh .sym { font: 800 16px/1 Inter, sans-serif; } .dh .nm { color: var(--x-dim); }
+.dh .big { margin-left: auto; font: 800 22px/1 Inter, sans-serif; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 10px; margin: 12px 0; }
+.stats div { font-size: 10px; color: var(--x-dim); letter-spacing: .04em; text-transform: uppercase; }
+.stats b { display: block; color: var(--x-ink); font: 700 12px/1.3 Inter, sans-serif; text-transform: none; letter-spacing: 0; }
+.chartbox { background: var(--x-panel); border: 1px solid var(--x-line); border-radius: 8px; padding: 6px; }
+.chartctl { display: flex; gap: 4px; justify-content: flex-end; margin-bottom: 4px; flex-wrap: wrap; }
+.chartctl button { border: 1px solid var(--x-line); background: none; color: var(--x-dim); font: 700 10px/1 Inter, sans-serif; padding: 4px 6px; border-radius: 4px; }
+.chartctl button.on { background: #2b313c; color: #fff; }
+#chart { width: 100%; height: 200px; display: block; }
+.tbl { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+.tbl th { text-align: left; color: var(--x-dim); font-weight: 700; padding: 6px 4px; border-bottom: 1px solid var(--x-line); }
+.tbl td { padding: 6px 4px; border-bottom: 1px solid var(--x-line); }
+.tbl td:last-child, .tbl th:last-child { text-align: right; }
+.sec { margin: 14px 0 4px; font: 800 10px/1 Inter, sans-serif; letter-spacing: .12em; color: var(--x-dim); }
+.book { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font: 700 11px/1.5 Inter, sans-serif; background: var(--x-panel); border: 1px solid var(--x-line); border-radius: 8px; padding: 8px; }
+.book .a { color: var(--x-dn); } .book .b { color: var(--x-up); } .book .q { color: var(--x-dim); text-align: right; }
+.tk { margin-top: 10px; background: var(--x-panel); border: 1px solid var(--x-line); border-radius: 8px; padding: 10px; display: grid; gap: 8px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: #111318; border-radius: 6px; padding: 3px; gap: 3px; }
+.seg button { border: 0; border-radius: 5px; background: none; color: var(--x-dim); font: 800 11px/1 Inter, sans-serif; padding: 8px; }
+.seg button.on.buy { background: #14532d; color: #4ade80; } .seg button.on.sell { background: #7f1d1d; color: #fca5a5; } .seg button.on.plain { background: #2b313c; color: #fff; }
+.fld { display: grid; gap: 4px; } .fld label { font-size: 10px; color: var(--x-dim); letter-spacing: .06em; text-transform: uppercase; }
+.step { display: grid; grid-template-columns: 36px 1fr 36px; background: #111318; border: 1px solid var(--x-line); border-radius: 6px; }
+.step button { border: 0; background: none; color: #fff; font: 700 16px/1 Inter, sans-serif; }
+.step input { min-width: 0; border: 0; background: none; color: #fff; text-align: center; font: 800 14px/1 Inter, sans-serif; padding: 9px 0; user-select: text; -webkit-user-select: text; }
+.pct { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.pct button { border: 1px solid var(--x-line); background: none; color: var(--x-dim); border-radius: 5px; padding: 6px 0; font: 700 11px/1 Inter, sans-serif; }
+.est { display: flex; justify-content: space-between; color: var(--x-dim); font-size: 11px; } .est b { color: #fff; }
+#go { border: 0; border-radius: 8px; padding: 13px; font: 800 14px/1 Inter, sans-serif; color: #052e16; background: var(--x-up); }
+#go.sell { background: var(--x-dn); color: #fff; }
+#go:disabled { opacity: .45; }
+.note { font-size: 10px; color: var(--x-dim); }
+#pf, #nf { flex: 1; overflow-y: auto; padding: 12px; }
+#pf[hidden], #nf[hidden] { display: none; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cards div { background: var(--x-panel); border: 1px solid var(--x-line); border-radius: 8px; padding: 8px; font-size: 10px; color: var(--x-dim); text-transform: uppercase; letter-spacing: .05em; }
+.cards b { display: block; color: #fff; font: 800 14px/1.3 Inter, sans-serif; text-transform: none; letter-spacing: 0; }
+.news { padding: 10px 0; border-bottom: 1px solid var(--x-line); }
+.news small { color: var(--x-dim); font-weight: 700; } .news b { display: block; margin: 2px 0; } .news span { color: var(--x-dim); }
+.mini { border: 1px solid var(--x-line); background: none; color: var(--x-dim); border-radius: 5px; padding: 3px 7px; font: 700 10px/1 Inter, sans-serif; }
+/* phones: list first, a company opens full width */
+@media (max-width: 899px) {
+  #exBody.pick #detail, #exBody.pick #ticket { display: none; }
+  #exBody:not(.pick) #list { display: none; }
+  #exBody:not(.pick) { display: block; overflow-y: auto; }
+  #exBody:not(.pick) > div { overflow: visible; }
+}
+@media (min-width: 900px) {
+  #ex { left: 50%; transform: translateX(-50%); width: min(1180px, calc(100vw - 32px)); }
+  #exBody { grid-template-columns: 270px 1fr 290px; }
+  #list { border-right: 1px solid var(--x-line); } #ticket { border-left: 1px solid var(--x-line); }
+  .back { display: none; }
+}
+/* story cards */
+#story { position: fixed; inset: 0; display: grid; place-items: end center; padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom) + 40px); background: linear-gradient(to top, rgba(8, 10, 16, .85), rgba(8, 10, 16, 0) 60%); z-index: 4; }
+#story[hidden] { display: none; }
+#story .box { width: min(420px, 100%); background: var(--x-bg); border: 1px solid var(--x-line); border-radius: 12px; padding: 16px; color: var(--x-ink); display: grid; gap: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); }
+#story small { font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; color: var(--x-acc); }
+#story b { font: 400 22px/1.15 'Archivo Black', sans-serif; }
+#story p { margin: 0; color: #c3c9d3; font: 600 14px/1.45 Inter, sans-serif; }
+#story .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#story .facts div { background: var(--x-panel); border: 1px solid var(--x-line); border-radius: 8px; padding: 8px; font: 700 10px/1.3 Inter, sans-serif; color: var(--x-dim); text-transform: uppercase; letter-spacing: .05em; }
+#story .facts b { display: block; font: 800 16px/1.3 Inter, sans-serif; color: #fff; text-transform: none; letter-spacing: 0; }
+#story .facts .warn b { color: var(--x-acc); }
+#story button { border: 0; border-radius: 8px; padding: 13px; font: 800 14px/1 Inter, sans-serif; background: var(--x-up); color: #052e16; }
 /* big centre text, like "WHERE YOU START" */
 #big { position: fixed; left: 50%; top: 19%; transform: translate(-50%, 10px); font: 400 clamp(34px, 11vw, 64px)/.95 'Archivo Black', sans-serif; text-align: center; color: #fff; -webkit-text-stroke: 2px rgba(0, 0, 0, .55); paint-order: stroke fill; text-shadow: 0 3px 0 rgba(0, 0, 0, .55), 0 0 18px rgba(0, 0, 0, .55); opacity: 0; transition: opacity .5s, transform .5s; pointer-events: none; width: 92vw; }
 #big.on { opacity: 1; transform: translate(-50%, 0); }
@@ -152,47 +204,55 @@ h1 em { font-style: normal; color: var(--green); }
   <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9 5.5 4h13L20 9"/><path d="M4 9h16v1.5a2.7 2.7 0 0 1-5.3.8 2.7 2.7 0 0 1-5.4 0 2.7 2.7 0 0 1-5.3-.8z"/><path d="M5 13v7h14v-7"/><path d="M10 20v-4h4v4"/></symbol>
   <symbol id="i-avatar" viewBox="0 0 40 64"><circle cx="20" cy="14" r="11" fill="#a3a9b2" stroke="#1d2430" stroke-width="2"/><rect x="9" y="27" width="22" height="35" rx="11" fill="#3b6fd8" stroke="#1d2430" stroke-width="2"/></symbol>
   <symbol id="i-iso" viewBox="0 0 48 48"><path d="M24 7 39 15v20L24 43 9 35V15z" fill="#e9edf2" stroke="#3d4652" stroke-width="2" stroke-linejoin="round"/><path d="M24 23 39 15v20L24 43z" fill="#b6c0cc"/><path d="M24 23 9 15v20l15 8z" fill="#dfe5ec"/><path d="M24 7 39 15 24 23 9 15z" fill="#f8fafc"/><path d="M12 20.5l9 4.5M12 25.5l9 4.5M12 30.5l9 4.5" stroke="#6f8fb3" stroke-width="2"/><path d="M27 25l9-4.5M27 30l9-4.5M27 35l9-4.5" stroke="#55769c" stroke-width="2"/><path d="M24 7 39 15v20L24 43 9 35V15z" fill="none" stroke="#3d4652" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7h15a3 3 0 0 1 3 3v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7l12-4v4"/><circle cx="16.5" cy="14" r="1.3"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></symbol>
+  <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7 9h7M7 12h7M7 15h4"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
 </svg>
 <canvas id="c"></canvas>
 <div id="labels"></div>
 <div id="hud" hidden>
-  <div id="top">
-    <div id="lvl"><div class="star"><svg viewBox="0 0 46 46"><path d="M23 2l6.2 13.3 14.5 1.6-10.8 9.9 3 14.3L23 33.8 10.1 41.1l3-14.3L2.3 16.9l14.5-1.6z" fill="#FFC531" stroke="#8A5A00" stroke-width="2.5" stroke-linejoin="round"/><path d="M23 7l4.6 9.8 10.6 1.2-7.9 7.2" fill="none" stroke="#FFE9A3" stroke-width="2" stroke-linecap="round"/></svg><b id="lvlN">1</b></div><div class="xp"><div class="track"><i id="xpFill"></i></div><span id="xpT">0 / 40 XP</span></div></div>
-    <div class="pill" id="popP"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#3B82F6"/><circle cx="12" cy="9" r="3.4" fill="#fff"/><path d="M5.5 19c.8-3.4 3.4-5.2 6.5-5.2s5.7 1.8 6.5 5.2" fill="#fff"/></svg><b id="popN">0</b></div>
-    <div id="money">
-      <div class="pill"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#22B455"/><circle cx="12" cy="12" r="9" fill="#2FD47A" stroke="#14823F" stroke-width="1.5"/><path d="M14.5 8.8c-.6-.8-1.5-1.1-2.5-1.1-1.5 0-2.6.8-2.6 2s1.1 1.6 2.6 2 2.7.8 2.7 2.1-1.2 2.1-2.7 2.1c-1.2 0-2.2-.4-2.8-1.3M12 6v12" fill="none" stroke="#0B3B1C" stroke-width="1.8" stroke-linecap="round"/></svg><b id="cashN">$2,500</b><button class="plus" id="cashPlus" aria-label="Get cash">+</button></div>
-      <div class="pill"><svg viewBox="0 0 24 24"><path d="M3 17l3-8h12l3 8z" fill="#FFC531" stroke="#8A5A00" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 10h10l1.6 4" fill="none" stroke="#FFE9A3" stroke-width="1.5"/></svg><b id="goldN">10</b><button class="plus" id="goldPlus" aria-label="Get gold">+</button></div>
-    </div>
-  </div>
-  <div id="task" class="glass" hidden><div class="chk"></div><div><span id="taskT"></span><em id="taskR"></em></div></div>
-  <button id="bMarket" class="bigbtn" aria-label="Market"><svg viewBox="0 0 24 24"><path d="M3 17l5-5 4 3 7-8"/><path d="M15 7h4v4"/></svg>MARKET</button>
-  <button id="bBuild" class="bigbtn" aria-label="Build"><svg viewBox="0 0 24 24"><path d="M4 14a8 8 0 0 1 16 0"/><path d="M2.5 14h19v2.5h-19z" fill="#3B2400"/><path d="M12 6v4M9 7l1 3M15 7l-1 3"/></svg>BUILD</button>
-  <div id="sheet" hidden><h3><span id="sheetT">HOMES</span><button id="sheetX" aria-label="Close">✕</button></h3><div id="cards"></div><div id="cats"></div></div>
+  <div id="bar"><span class="dot" id="dot"></span><span id="clock">NEW YORK · DAY 1 · 09:28</span><b id="mstat">PRE-MARKET</b><button id="speed" aria-label="Game speed">1×</button><button id="skip" hidden>Skip to open ▸</button></div>
+  <div id="money"><div>Cash <b id="cashV">$0</b></div><div>Worth <b id="worthV">$0</b></div><div class="rent" id="rentBox">Rent <b id="rentV">-</b></div></div>
   <div id="dock">
-    <button id="bWorld" class="dk" aria-label="World map"><svg class="i"><use href="#i-globe"/></svg></button>
-    <button id="bHome" class="avatar" aria-label="Home"><svg viewBox="0 0 40 64"><use href="#i-avatar"/></svg></button>
-    <button id="bWall" class="dk" aria-label="Wall Street"><svg class="i"><use href="#i-bank"/></svg></button>
+    <button id="bPortfolio" class="dk" aria-label="Portfolio"><svg class="i"><use href="#i-wallet"/></svg></button>
+    <button id="bExchange" class="dk" aria-label="Share exchange"><svg class="i"><use href="#i-chart"/></svg></button>
+    <button id="bHome" class="avatar" aria-label="Your apartment"><svg viewBox="0 0 40 64"><use href="#i-avatar"/></svg></button>
+    <button id="bNews" class="dk" aria-label="News"><svg class="i"><use href="#i-news"/></svg></button>
+    <button id="bWorld" class="dk" aria-label="Map"><svg class="i"><use href="#i-globe"/></svg></button>
   </div>
   <div id="ticker"><div id="tape"></div></div>
   <div id="hint" class="glass"></div>
 </div>
 <div id="toast" class="glass"><div class="badge"><svg class="i"><use href="#i-lock"/></svg></div><div><b id="toastT">Locked</b><span id="toastB">Only New York is open. More cities in a future update.</span></div></div>
 <div id="big"></div>
-<div id="lvlup" hidden><div class="box"><b id="lvlupT">LEVEL 2!</b><p>New buildings unlocked:</p><div class="unl" id="lvlupU"></div><button id="lvlupOk">GREAT!</button></div></div>
+<div id="breaking"><small id="brkK">BREAKING NEWS</small><b id="brkT"></b><span id="brkB"></span><button id="brkGo" hidden>Look</button></div>
+<div id="ex" hidden>
+  <div class="exh"><b>CAPITAL STREET SHARE EXCHANGE</b><span class="st" id="exSt"></span><button id="exX" aria-label="Close">✕</button></div>
+  <div class="tabs"><button data-tab="companies" class="on">Companies</button><button data-tab="portfolio">Portfolio <i id="posN"></i></button><button data-tab="news">News</button></div>
+  <div id="exBody" class="pick">
+    <div id="list"></div>
+    <div id="detail"></div>
+    <div id="ticket"></div>
+  </div>
+  <div id="pf" hidden></div>
+  <div id="nf" hidden></div>
+</div>
+<div id="story" hidden><div class="box" id="storyBox"></div></div>
 <div id="title" class="ov" hidden>
   <div class="card">
     <div class="over">A WALL STREET STORY</div>
     <h1>CAPITAL<br><em>STREET</em></h1>
-    <p>You're a broke student in New York. Borrow a little, trade smart, and buy your own tower on Wall Street.</p>
+    <p>You live alone in a tiny New York apartment and the rent is due. You just found some cash. Trade it into a fortune.</p>
     <button id="play">PLAY</button>
-    <small>Only New York is open in this version</small>
+    <small>Paper trading · fictional companies · anything can happen</small>
   </div>
 </div>
 <div id="load">Loading New York…<small id="loadMsg">Fetching 56,000 real buildings</small></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="js/market.js"></script>
 <script>
 'use strict';
 const loadMsg = document.getElementById('loadMsg');
@@ -250,7 +310,7 @@ renderer.toneMappingExposure = 0.85;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
-const OCEAN = 0x2b84c4, LAND = 0x64a04b, HORIZON = 0xd4e4f1, ZENITH = 0x5d9bd6, PAVEMENT = 0xa19f99, ASPHALT = 0x50535a; // land and sea as on the reference world map
+const OCEAN = 0x2b84c4, LAND = 0x64a04b, HORIZON = 0xd4e4f1, ZENITH = 0x5d9bd6, PAVEMENT = 0x7fb95c, ASPHALT = 0x3e4046, SIDEWALK = 0xcfc8b6; // green lots and beige sidewalks, like the reference // land and sea as on the reference world map
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(lin(HORIZON), 1e9, 2e9);
 const camera = new THREE.PerspectiveCamera(50, 1, 1, 1e5);
@@ -276,7 +336,7 @@ scene.add(sky);
   scene.environment = pm.fromScene(envScene, 0.02).texture;
 }
 scene.add(new THREE.HemisphereLight(lin(0xdfeaff), lin(0x4d463e), 0.3));
-const SUN_DIR = new THREE.Vector3(-0.55, 0.72, 0.42).normalize();
+const SUN_DIR = new THREE.Vector3(-0.6, 0.5, 0.55).normalize(); // a lower, warmer sun for long shadows
 const sunLight = new THREE.DirectionalLight(lin(0xffeccc), 3.0);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.set(4096, 4096);
@@ -365,19 +425,19 @@ buildingMat.onBeforeCompile = sh => {
         float fy = y / fh, fx = u / bay, wy = fwidth(fy), wx = fwidth(fx), ffy = fract(fy), ffx = fract(fx);
         float win, cover;
         if (sty < 0.5) { win = boxAA(ffy, 0.22, 0.9, wy) * (1.0 - boxAA(ffx, 0.0, 0.07, wx)); cover = 0.63; }
-        else if (sty < 1.5) { win = boxAA(ffy, 0.28, 0.82, wy) * boxAA(ffx, 0.22, 0.78, wx); cover = 0.3;
-          c *= 1.0 + 0.08 * boxAA(fract(u / (bay * 2.0)), 0.0, 0.1, fwidth(u / (bay * 2.0))); }
-        else if (sty < 2.5) { win = boxAA(ffy, 0.3, 0.78, wy) * boxAA(ffx, 0.3, 0.7, wx); cover = 0.19;
-          c *= 1.0 + 0.3 * boxAA(ffy, 0.8, 0.88, wy) * boxAA(ffx, 0.26, 0.74, wx); }
+        else if (sty < 1.5) { win = boxAA(ffy, 0.3, 0.8, wy) * boxAA(ffx, 0.26, 0.74, wx); cover = 0.25;
+          c = mix(c, vec3(0.86), (boxAA(ffy, 0.25, 0.85, wy) * boxAA(ffx, 0.21, 0.79, wx) - win) * (1.0 - smoothstep(0.3, 0.7, max(wx, wy)))); } // white window frames
+        else if (sty < 2.5) { win = boxAA(ffy, 0.32, 0.76, wy) * boxAA(ffx, 0.32, 0.68, wx); cover = 0.16;
+          c = mix(c, vec3(0.86), (boxAA(ffy, 0.27, 0.86, wy) * boxAA(ffx, 0.27, 0.73, wx) - win) * (1.0 - smoothstep(0.3, 0.7, max(wx, wy)))); }
         else { win = 1.0 - 0.75 * boxAA(ffy, 0.0, 0.06, wy); cover = 0.96; }
         float far = smoothstep(0.3, 0.7, max(wx, wy));
         win = mix(win, cover, far);
         if (y < 4.6 && sty < 2.5) win = boxAA(y, 0.4, 3.7, fwidth(y)) * (1.0 - boxAA(fract(u / 4.0), 0.0, 0.06, fwidth(u / 4.0))) * (1.0 - far) + 0.45 * far;
         gMask = win;
-        c = mix(c, sty > 2.5 ? base * 0.7 : vec3(0.05, 0.12, 0.30), win);
+        c = mix(c, sty > 2.5 ? base * 0.7 : sty < 0.5 ? vec3(0.05, 0.12, 0.30) : vec3(0.05, 0.08, 0.13), win);
         c *= mix(0.62, 1.0, smoothstep(0.0, 16.0, y)); // a little ambient occlusion near the street
       }
-      c = max(mix(vec3(dot(c, vec3(0.299, 0.587, 0.114))), c, 1.3), 0.0); // a little extra colour, toy-city style
+      c = max(mix(vec3(dot(c, vec3(0.299, 0.587, 0.114))), c, 1.08), 0.0); // a touch of extra colour
       diffuseColor.rgb = c;`)
     .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.3, gMask);')
     .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.25, gMask);');
@@ -385,6 +445,7 @@ buildingMat.onBeforeCompile = sh => {
 const TILE = 1000, TALL = 45;
 const tiles = []; // { mesh, tall }
 let homeTop = 20, homeAngle = 0;
+const towers = []; // tall buildings, for disasters
 function buildCity(d) {
   const n = d['b.n'], ni = d['b.ni'], H = d['b.h'], MH = d['b.mh'], C = d['b.c'], S = d['b.s'], XY = d['b.xy'], IXY = d['b.ixy'];
   const bins = new Map();
@@ -394,6 +455,7 @@ function buildCity(d) {
     const k = n[i], kin = ni[i], h = H[i] / 10, mh = MH[i] / 10, sty = S[i], tall = h >= TALL;
     const outer = ring(XY, p, k), inner = kin ? ring(IXY, pi, kin) : null;
     p += 2 * k; pi += 2 * kin;
+    if (h > 150 && mh === 0 && towers.length < 400) towers.push([outer[0].x, outer[0].y, h]);
     if (h > 90 && mh === 0) { // the start: a tower by the home spot
       let cx = 0, cz = 0;
       for (const v of outer) { cx += v.x; cz += v.y; }
@@ -504,16 +566,19 @@ function buildRoofs(d) {
   const boxGeo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
   const tankGeo = new THREE.CylinderGeometry(0.5, 0.5, 1, 14, 1).translate(0, 0.5, 0), coneGeo = new THREE.ConeGeometry(0.53, 1, 14).translate(0, 0.5, 0);
   const legGeo = mergeGeos([[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([x, z]) => new THREE.BoxGeometry(0.07, 1, 0.07).translate(x * 0.3, 0.5, z * 0.3)));
-  const plantMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+  const plantMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }), chimMat = new THREE.MeshStandardMaterial({ color: lin(0x8e4a3a), roughness: 0.9 });
   const woodMat = new THREE.MeshStandardMaterial({ color: lin(0x7a5236), roughness: 0.95 }), roofMat = new THREE.MeshStandardMaterial({ color: lin(0x34302c), roughness: 0.9 }), legMat = new THREE.MeshStandardMaterial({ color: lin(0x2b2c30), roughness: 0.8 });
   const at = i => [XY[2 * i] / 2, XY[2 * i + 1] / 2], tint = new THREE.Color();
-  for (const { list, sphere } of tiled(T.length, at)) {
-    const boxes = list.filter(i => T[i] === 0), towers = list.filter(i => T[i] === 1);
+  const clear = i => (XY[2 * i] / 2 - PLACE.home[0]) ** 2 + (XY[2 * i + 1] / 2 - PLACE.home[1]) ** 2 > 40 * 40; // keep your roof free
+  for (const { list: all, sphere } of tiled(T.length, at)) {
+    const list = all.filter(clear);
+    const boxes = list.filter(i => T[i] === 0), towers = list.filter(i => T[i] === 1), chimneys = list.filter(i => T[i] === 2);
     const place = (i, o) => { const [x, z] = at(i); o.position.set(x, Y[i] / 10, z); o.rotation.set(0, -A[i] / 255 * Math.PI, 0); };
     if (boxes.length) roofThings.push(instanced(boxGeo, plantMat, boxes, sphere, (i, o, m, j) => {
       place(i, o); o.scale.set(S[3 * i] / 10, S[3 * i + 2] / 10, S[3 * i + 1] / 10);
       m.setColorAt(j, tint.setScalar(0.55 + (i % 5) * 0.07));
     }));
+    if (chimneys.length) roofThings.push(instanced(boxGeo, chimMat, chimneys, sphere, (i, o) => { place(i, o); o.scale.set(S[3 * i] / 10, S[3 * i + 2] / 10, S[3 * i + 1] / 10); }));
     if (towers.length) {
       const sz = i => [S[3 * i] / 10, S[3 * i + 2] / 10];
       roofThings.push(instanced(legGeo, legMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.scale.set(w, h * 0.38, w); }));
@@ -635,7 +700,7 @@ let homeLabel;
 const controls = new THREE.MapControls(camera, canvas);
 controls.enableDamping = true; controls.dampingFactor = 0.12;
 controls.screenSpacePanning = false;
-controls.minDistance = 160; controls.maxDistance = 9e6;
+controls.minDistance = 22; controls.maxDistance = 2.4e7;
 controls.zoomSpeed = 2.2;
 const tiltFor = dist => dist > 3e5 ? 0.02 : dist > 25000 ? 0.02 + 0.6 * (1 - Math.log(dist / 25000) / Math.log(12)) : dist > 6000 ? 0.62 + 0.6 * (1 - Math.log(dist / 6000) / Math.log(25000 / 6000)) : 1.25;
 function view(target, dist, polar, az, y = 0) { return { t: new THREE.Vector3(target[0], y, target[1]), dist, polar, az }; }
@@ -666,7 +731,7 @@ const AZ = -0.5; // looking up the island
 const V = {
   world: () => view(PLACE.world, 6.5e6, 0.02, 0),
   city: () => view(PLACE.manhattan, 16000, 0.7, AZ),
-  home: () => view(PLACE.home, 210, 0.38, current().az, homeTop),
+  home: () => view(PLACE.home, 70, 0.55, current().az, homeTop),
   wall: () => view(PLACE.wall, 700, 0.5, current().az)
 };
 
@@ -693,6 +758,64 @@ canvas.addEventListener('pointerup', e => {
   else if (dist > 60000) flyTo(V.city());
 });
 nycMarker.el.onclick = () => { if (!fly && document.getElementById('title').hidden) flyTo(V.city()); };
+
+
+// ---------- the globe: zoomed far out, the flat map gives way to a planet in space, like the reference ----------
+const globe = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(50, 1, 0.01, 300), t: 0, mats: [] };
+const toGeo = (x, z) => [(2 * Math.atan(Math.exp(-z / (R * K) + Y0)) - Math.PI / 2) * 180 / Math.PI, x / (R * K) * 180 / Math.PI + LON0];
+const geoVec = (lat, lon, r = 1) => { const th = (90 - lat) * Math.PI / 180, ph = (lon + 180) * Math.PI / 180; return new THREE.Vector3(-Math.cos(ph) * Math.sin(th) * r, Math.cos(th) * r, Math.sin(ph) * Math.sin(th) * r); };
+function buildGlobe(world) {
+  const W = 4096, H = 2048, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'), X = lon => (lon + 180) / 360 * W, Yy = lat => (90 - lat) / 180 * H;
+  g.fillStyle = '#2b84c4'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#eef3f6'; g.fillRect(0, Yy(-62), W, H - Yy(-62)); // ice to the south
+  g.fillStyle = '#64a04b';
+  for (const name of ['world', 'region']) {
+    const r = world[name + '.r'], xy = world[name + '.xy'];
+    let ri = 1, p = 0;
+    for (let k = 0; k < r[0]; k++) {
+      const rings = r[ri++];
+      g.beginPath();
+      for (let h = 0; h < rings; h++) { const n = r[ri++]; for (let j = 0; j < n; j++, p += 2) { const [lat, lon] = toGeo(xy[p], xy[p + 1]); j ? g.lineTo(X(lon), Yy(lat)) : g.moveTo(X(lon), Yy(lat)); } g.closePath(); }
+      g.fill('evenodd');
+    }
+  }
+  g.strokeStyle = 'rgba(20, 28, 20, .9)'; g.lineWidth = 2.2; g.lineJoin = 'round';
+  { const r = world['border.r'], xy = world['border.xy']; let p = 0; for (let i = 1; i <= r[0]; i++) { g.beginPath(); for (let j = 0; j < r[i]; j++, p += 2) { const [lat, lon] = toGeo(xy[p], xy[p + 1]); j ? g.lineTo(X(lon), Yy(lat)) : g.moveTo(X(lon), Yy(lat)); } g.stroke(); } }
+  const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const fade = m => { m.transparent = true; globe.mats.push(m); return m; };
+  const backdrop = new THREE.Mesh(new THREE.SphereGeometry(150, 16, 12), fade(new THREE.MeshBasicMaterial({ color: 0x05070d, side: THREE.BackSide, depthWrite: false, toneMapped: false })));
+  const sp = []; for (let i = 0; i < 3000; i++) { const v = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize().multiplyScalar(120); sp.push(v.x, v.y, v.z); }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3));
+  const stars = new THREE.Points(sg, fade(new THREE.PointsMaterial({ color: 0xffffff, size: 1.6, sizeAttenuation: false, depthWrite: false, toneMapped: false })));
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(1, 160, 120), fade(new THREE.MeshBasicMaterial({ map: tex, toneMapped: false })));
+  const hc = document.createElement('canvas'); hc.width = hc.height = 512;
+  { const hg = hc.getContext('2d'), gr = hg.createRadialGradient(256, 256, 0, 256, 256, 256);
+    gr.addColorStop(0, 'rgba(210,230,255,1)'); gr.addColorStop(0.72, 'rgba(210,230,255,1)'); gr.addColorStop(0.76, 'rgba(190,220,255,.75)'); gr.addColorStop(0.86, 'rgba(160,200,255,.25)'); gr.addColorStop(1, 'rgba(140,180,255,0)');
+    hg.fillStyle = gr; hg.fillRect(0, 0, 512, 512); }
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, depthWrite: false, toneMapped: false }));
+  glow.scale.set(2.75, 2.75, 1); // the earth is radius 1; the halo fades out just beyond it
+  globe.glow = glow.material;
+  backdrop.renderOrder = -2; stars.renderOrder = -1; glow.renderOrder = 0; earth.renderOrder = 1;
+  globe.scene.add(backdrop, stars, earth, glow);
+}
+function renderGlobeAndCity(dist) {
+  const t = Math.min(1, Math.max(0, (Math.log(dist) - Math.log(1.4e6)) / (Math.log(3.2e6) - Math.log(1.4e6))));
+  globe.t = t * t * (3 - 2 * t);
+  renderer.autoClear = false;
+  renderer.clear();
+  if (globe.t < 0.999) renderer.render(scene, camera);
+  if (globe.t > 0.001 && globe.mats.length) {
+    const [lat, lon] = toGeo(controls.target.x, controls.target.z), alt = dist / 6.371e6;
+    globe.cam.position.copy(geoVec(Math.max(-80, Math.min(80, lat)), lon, 1 + alt));
+    globe.cam.up.set(0, 1, 0); globe.cam.lookAt(0, 0, 0);
+    globe.cam.aspect = camera.aspect; globe.cam.near = Math.max(0.001, alt * 0.2); globe.cam.updateProjectionMatrix();
+    for (const m of globe.mats) m.opacity = globe.t;
+    globe.glow.opacity = globe.t * 0.9;
+    renderer.clearDepth();
+    renderer.render(globe.scene, globe.cam);
+  }
+}
 
 // ---------- frame loop ----------
 const tmp = new THREE.Vector3();
@@ -728,6 +851,8 @@ function frame(now) {
   const sink = 1 - Math.min(1, Math.max(0, Math.log(dist / 6000) / Math.log(70000 / 6000)));
   const hs = Math.max(0.01, sink * sink * (3 - 2 * sink));
   for (const t of tiles) { t.mesh.visible = dist < (t.tall ? 120000 : 40000); t.mesh.scale.y = hs; }
+  for (const t of cityTiles) { t.mesh.visible = t.kind === 'marks' ? dist < 3000 : dist < 40000; if (t.kind === 'roof') t.mesh.scale.y = hs; }
+  for (const f of frameHooks) f(dt, dist);
   for (const t of trees) t.visible = dist < 4500;
   for (const t of roofThings) t.visible = dist < 3500;
   if (streetLabels) { streetLabels.visible = dist < 2600; streetLabels.material.uniforms.fade.value = 1 - Math.max(0, (dist - 1800) / 800); }
@@ -746,148 +871,31 @@ function frame(now) {
   }
   if (manhattanLand) manhattanLand.material.color.lerpColors(cityGrey, cityGreen, Math.min(1, Math.max(0, (dist - 15000) / 60000)));
   if (pin) {
-    pin.visible = dist < 60000;
+    pin.visible = dist > 450 && dist < 60000;
     pin.scale.setScalar(Math.max(0.3, Math.min(30, dist / 900)));
     pin.position.y = homeTop + 3 + (4 + Math.sin(clock * 3) * 4) * pin.scale.x;
     homeLabel.p.y = pin.position.y + 46 * pin.scale.x;
   }
-  if ((checkT += dt) > 0.5) { checkT = 0; checkPlaces(dist); }
   for (const l of labels) {
     let on = !l.hidden && dist >= l.min && dist <= l.max;
-    if (on) {
+    if (on && globe.t > 0.5) { // on the globe only countries, continents and New York are shown
+      on = /country|continent|city/.test(l.el.className) && !(l.el.className.includes('country') && dist > 9e6);
+      if (on) {
+        if (!l.geo) l.geo = toGeo(l.p.x, l.p.z);
+        const v = geoVec(l.geo[0], l.geo[1], 1.002);
+        on = v.dot(tmp.copy(globe.cam.position).sub(v)) > 0.02;
+        if (on) { v.project(globe.cam); l.el.style.transform = `translate(${(v.x + 1) / 2 * w0}px, ${(1 - v.y) / 2 * h0}px) translate(-50%, -50%)`; }
+      }
+    } else if (on) {
       tmp.copy(l.p).project(camera);
       on = tmp.z < 1 && tmp.x > -1.2 && tmp.x < 1.2 && tmp.y > -1.2 && tmp.y < 1.2;
       if (on) l.el.style.transform = `translate(${(tmp.x + 1) / 2 * w0}px, ${(1 - tmp.y) / 2 * h0}px) translate(-50%, -50%)`;
     }
     if (on !== l.on) { l.on = on; l.el.style.display = on ? (l.el.classList.contains('home') ? 'flex' : 'block') : 'none'; }
   }
-  renderer.render(scene, camera);
+  renderGlobeAndCity(dist);
   requestAnimationFrame(frame);
 }
-
-// ---------- city-builder progression: levels, XP, money (systems modelled on mobile city builders, names and art our own) ----------
-const xpFor = level => Math.round(40 * level ** 1.8); // XP needed to go from this level to the next
-const CATS = [
-  { id: 'homes', name: 'HOMES', color: '#3b82f6', icon: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>' },
-  { id: 'shops', name: 'SHOPS', color: '#f59e0b', icon: '<path d="M4 9 5.5 4h13L20 9"/><path d="M4 9h16v1.5a2.7 2.7 0 0 1-5.3.8 2.7 2.7 0 0 1-5.4 0 2.7 2.7 0 0 1-5.3-.8z"/><path d="M5 13v7h14v-7"/>' },
-  { id: 'industry', name: 'INDUSTRY', color: '#ef6c3a', icon: '<path d="M3 21V11l5 3V11l5 3V7h3l1-4h2l1 4v14z"/>' },
-  { id: 'finance', name: 'FINANCE', color: '#22b455', icon: '<path d="M3 17l5-5 4 3 7-8"/><path d="M15 7h4v4"/>' },
-  { id: 'services', name: 'SERVICES', color: '#e0444c', icon: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="M9 12h6M12 9v6"/>' },
-  { id: 'parks', name: 'PARKS', color: '#4caf50', icon: '<path d="M12 3 6 13h3l-3 5h12l-3-5h3z"/><path d="M12 18v3"/>' },
-  { id: 'landmarks', name: 'LANDMARKS', color: '#a855f7', icon: '<path d="M12 2l2.6 6.2 6.4.5-4.9 4.2 1.5 6.4L12 15.9 6.4 19.3l1.5-6.4L3 8.7l6.4-.5z"/>' }
-];
-// [name, unlock level, cost, wall colour, roof colour, floors, footprint]
-const CATALOG = {
-  homes: [['Studio Walk-up', 1, 1200, '#c08f6e', '#5e5a55', 3, 1], ['Brownstone', 2, 2500, '#8c4a3a', '#4a4440', 4, 1], ['Mid-rise Flats', 4, 6000, '#d8cbb0', '#55524d', 7, 1.2], ['Luxury Condos', 9, 25000, '#9fb6cc', '#45505c', 12, 1.1], ['Penthouse Tower', 18, 120000, '#6d8aa8', '#3d4652', 20, 1]],
-  shops: [['Coffee Cart', 1, 800, '#e8c48a', '#b8442e', 1, 0.8], ['Corner Deli', 2, 1500, '#d9a066', '#2f6b4f', 2, 1], ['Hardware Store', 3, 3000, '#c9b79c', '#8a3b2e', 2, 1.2], ['Fashion Boutique', 7, 9000, '#f2e6e9', '#3a3540', 3, 1], ['Department Store', 13, 40000, '#e0d8c6', '#4a5866', 6, 1.4]],
-  industry: [['Steel Works', 1, 1000, '#9aa3ab', '#6b4a3a', 2, 1.3], ['Lumber Yard', 2, 1800, '#b07a5a', '#5b4330', 2, 1.3], ['Plastics Plant', 5, 5000, '#d2dae2', '#4f8bff', 3, 1.3], ['Textile Mill', 11, 14000, '#a86b4f', '#55524d', 4, 1.4], ['Electronics Factory', 17, 60000, '#cfd3d6', '#2f6fb0', 4, 1.4]],
-  finance: [['Trading Desk', 1, 1500, '#e6e2d8', '#2f8f5a', 2, 0.9], ['Brokerage Office', 4, 8000, '#cbbd9f', '#3d4652', 6, 1], ['Community Bank', 8, 20000, '#f3efe6', '#7a8a96', 3, 1.2], ['Hedge Fund', 15, 90000, '#4d6f96', '#2d3b4a', 16, 1], ['Exchange Tower', 25, 500000, '#3f5d7c', '#ffc531', 26, 1.1]],
-  services: [['Fire Station', 3, 2000, '#c0392b', '#4a4440', 2, 1.1], ['Power Plant', 3, 2500, '#b9c0c8', '#f59e0b', 3, 1.3], ['Water Pumps', 3, 2500, '#a7c6e0', '#3b82f6', 2, 1.1], ['Police Precinct', 6, 6000, '#4a6078', '#2d3b4a', 3, 1.1], ['Sewage Works', 8, 9000, '#8f9aa5', '#55524d', 2, 1.3], ['Waste Depot', 10, 12000, '#7d8a6a', '#4a4440', 2, 1.3], ['Hospital', 14, 45000, '#f4f4f2', '#e0444c', 8, 1.3]],
-  parks: [['Pocket Park', 2, 600, '#6fae5a', '#4f8a3c', 0, 1], ['Plaza Fountain', 5, 3500, '#d9d6cf', '#3b82f6', 0, 1.1], ['Rooftop Garden', 8, 7000, '#cbbd9f', '#5e9a4a', 1, 1], ['Riverside Promenade', 12, 15000, '#9fd18a', '#2b84c4', 0, 1.3]],
-  landmarks: [['Bull Statue', 20, 150000, '#b8863b', '#8a5a00', 1, 0.8], ['Golden Ticker Tower', 30, 900000, '#ffd25a', '#8a5a00', 30, 1], ['Capital Street HQ', 40, 5000000, '#2fd47a', '#0b3b1c', 40, 1.2]]
-};
-// a small isometric building drawing for menu cards
-function isoArt(wall, roof, floors, foot = 1) {
-  const sh = c => { const n = parseInt(c.slice(1), 16), f = k => Math.round(((n >> k) & 255) * 0.78); return `rgb(${f(16)},${f(8)},${f(0)})`; };
-  const w = 26 * foot, d = 13 * foot, hgt = floors ? 6 + floors * 3.2 : 3, cx = 38, base = 60;
-  const top = base - d - hgt;
-  const L = `${cx - w},${base - d} ${cx},${base} ${cx},${base - hgt} ${cx - w},${base - d - hgt}`;
-  const R = `${cx},${base} ${cx + w},${base - d} ${cx + w},${base - d - hgt} ${cx},${base - hgt}`;
-  const T = `${cx - w},${top} ${cx},${top + d} ${cx + w},${top} ${cx},${top - d}`;
-  let win = '';
-  for (let f = 0; f < Math.min(floors, 12); f++) {
-    const y = base - d - 5 - f * (hgt - 6) / Math.max(1, Math.min(floors, 12));
-    win += `<path d="M${cx - w + 4} ${y - 1} L${cx - 4} ${y + d - 3}" stroke="#2f5b8a" stroke-width="2.4" opacity=".8"/><path d="M${cx + 4} ${y + d - 3} L${cx + w - 4} ${y - 1}" stroke="#244a73" stroke-width="2.4" opacity=".8"/>`;
-  }
-  return `<svg viewBox="0 0 76 70"><ellipse cx="38" cy="${base + 2}" rx="${w + 6}" ry="6" fill="#000" opacity=".14"/><polygon points="${L}" fill="${wall}"/><polygon points="${R}" fill="${sh(wall)}"/>${win}<polygon points="${T}" fill="${roof}"/></svg>`;
-}
-const SAVE_KEY = 'capital-street-save-v1';
-const state = (() => { try { return Object.assign({ level: 1, xp: 0, cash: 2500, gold: 10, pop: 0, tasks: 0 }, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) { return { level: 1, xp: 0, cash: 2500, gold: 10, pop: 0, tasks: 0 }; } })();
-function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { /* private mode: progress lasts this visit */ } }
-const fmt = n => '$' + Math.round(n).toLocaleString('en-US');
-function drawHud() {
-  document.getElementById('lvlN').textContent = state.level;
-  const need = xpFor(state.level);
-  document.getElementById('xpFill').style.width = Math.min(100, state.xp / need * 100) + '%';
-  document.getElementById('xpT').textContent = `${state.xp} / ${need} XP`;
-  document.getElementById('popN').textContent = state.pop.toLocaleString('en-US');
-  document.getElementById('cashN').textContent = fmt(state.cash);
-  document.getElementById('goldN').textContent = state.gold;
-}
-function gainXp(n) {
-  state.xp += n;
-  const ups = [];
-  while (state.xp >= xpFor(state.level)) { state.xp -= xpFor(state.level); state.level++; ups.push(state.level); }
-  save(); drawHud();
-  if (ups.length) showLevelUp(state.level);
-}
-function showLevelUp(level) {
-  document.getElementById('lvlupT').textContent = `LEVEL ${level}!`;
-  const unl = Object.values(CATALOG).flat().filter(b => b[1] === level);
-  document.getElementById('lvlupU').innerHTML = unl.length ? unl.map(b => `<div>${isoArt(b[3], b[4], b[5], b[6])}${b[0]}</div>`).join('') : '<div style="width:auto">Keep going: bigger buildings unlock at higher levels.</div>';
-  document.getElementById('lvlup').hidden = false;
-}
-document.getElementById('lvlupOk').onclick = () => { document.getElementById('lvlup').hidden = true; if (sheetCat) openSheet(sheetCat); };
-// build menu
-let sheetCat = null;
-const sheetEl = document.getElementById('sheet');
-document.getElementById('cats').innerHTML = CATS.map(c => `<button data-c="${c.id}" style="background:linear-gradient(${c.color}, ${c.color})" aria-label="${c.name}"><svg viewBox="0 0 24 24">${c.icon}</svg></button>`).join('');
-document.querySelectorAll('#cats button').forEach(b => b.onclick = () => openSheet(b.dataset.c));
-function openSheet(cat) {
-  sheetCat = cat;
-  const c = CATS.find(x => x.id === cat);
-  document.getElementById('sheetT').textContent = c.name;
-  document.querySelectorAll('#cats button').forEach(b => b.classList.toggle('on', b.dataset.c === cat));
-  document.getElementById('cards').innerHTML = CATALOG[cat].map(([name, lvl, cost, wall, roof, floors, foot], i) => {
-    const locked = state.level < lvl;
-    return `<button class="bcard${locked ? ' locked' : ''}" data-i="${i}">${isoArt(wall, roof, floors, foot)}<b>${name}</b><span class="price">${locked ? 'Level ' + lvl : fmt(cost)}</span></button>`;
-  }).join('');
-  document.querySelectorAll('#cards .bcard').forEach(b => b.onclick = () => {
-    const [name, lvl, cost] = CATALOG[cat][+b.dataset.i];
-    if (state.level < lvl) toast('Locked', `${name} unlocks at level ${lvl}.`);
-    else if (state.cash < cost) toast('Not enough cash', `${name} costs ${fmt(cost)}.`);
-    else toast(name, 'Next goal: pick a lot on the map and build it there.');
-  });
-  sheetEl.hidden = false;
-  document.getElementById('hud').classList.add('sheet-open');
-  taskEvent('build');
-}
-function closeSheet() { sheetEl.hidden = true; sheetCat = null; document.getElementById('hud').classList.remove('sheet-open'); }
-document.getElementById('bBuild').onclick = () => sheetEl.hidden ? openSheet('homes') : closeSheet();
-document.getElementById('sheetX').onclick = closeSheet;
-document.getElementById('bMarket').onclick = () => toast('Market', 'Trading opens once you get your first bank loan.');
-document.getElementById('cashPlus').onclick = () => toast('Cash', 'Earn cash from your businesses and trades.');
-document.getElementById('goldPlus').onclick = () => toast('Gold', 'Gold comes from level-ups and special deals.');
-// starter tasks, each worth XP, so the level system works from the first minute
-const TASKS = [
-  { text: 'Fly to Wall Street', xp: 20, cash: 200, on: 'wall' },
-  { text: 'Open the Build menu', xp: 15, cash: 0, on: 'build' },
-  { text: 'Zoom out to see the whole world', xp: 25, cash: 300, on: 'world' },
-  { text: 'Visit Central Park', xp: 30, cash: 300, on: 'park' },
-  { text: 'Find the Stock Exchange', xp: 40, cash: 500, on: 'nyse' }
-];
-function drawTask() {
-  const t = TASKS[state.tasks], el = document.getElementById('task');
-  el.hidden = !t;
-  if (!t) return;
-  document.getElementById('taskT').textContent = t.text;
-  document.getElementById('taskR').textContent = `+${t.xp} XP` + (t.cash ? ` · +${fmt(t.cash)}` : '');
-}
-function taskEvent(kind) {
-  const t = TASKS[state.tasks];
-  if (!t || t.on !== kind || document.getElementById('hud').hidden) return;
-  state.tasks++; state.cash += t.cash;
-  toast('Task done!', `${t.text}: +${t.xp} XP${t.cash ? ', +' + fmt(t.cash) : ''}`);
-  gainXp(t.xp); drawTask();
-}
-const PARK = ll(40.7812, -73.9665), NYSE = ll(40.7069, -74.0113);
-function checkPlaces(dist) {
-  const t = controls.target, near = (p, r) => (t.x - p[0]) ** 2 + (t.z - p[1]) ** 2 < r * r;
-  if (dist > 1.5e6) taskEvent('world');
-  if (dist < 6000 && near(PARK, 1500)) taskEvent('park');
-  if (dist < 1500 && near(NYSE, 350)) taskEvent('nyse');
-}
-drawHud(); drawTask();
 
 // ---------- intro and HUD ----------
 const big = document.getElementById('big');
@@ -895,25 +903,15 @@ function shout(text, ms = 2600) { big.textContent = text; big.classList.add('on'
 const touch = matchMedia('(pointer: coarse)').matches;
 document.getElementById('hint').textContent = touch ? 'Drag to move · Pinch to zoom · Twist with two fingers' : 'Drag to move · Scroll to zoom · Right-drag to turn';
 document.getElementById('bHome').onclick = () => flyTo(V.home());
-document.getElementById('bWall').onclick = () => flyTo(V.wall(), 2.6, () => taskEvent('wall'));
-// price ticker along the bottom, as in the reference (prices drift for now; trading comes in a later goal)
-const TICKS = [['WHEAT', 6.12], ['CORN', 4.38], ['COFFEE', 2.31], ['SUGAR', 0.21], ['BEEF', 3.0], ['PORK', 0.92], ['SALMON', 1.2], ['OIL', 78.4],
-  ['GOLD', 2418.3], ['SILVER', 29.12], ['STEEL', 0.42], ['NYCX', 41.2], ['BRKL', 18.75], ['HDSN', 102.4], ['WLST', 64.05]].map(([s, p]) => ({ s, p, o: p }));
-const tape = document.getElementById('tape');
-const money = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-function drawTape() {
-  const one = TICKS.map(t => { const ch = (t.p / t.o - 1) * 100; return `<span>${t.s} ${money(t.p)} <i class="${ch >= 0 ? 'up' : 'dn'}">${ch >= 0 ? '▲' : '▼'}${Math.abs(ch).toFixed(1)}%</i></span>`; }).join('');
-  tape.innerHTML = one + one;
-}
-drawTape();
-setInterval(() => { for (const t of TICKS) t.p = Math.max(0.01, t.p * (1 + (Math.random() - 0.5) * 0.01)); drawTape(); }, 3000);
-document.getElementById('bWorld').onclick = () => flyTo(V.world(), 3);
+// the map button flips between the world and your apartment
+document.getElementById('bWorld').onclick = () => flyTo(current().dist > 200000 ? V.home() : V.world(), 3);
 document.getElementById('play').onclick = () => {
   document.getElementById('title').hidden = true;
-  flyTo(view(PLACE.home, 210, 0.38, AZ, homeTop), 5, () => {
+  flyTo(view(PLACE.home, 70, 0.55, AZ, homeTop), 5, () => {
     shout('WHERE YOU START');
     document.getElementById('hud').hidden = false;
     setTimeout(() => { document.getElementById('hint').style.opacity = 0; }, 6000);
+    setTimeout(() => window.CSUI && CSUI.intro(), 2200);
   });
   homeLabel.hidden = false;
 };
@@ -932,28 +930,26 @@ document.getElementById('play').onclick = () => {
       borders = thickLines(seg, 2.4, 0x111111, 7);
     }
     manhattanLand = flat(polyGeo(nyc, 'land'), PAVEMENT, 3);
-    flat(polyGeo(nyc, 'park'), 0x5e9a4a, 4);
+    flat(polyGeo(nyc, 'park'), 0x6aaa4c, 4);
+    flat(polyGeo(nyc, 'walk'), SIDEWALK, 4.3);
     flat(polyGeo(nyc, 'road'), ASPHALT, 4.5);
     flat(polyGeo(nyc, 'lake'), OCEAN, 5, null, true);
     buildCity(nyc);
     buildRoofs(nyc);
+    buildPitched(nyc);
     buildTrees(nyc);
+    const streetLines = lines(nyc);
+    buildMarkings(nyc, streetLines);
+    buildTraffic(streetLines);
+    buildGlobe(world);
     await buildStreetLabels(nyc, streets);
-    { // the student's rooftop room: white walls seen from above, like the reference
-      const room = new THREE.Group(), wallMat = new THREE.MeshStandardMaterial({ color: lin(0xf2efe8), roughness: 0.7 });
-      const W = [[0, -6, 18, 0.4], [0, 6, 18, 0.4], [-9, 0, 0.4, 12], [9, -2.5, 0.4, 7], [-3, -1.5, 0.4, 9], [3, 2, 0.4, 8], [6, -1, 6, 0.4], [-6, 2, 6, 0.4]];
-      for (const [x, z, w, d] of W) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 2.8, d).translate(x, 1.4, z), wallMat); m.castShadow = m.receiveShadow = true; room.add(m); }
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(18, 12).rotateX(-Math.PI / 2).translate(0, 0.05, 0), new THREE.MeshStandardMaterial({ color: lin(0x8d8a84), roughness: 0.9 }));
-      floor.receiveShadow = true; room.add(floor);
-      room.position.set(PLACE.home[0], homeTop, PLACE.home[1]); room.rotation.y = -homeAngle;
-      scene.add(room);
-    }
+    buildApartment(PLACE.home, homeTop, homeAngle); // your studio, with the ceiling off
     pin = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({ color: lin(0xffcc4d), emissive: lin(0x885500), roughness: 0.35, metalness: 0.3 });
     pin.add(new THREE.Mesh(new THREE.ConeGeometry(9, 26, 16).rotateX(Math.PI).translate(0, 13, 0), mat), new THREE.Mesh(new THREE.SphereGeometry(10, 16, 12).translate(0, 30, 0), mat));
     pin.position.set(PLACE.home[0], homeTop + 3, PLACE.home[1]); pin.renderOrder = 11;
     scene.add(pin);
-    homeLabel = label('<svg class="i"><use href="#i-home"/></svg>YOU START HERE', 'home', PLACE.home, 70, 0, 60000);
+    homeLabel = label('<svg class="i"><use href="#i-home"/></svg>YOUR APARTMENT', 'home', PLACE.home, 70, 320, 60000); // hidden up close, where you can see the room itself
     homeLabel.hidden = true;
     cityLabels();
     countryLabels(countries);
@@ -965,11 +961,14 @@ document.getElementById('play').onclick = () => {
   controls.update();
   document.getElementById('load').hidden = true;
   document.getElementById('title').hidden = false;
-  window.CS = { scene, renderer, tiles, flyTo, view, V, PLACE, current, place, ll, borders, home: () => [homeTop, homeAngle] }; // handy for testing in the console
+  window.CS = { scene, renderer, tiles, flyTo, view, V, PLACE, current, place, ll, borders, home: () => [homeTop, homeAngle],
+    smoke() { const mid = towers.filter(t => Math.hypot(t[0], t[1]) < 2500), t = (mid.length ? mid : towers)[Math.floor(Math.random() * (mid.length || towers.length))]; smokeAt(t[0], t[1], t[2]); return [t[0], t[1]]; } }; // handy for testing in the console
   requestAnimationFrame(frame);
   // installable app: works offline after the first visit
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 </script>
+<script src="js/city.js"></script>
+<script src="js/ui.js"></script>
 </body>
 </html>

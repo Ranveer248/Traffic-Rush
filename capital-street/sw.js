@@ -1,6 +1,6 @@
 // Capital Street offline support. Bump VERSION whenever data/ or the page changes.
-const VERSION = 'capital-street-2026-10-27.1';
-const CORE = ['./', './manifest.webmanifest', './data/nyc.bin', './data/world.bin', './data/countries.json', './data/streets.json', './icons/icon-192.png'];
+const VERSION = 'capital-street-2026-10-27.2';
+const CORE = ['./', './js/market.js', './js/city.js', './js/ui.js', './manifest.webmanifest', './data/nyc.bin', './data/world.bin', './data/countries.json', './data/streets.json', './icons/icon-192.png'];
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).catch(() => {}));
