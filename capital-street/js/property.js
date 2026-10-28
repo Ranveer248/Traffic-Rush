@@ -79,13 +79,14 @@ window.Property = (function () {
   }
   function drawOwned() {
     const have = new Set(Object.keys(M.state.props).map(Number));
-    for (const [g, m] of ownMeshes) if (!have.has(g)) { scene.remove(m); m.geometry.dispose(); ownMeshes.delete(g); }
+    const hq = window.Office ? Office.hq() : null; // no green tint over your office: you look into it from above
+    for (const [g, m] of ownMeshes) if (!have.has(g) || g === hq) { scene.remove(m); m.geometry.dispose(); ownMeshes.delete(g); }
     for (const [g, l] of ownLabels) if (!have.has(g)) { l.el.remove(); labels.splice(labels.indexOf(l), 1); ownLabels.delete(g); }
     for (const g of have) {
       if (!groups.has(g)) continue;
       const it = info(g), p = M.state.props[g];
-      if (!ownMeshes.has(g)) { const m = new THREE.Mesh(shellGeo(g, 0.25), ownMat); m.renderOrder = 11; scene.add(m); ownMeshes.set(g, m); }
-      const txt = p.floors >= it.floors ? 'YOURS' : `YOURS · ${p.floors}/${it.floors} floors`;
+      if (!ownMeshes.has(g) && g !== hq) { const m = new THREE.Mesh(shellGeo(g, 0.25), ownMat); m.renderOrder = 11; scene.add(m); ownMeshes.set(g, m); }
+      const txt = (g === hq ? 'YOUR OFFICE' : 'YOURS') + (p.floors >= it.floors ? '' : ` · ${p.floors}/${it.floors} floors`);
       if (!ownLabels.has(g)) { const l = label(txt, 'place mine', [it.x, it.z], it.maxH + 6, 0, 9000); l.el.onclick = () => select(g, true); ownLabels.set(g, l); }
       else ownLabels.get(g).el.textContent = txt;
     }
@@ -160,6 +161,7 @@ window.Property = (function () {
           ${left > 0 ? `<button class="buy" data-buy="${left}">${mine ? `Buy the other ${left} floors` : it.floors > 1 ? 'Buy the whole building' : 'Buy it'} · ${usd(mine ? left * perFloor(it) : wholePrice(it))}</button>` : ''}
           ${p && p.floors > 1 ? `<button class="sell" data-sell="1">Sell 1 floor · ${usd(M.floorValue(p) * (1 - M.PROP_FEE))}</button>` : ''}
           ${p ? `<button class="sell" data-sell="${p.floors}">Sell ${p.floors > 1 ? 'everything' : 'it'} · ${usd(p.floors * M.floorValue(p) * (1 - M.PROP_FEE))}</button>` : ''}
+          ${p && window.Office ? (Office.hq() === it.g ? '<button class="buy" id="lsOffice">Enter your office</button>' : '<button class="plain" id="lsOffice">Make this my office</button>') : ''}
           <button class="plain" id="lsFly">Fly there</button>
         </div>
         <p class="note">Tenants pay rent every night. Prices follow the New York property market, which crashes and booms with everything else. Selling costs ${M.PROP_FEE * 100}%.</p>
@@ -167,6 +169,7 @@ window.Property = (function () {
     sheet.hidden = false;
     $('lsX').onclick = deselect;
     $('lsFly').onclick = () => select(selected, true);
+    if ($('lsOffice')) $('lsOffice').onclick = () => { if (Office.hq() !== it.g) { Office.setHQ(it.g); drawListing(false); } else Office.enter(); };
     sheet.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => {
       const n = +b.dataset.buy, cost = mine || n === 1 || it.floors === 1 ? n * perFloor(it) : wholePrice(it);
       CSUI.story(`<small>BUY PROPERTY</small><b>${it.type} at ${it.name}</b><p>${n === it.floors ? 'The whole building' : n + ' floor' + (n > 1 ? 's' : '')} for ${usd(cost)}. It earns about ${usd(n * perFloor(it) * M.PROP_YIELD * 7)} a week in rent.</p>`,
@@ -260,7 +263,7 @@ window.Property = (function () {
         const it = info(+d.id);
         if (it && /Office/.test(it.type) && it.wallSt && !M.state.wallOffice) {
           M.state.wallOffice = true; M.save();
-          CSUI.story(`<small>MILESTONE</small><b>Your first office on Wall Street.</b><p>A few days ago you were counting coins for rent. Now you have a key to ${it.name}. Next: fill it with desks, screens and people.</p>`, [['Look at it', () => select(it.g, true)]]);
+          CSUI.story(`<small>MILESTONE</small><b>Your first office on Wall Street.</b><p>A few days ago you were counting coins for rent. Now you have a key to ${it.name}. Next: fill it with desks, screens and people.</p>`, [['Go inside', () => Office.enter()]]);
         }
       }
       if (d.kind === 'sold') toast('Property sold', `${d.floors} floor${d.floors > 1 ? 's' : ''} for ${usd(d.gets)}.`);
@@ -281,5 +284,5 @@ window.Property = (function () {
     }
     drawOwned();
   }
-  return { init, tap, select, open, info, goal, deselect, debug: () => ({ meshes: ownMeshes.size, labels: [...ownLabels.values()].map(l => [l.el.textContent, l.on, l.p.y]) }) };
+  return { init, tap, select, open, info, goal, deselect, refreshOwned: drawOwned, debug: () => ({ meshes: ownMeshes.size, labels: [...ownLabels.values()].map(l => [l.el.textContent, l.on, l.p.y]) }) };
 })();

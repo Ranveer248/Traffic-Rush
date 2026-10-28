@@ -358,5 +358,5 @@
   }
   drawBar(); drawTape();
   requestAnimationFrame(loop);
-  window.CSUI = { intro, openEx, openBank, story };
+  window.CSUI = { intro, openEx, openBank, story, breaking };
 })();

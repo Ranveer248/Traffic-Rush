@@ -142,7 +142,12 @@
   }
   const PROP_SHOCK = { crash: 0.95, rally: 1.02, plane: 0.92, blackout: 0.99, fed: 0.97, storm: 0.96, hack: 1 };
 
-  const netWorth = () => S.cash + holdings() + propValue() - (S.loan ? S.loan.balance : 0);
+  // other parts of the game (the office) add their own nightly work and their own value
+  const dayHooks = [], worthHooks = [];
+  const extraWorth = () => worthHooks.reduce((sum, f) => sum + f(S), 0);
+  const marketReturn = () => COMPANIES.reduce((sum, c) => sum + S.stocks[c.t].price / S.stocks[c.t].prevClose - 1, 0) / COMPANIES.length;
+  function newDay() { const ret = marketReturn(); dayRollover(); propertyDay(); for (const f of dayHooks) f(S, ret); }
+  const netWorth = () => S.cash + holdings() + propValue() + extraWorth() - (S.loan ? S.loan.balance : 0);
 
   // ---------- the bank ----------
   const clampScore = v => Math.max(300, Math.min(850, Math.round(v)));
@@ -319,7 +324,7 @@
       acc -= 1;
       const before = minuteOfDay(), d0 = day();
       S.time++;
-      if (day() !== d0) { dayRollover(); propertyDay(); }
+      if (day() !== d0) newDay();
       if (before === OPEN - 1 && minuteOfDay() === OPEN && S.closedToday !== day()) marketOpens();
       if (isOpen()) minute();
       if (before === CLOSE - 1 && minuteOfDay() === CLOSE) emit('close');
@@ -334,7 +339,7 @@
     if (isOpen()) return;
     const m = minuteOfDay();
     const target = m < OPEN ? S.time - m + OPEN : S.time - m + DAY + OPEN;
-    while (S.time < target - 1) { const d0 = day(); S.time++; if (day() !== d0) { dayRollover(); propertyDay(); } accrue(); checkLoan(); checkRent(); if (S.evicted) break; }
+    while (S.time < target - 1) { const d0 = day(); S.time++; if (day() !== d0) newDay(); accrue(); checkLoan(); checkRent(); if (S.evicted) break; }
     acc = 1; step(0.0001, 1); // lands on 09:30 and opens the market
   }
   function reset() { S = fresh(); effects.length = 0; save(); emit('reset'); }
@@ -342,6 +347,6 @@
   window.Market = {
     COMPANIES, OPEN, CLOSE, DAY, RENT, LOANS, company, borrow, repay, loanStatus, dailyRate, holdings, buyProperty, sellProperty, propValue, floorValue, PROP_YIELD, PROP_FEE, step, placeOrder, cancelOrder, skipToOpen, reset, save,
     on: f => listeners.push(f), get state() { return S; }, day, minuteOfDay, isOpen, status, priceOf, netWorth,
-    start() { S.started = true; save(); }, triggerEvent(kind) { const e = EVENTS.find(x => x.run().kind === kind); if (e) applyEvent(e.run()); }
+    start() { S.started = true; save(); }, onDay: f => dayHooks.push(f), addWorth: f => worthHooks.push(f), emit, triggerEvent(kind) { const e = EVENTS.find(x => x.run().kind === kind); if (e) applyEvent(e.run()); }
   };
 })();

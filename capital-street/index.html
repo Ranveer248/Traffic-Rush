@@ -216,6 +216,32 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lbtns .buy { background: var(--x-acc); color: #1a1300; } .lbtns .sell { background: #7f1d1d; color: #fecaca; } .lbtns .plain { background: #2b313c; color: #fff; }
 .lab.place.mine { pointer-events: auto; cursor: pointer; background: #15803d; border-color: #4ade80; }
 @media (min-width: 900px) { #props { left: 50%; transform: translateX(-50%); width: min(900px, calc(100vw - 32px)); } #listing { left: auto; right: 16px; width: 380px; } }
+
+/* office mode: the dock gives way to the office toolbar */
+#hud.in-office #dock, #hud.in-office #hint { display: none; }
+body.in-office .lab.mine { display: none !important; } /* inside, the office's own marker would sit on the floor plan */
+#obar { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 32px); transform: translateX(-50%); display: flex; gap: 6px; align-items: center; padding: 6px; border-radius: 12px; background: var(--x-bg); border: 1px solid var(--x-line); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); z-index: 3; color: var(--x-ink); font: 700 11px/1.2 Inter, sans-serif; white-space: nowrap; }
+#obar[hidden], #otray[hidden], #ostaff[hidden] { display: none; }
+#obar button { border: 0; border-radius: 8px; padding: 10px 12px; font: 800 12px/1 Inter, sans-serif; background: #2b313c; color: #fff; }
+#obar button.pri { background: var(--x-acc); color: #1a1300; }
+#obar .st { padding: 0 6px; color: var(--x-dim); } #obar .st b { color: #fff; }
+#otray { position: fixed; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 86px); padding: 10px; border-radius: 10px; background: var(--x-bg); border: 1px solid var(--x-line); z-index: 3; color: var(--x-ink); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); }
+.ocats { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; scrollbar-width: none; }
+.ocats button { flex: none; border: 1px solid var(--x-line); background: none; color: var(--x-dim); border-radius: 999px; padding: 6px 10px; font: 700 11px/1 Inter, sans-serif; }
+.ocats button.on { background: var(--x-acc); border-color: var(--x-acc); color: #1a1300; } .ocats .rm.on { background: var(--x-dn); border-color: var(--x-dn); color: #fff; }
+.oitems { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; touch-action: pan-x; }
+.oitems button { flex: 0 0 104px; border: 1px solid var(--x-line); background: var(--x-panel); color: var(--x-ink); border-radius: 8px; padding: 8px 6px; display: grid; gap: 2px; justify-items: center; text-align: center; }
+.oitems button.on { border-color: var(--x-acc); box-shadow: 0 0 0 1px var(--x-acc) inset; }
+.oitems i { font-style: normal; font-size: 24px; } .oitems b { font: 800 11px/1.2 Inter, sans-serif; } .oitems span { font: 800 11px/1 Inter, sans-serif; color: var(--x-acc); } .oitems em { font-style: normal; font-size: 9px; color: var(--x-dim); }
+#otray .note { margin: 6px 0 0; }
+#ostaff { position: fixed; left: 8px; right: 8px; top: max(8px, env(safe-area-inset-top)); bottom: calc(env(safe-area-inset-bottom) + 86px); display: flex; flex-direction: column; background: var(--x-bg); border: 1px solid var(--x-line); border-radius: 10px; color: var(--x-ink); font: 600 12px/1.35 Inter, sans-serif; z-index: 3; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); overflow: hidden; }
+#ostaffBody { flex: 1; overflow-y: auto; padding: 12px; }
+.srow { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--x-line); }
+.srow .av { width: 34px; height: 34px; border-radius: 17px; border: 2px solid #fff; }
+.srow b { display: block; font: 800 13px/1.2 Inter, sans-serif; } .srow span { display: block; font-size: 11px; color: var(--x-dim); } .srow i { font-style: normal; }
+.sb { display: flex; gap: 6px; } .sb button { border: 0; border-radius: 7px; padding: 8px 10px; font: 800 11px/1 Inter, sans-serif; background: var(--x-up); color: #052e16; }
+.sb button.ghost { background: #2b313c; color: var(--x-dim); }
+@media (min-width: 900px) { #otray { left: 50%; right: auto; transform: translateX(-50%); width: 720px; } #ostaff { left: auto; right: 16px; width: 420px; } }
 /* story cards */
 #story { position: fixed; inset: 0; display: grid; place-items: end center; padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom) + 40px); background: linear-gradient(to top, rgba(8, 10, 16, .85), rgba(8, 10, 16, 0) 60%); z-index: 4; }
 #story[hidden] { display: none; }
@@ -262,6 +288,7 @@ h1 em { font-style: normal; color: var(--green); }
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></symbol>
   <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7 9h7M7 12h7M7 15h4"/></symbol>
   <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
 </svg>
 <canvas id="c"></canvas>
@@ -274,7 +301,7 @@ h1 em { font-style: normal; color: var(--green); }
     <button id="bExchange" class="dk" aria-label="Share exchange"><svg class="i"><use href="#i-chart"/></svg></button>
     <button id="bHome" class="avatar" aria-label="Your apartment"><svg viewBox="0 0 40 64"><use href="#i-avatar"/></svg></button>
     <button id="bProps" class="dk" aria-label="Property"><svg class="i"><use href="#i-key"/></svg></button>
-    <button id="bWorld" class="dk" aria-label="Map"><svg class="i"><use href="#i-globe"/></svg></button>
+    <button id="bOffice" class="dk" aria-label="Your office"><svg class="i"><use href="#i-brief"/></svg></button>
   </div>
   <div id="ticker"><div id="tape"></div></div>
   <div id="hint" class="glass"></div>
@@ -303,6 +330,13 @@ h1 em { font-style: normal; color: var(--green); }
   <div id="propsBody"></div>
 </div>
 <div id="listing" hidden></div>
+<div id="obar" hidden><span class="st">Vibe <b id="oVibe">0</b></span><span class="st">Staff <b id="oStaff">0/0</b></span><button class="pri" id="oFurnish">Furnish</button><button id="oPeople">Staff</button><button id="oDone">Done</button></div>
+<div id="otray" hidden></div>
+<div id="ostaff" hidden>
+  <div class="exh"><b>YOUR OFFICE</b><span class="st"></span><button id="ostaffX" aria-label="Close">✕</button></div>
+  <div class="tabs"><button data-st="staff" class="on">Staff</button><button data-st="hire">Hire</button><button data-st="report">Report</button></div>
+  <div id="ostaffBody"></div>
+</div>
 <div id="story" hidden><div class="box" id="storyBox"></div></div>
 <div id="title" class="ov" hidden>
   <div class="card">
@@ -830,6 +864,7 @@ canvas.addEventListener('pointerup', e => {
   if (moved > 8 || !quick) return;
   ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
+  if (window.Office && Office.active() && Office.tap(ray)) return; // inside your office: furnish it
   if (current().dist < 6000 && !document.getElementById('hud').hidden && window.Property && Property.tap(ray)) return; // a building: open its listing
   const hit = ray.ray.intersectPlane(ground, new THREE.Vector3());
   if (!hit) return;
@@ -984,7 +1019,7 @@ const touch = matchMedia('(pointer: coarse)').matches;
 document.getElementById('hint').textContent = touch ? 'Drag to move · Pinch to zoom · Twist with two fingers' : 'Drag to move · Scroll to zoom · Right-drag to turn';
 document.getElementById('bHome').onclick = () => flyTo(V.home());
 // the map button flips between the world and your apartment
-document.getElementById('bWorld').onclick = () => flyTo(current().dist > 200000 ? V.home() : V.world(), 3);
+document.getElementById('bOffice').onclick = () => Office.active() ? Office.exit() : Office.enter();
 document.getElementById('play').onclick = () => {
   document.getElementById('title').hidden = true;
   flyTo(view(PLACE.home, 70, 0.55, AZ, homeTop), 5, () => {
@@ -1024,6 +1059,7 @@ document.getElementById('play').onclick = () => {
     buildGlobe(world);
     await buildStreetLabels(nyc, streets);
     if (window.Property) Property.init(nyc, streets);
+    if (window.Office) Office.init(nyc);
     buildApartment(PLACE.home, homeTop, homeAngle); // your studio, with the ceiling off
     pin = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({ color: lin(0xffcc4d), emissive: lin(0x885500), roughness: 0.35, metalness: 0.3 });
@@ -1052,5 +1088,6 @@ document.getElementById('play').onclick = () => {
 <script src="js/city.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/property.js"></script>
+<script src="js/office.js"></script>
 </body>
 </html>

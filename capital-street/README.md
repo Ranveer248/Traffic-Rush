@@ -75,6 +75,17 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 | Rent and prices | ✅ tenants pay rent every night (about 2.8% of the value a week); prices follow a New York property index that drifts daily and falls in crashes, plane crashes, hurricanes, blackouts and rate hikes |
 | Sell, and it counts | ✅ sell a floor or everything (6% fee); property counts toward net worth and shows in the portfolio. If rent or a loan can't be paid, shares are sold first, then property |
 
+## Goal 6: your office and staff ✅
+
+| Check | Result |
+|---|---|
+| Your office, roof off | ✅ the first office floor you buy becomes your office (or pick any building you own: "Make this my office"). The briefcase button, or "Enter your office" on its listing, looks straight down into the top floor: the roof, rooftop machinery and any tiled roof are lifted off, leaving a wooden floor inside the building's real outline |
+| Furnish it | ✅ 13 items in 4 groups (desks, trading desks, meeting tables, plants, coffee machine, water cooler, sofas, ping-pong, rugs, bookshelves, walls, server racks, news screens), placed by tapping a grid on the floor; rotate, or remove for half back. Furniture counts toward net worth at half its price |
+| Hire staff | ✅ every day new interns, employees and brokers apply, each with a name, skill stars, a salary and a hiring fee. Everyone needs a desk; brokers need a trading desk. They sit at their desks as round-headed people, like the reference videos |
+| They earn (or lose) money | ✅ every night: interns and employees bring in office income; brokers trade for you, riding the day's market, with the odd monster day or disaster day; salaries are paid. A nightly report shows the profit or loss |
+| Vibe | ✅ plants, coffee, sofas, ping-pong and more raise the office vibe (30 to 100), which sets how fast people work (60% to 140%). A gloomy office makes people quit |
+| Promotions and surprises | ✅ interns can be promoted to employees after 5 days, employees to brokers after 10; staff you can't pay quit; selling the building closes the office |
+
 ## Roadmap
 
 1. ✅ The New York map
@@ -82,7 +93,7 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 3. ✅ The trading game and the reference style
 4. ✅ Bank loan
 5. ✅ Buy property
-6. **Customise your building:** rooms, desks and decor, seen from above with the roof off; hire brokers, employees and interns
+6. ✅ Your office and staff
 7. **More cities:** unlock cities on the globe
 8. **App stores:** wrap the game for the App Store and Google Play
 

@@ -37,13 +37,12 @@ roofMat.onBeforeCompile = sh => {
       }
       diffuseColor.rgb = c;`);
 };
-function buildPitched(d) {
-  const F = d['p.f'], G = d['p.g'], C = d['p.c'], n = G.length, bins = new Map();
-  for (let i = 0; i < n; i++) {
+const pitched = { F: null, G: null, C: null, tiles: new Map(), hidden: () => false }; // tile -> { mesh, list of roofs }
+function pitchedGeo(list) {
+  const { F, G, C } = pitched, b = { pos: [], nor: [], col: [], rt: [] };
+  for (const i of list) {
     const [x, z, a, L, W, y, rise] = F.subarray(7 * i, 7 * i + 7), gable = G[i];
-    const key = tileOf(x, z);
-    let b = bins.get(key);
-    if (!b) bins.set(key, b = { pos: [], nor: [], col: [], rt: [] });
+    if (pitched.hidden(x, z)) continue; // the roof over your office is lifted off
     const ca = Math.cos(a), sa = Math.sin(a), hl = L / 2, hw = W / 2, r = gable ? hl : Math.max(0, hl - hw);
     const P = (lx, ly, lz) => [x + ca * lx - sa * lz, y + ly, z + sa * lx + ca * lz];
     const A = P(-hl, 0, -hw), B = P(hl, 0, -hw), Cc = P(hl, 0, hw), D = P(-hl, 0, hw), R1 = P(-r, rise, 0), R2 = P(r, rise, 0);
@@ -60,10 +59,28 @@ function buildPitched(d) {
     const ac = v => (v[0] - x) * -sa + (v[2] - z) * ca; // across the ridge, for hip tiles
     tri(B, R2, Cc, endC, endR, [ac(B), ac(R2), ac(Cc)]); tri(D, R1, A, endC, endR, [ac(D), ac(R1), ac(A)]);
   }
-  for (const b of bins.values()) {
-    const m = geoMesh(b.pos, b.nor, b.col, { rt: [b.rt, 2] }, roofMat);
+  return geoMesh(b.pos, b.nor, b.col, { rt: [b.rt, 2] }, roofMat).geometry;
+}
+function buildPitched(d) {
+  Object.assign(pitched, { F: d['p.f'], G: d['p.g'], C: d['p.c'] });
+  const lists = new Map();
+  for (let i = 0; i < pitched.G.length; i++) {
+    const key = tileOf(pitched.F[7 * i], pitched.F[7 * i + 1]);
+    if (!lists.has(key)) lists.set(key, []);
+    lists.get(key).push(i);
+  }
+  for (const [key, list] of lists) {
+    const m = new THREE.Mesh(pitchedGeo(list), roofMat);
     m.castShadow = m.receiveShadow = true; m.renderOrder = 10;
     scene.add(m); cityTiles.push({ mesh: m, kind: 'roof' });
+    pitched.tiles.set(key, { mesh: m, list });
+  }
+}
+// rebuild the roofs near a spot, after pitched.hidden has changed
+function refreshPitched(x, z) {
+  for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+    const t = pitched.tiles.get(tileOf(x + dx * 1000, z + dz * 1000));
+    if (t) { t.mesh.geometry.dispose(); t.mesh.geometry = pitchedGeo(t.list); }
   }
 }
 
