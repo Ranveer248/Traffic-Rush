@@ -1,0 +1,12 @@
+{
+  "appId": "com.ranveer248.capitalstreet",
+  "appName": "Capital Street",
+  "webDir": "www",
+  "backgroundColor": "#0b1220",
+  "android": { "backgroundColor": "#0b1220" },
+  "ios": { "backgroundColor": "#0b1220", "contentInset": "never" },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 1500, "launchAutoHide": true, "backgroundColor": "#0b1220", "showSpinner": false },
+    "StatusBar": { "overlaysWebView": true, "style": "DARK", "backgroundColor": "#00000000" }
+  }
+}

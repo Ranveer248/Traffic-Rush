@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Capital Street</string>
+    <string name="title_activity_main">Capital Street</string>
+    <string name="package_name">com.ranveer248.capitalstreet</string>
+    <string name="custom_url_scheme">com.ranveer248.capitalstreet</string>
+</resources>

@@ -1,0 +1,78 @@
+# Builds the Capital Street app for Android and iPhone from capital-street/ (the game) and capital-street-app/ (Capacitor).
+# Every run: an Android APK you can install on a phone, and an iOS build that proves the Xcode project compiles.
+# With the store secrets added (see capital-street-app/README.md): a signed Google Play bundle, and an upload to App Store Connect.
+name: Capital Street app
+on:
+  push:
+    paths: ['capital-street/**', 'capital-street-app/**', '.github/workflows/capital-street-app.yml']
+  workflow_dispatch:
+env:
+  VERSION_NAME: '1.0'
+  VERSION_CODE: ${{ github.run_number }}
+defaults:
+  run:
+    shell: bash   # bash with pipefail, so a failed build piped through tail still fails the step
+    working-directory: capital-street-app
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: capital-street-app/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21, cache: gradle }
+      - run: npm ci
+      - run: npm run copy && npx cap sync android
+      - name: Build the APK
+        run: cd android && chmod +x gradlew && ./gradlew --no-daemon assembleDebug
+      - uses: actions/upload-artifact@v4
+        with: { name: capital-street-android-apk, path: capital-street-app/android/app/build/outputs/apk/debug/app-debug.apk }
+      - name: Build the signed Google Play bundle
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then echo "No ANDROID_KEYSTORE_BASE64 secret yet: skipping the Play Store bundle"; exit 0; fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          cd android && ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks" ./gradlew --no-daemon bundleRelease
+      - uses: actions/upload-artifact@v4
+        with: { name: capital-street-play-bundle, path: capital-street-app/android/app/build/outputs/bundle/release/app-release.aab, if-no-files-found: ignore }
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: capital-street-app/package-lock.json }
+      - run: npm ci
+      - run: npm run copy && npx cap sync ios
+      - name: Build for the iPhone simulator (no signing needed)
+        run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build | tail -30
+      - name: Archive, sign and upload to App Store Connect
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          KEY_P8: ${{ secrets.APPSTORE_KEY_P8 }}
+        run: |
+          if [ -z "$KEY_P8" ]; then echo "No App Store Connect key yet: skipping the upload"; exit 0; fi
+          KEY="$RUNNER_TEMP/AuthKey_$KEY_ID.p8"; echo "$KEY_P8" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID")
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$VERSION_CODE" MARKETING_VERSION="$VERSION_NAME" "${AUTH[@]}" archive | tail -30
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" "${AUTH[@]}"

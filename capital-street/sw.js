@@ -1,6 +1,6 @@
 // Capital Street offline support. Bump VERSION whenever data/ or the page changes.
-const VERSION = 'capital-street-2026-10-28.4';
-const CORE = ['./', './js/cities.js', './js/market.js', './js/city.js', './js/ui.js', './js/property.js', './js/office.js', './js/world.js', './manifest.webmanifest', './data/nyc.bin', './data/world.bin', './data/countries.json', './data/nyc-streets.json', './icons/icon-192.png'];
+const VERSION = 'capital-street-2026-10-28.6';
+const CORE = ['./', './js/cities.js', './js/market.js', './js/city.js', './js/ui.js', './js/property.js', './js/office.js', './js/world.js', './js/app.js', './lib/three.min.js', './lib/OrbitControls.js', './fonts/fonts.css', './fonts/inter-latin.woff2', './fonts/archivo-black-latin.woff2', './manifest.webmanifest', './data/nyc.bin', './data/world.bin', './data/countries.json', './data/nyc-streets.json', './icons/icon-192.png'];
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).catch(() => {}));
@@ -13,7 +13,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   const lib = /(^|\.)(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|fonts\.googleapis\.com|fonts\.gstatic\.com)$/.test(url.hostname);
-  const data = url.origin === self.location.origin && /\/data\/|\/icons\//.test(url.pathname);
+  const data = url.origin === self.location.origin && /\/(data|icons|lib|fonts)\//.test(url.pathname);
   if (lib || data) { // big or versioned files: cache first
     e.respondWith(caches.open(VERSION).then(c => c.match(req).then(hit => hit || fetch(req).then(res => { if (res.ok || res.type === 'opaque') c.put(req, res.clone()); return res; }))));
     return;
