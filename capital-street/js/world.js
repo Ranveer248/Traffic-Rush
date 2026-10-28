@@ -1,11 +1,11 @@
 // Capital Street world: city markers on the map and globe, each city's card, opening branches and travelling.
-// Travelling saves the game and reloads the page around the new city (?city=london#arrive).
+// Travelling saves the game and reloads the page around the new city (goCity in cities.js).
 'use strict';
 window.World = (function () {
   const M = window.Market, $ = id => document.getElementById(id);
   const usd = v => '$' + Math.round(v).toLocaleString('en-US');
   const open = id => !!M.state.cities[id];
-  if (!open(CITY.id)) { location.replace('./'); return {}; } // a city you haven't opened yet: back to New York
+  if (!open(CITY.id)) { goCity('nyc'); return {}; } // a city you haven't opened yet: back to New York
 
   function drawMarkers() {
     for (const l of cityMarkers) {
@@ -51,7 +51,7 @@ window.World = (function () {
       $('loadMsg').textContent = `Flying to ${CITIES[id].name}`;
       $('load').firstChild.textContent = `${CITIES[id].flag} ${CITIES[id].name}…`;
       $('load').hidden = false;
-      location.href = `?city=${id}#arrive`;
+      goCity(id, true);
     });
   }
   M.on(type => { if (type === 'city' || type === 'tick') drawMarkers(); });
@@ -72,7 +72,9 @@ window.World = (function () {
       document.querySelector('.card .over').textContent = `${CITY.flag} ${CITY.name.toUpperCase()} BRANCH`;
       $('bHome').onclick = () => { toast('Home', 'Flying back to your apartment in New York.'); travel('nyc'); };
     }
-    if (location.hash === '#arrive') { history.replaceState(null, '', location.pathname + location.search); arrive(); }
+    let flyIn = false;
+    try { flyIn = sessionStorage.getItem('cs-arrive') === '1'; sessionStorage.removeItem('cs-arrive'); } catch (e) { /* storage blocked */ }
+    if (flyIn) arrive();
   }, 100);
   return { travel, card, open };
 })();

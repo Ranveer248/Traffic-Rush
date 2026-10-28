@@ -205,7 +205,7 @@
       ex.hidden = true; Property.select(Property.gOf(k), true);
     });
     $('pf').querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => M.cancelOrder(+b.dataset.cancel));
-    $('newGame').onclick = () => { if (confirm('Start over from Day 1? Your trades will be lost.')) { M.reset(); location.reload(); } };
+    $('newGame').onclick = () => story('<small>NEW GAME</small><b>Start over from Day 1?</b><p>Your cash, trades, buildings and staff will be lost.</p>', [['Start over', () => { M.reset(); goCity('nyc'); }], ['Keep playing', () => {}]]);
   }
   function drawNews() {
     const n = S().news;
@@ -256,7 +256,7 @@
     if (type === 'rent') {
       ex.hidden = true;
       if (d.paid) story(`<small>RENT DAY</small><b>Rent paid.</b><p>The landlord nods and takes ${usd(M.RENT, 0)}. You get to keep your apartment, for another week.</p>${facts([['Cash left', usd(S().cash)], ['Next rent', 'in 7 days', true]])}<p>Keep growing your money. Your dream: an office on Wall Street.</p>`, [['Back to trading', () => openEx()]]);
-      else story(`<small>RENT DAY</small><b>Evicted.</b><p>You couldn't cover the rent. The landlord changed the locks.</p>${facts([['You had', usd(M.netWorth())], ['Rent was', usd(M.RENT, 0), true]])}`, [['Start over', () => { M.reset(); location.reload(); }]]);
+      else story(`<small>RENT DAY</small><b>Evicted.</b><p>You couldn't cover the rent. The landlord changed the locks.</p>${facts([['You had', usd(M.netWorth())], ['Rent was', usd(M.RENT, 0), true]])}`, [['Start over', () => { M.reset(); goCity('nyc'); }]]);
     }
     if (type === 'loan') {
       if (d.kind === 'taken') toast('Loan received', `${usd(d.amount, 0)} is in your account. Spend it wisely.`);

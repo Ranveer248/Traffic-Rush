@@ -1,5 +1,6 @@
 // Capital Street cities: New York is home; the rest unlock with net worth and an opening fee.
-// The page loads one city at a time (?city=london); everything else is shared through the saved game.
+// The page loads one city at a time; everything else is shared through the saved game.
+// The city you're in is remembered on the device (cs-city); ?city=london still works as a link.
 'use strict';
 window.CITIES = {
   nyc: {
@@ -47,4 +48,13 @@ window.CITIES = {
     places: [['Burj Khalifa', 25.1972, 55.2744, 830], ['Dubai Mall', 25.1985, 55.2796, 40], ['DIFC Gate', 25.2133, 55.2820, 60], ['Dubai Exchange', 25.2150, 55.2830, 60]]
   }
 };
-window.CITY = window.CITIES[new URLSearchParams(location.search).get('city')] || window.CITIES.nyc;
+window.CITY = (function () {
+  let id = new URLSearchParams(location.search).get('city');
+  if (!id) try { id = localStorage.getItem('cs-city'); } catch (e) { /* no storage: New York */ }
+  return window.CITIES[id] || window.CITIES.nyc;
+})();
+// reloads the page in another city; arrive = fly in from the globe when it has loaded
+window.goCity = function (id, arrive) {
+  try { localStorage.setItem('cs-city', id); if (arrive) sessionStorage.setItem('cs-arrive', '1'); } catch (e) { /* storage blocked */ }
+  if (location.search) location.replace(location.pathname); else location.reload();
+};
