@@ -31,9 +31,28 @@
     ['BDGA', 'Bodega Holdings', 'Retail', 15.10, 0.032, 0.9, 230],
     ['MDTN', 'Midtown Media', 'Tech', 71.50, 0.033, 1.3, 330],
     ['FISH', 'Fulton Fish Market', 'Food', 8.90, 0.035, 0.7, 60],
-    ['WLST', 'Wall St. Capital', 'Finance', 212.40, 0.024, 1.2, 150]
-  ].map(([t, name, sector, price, vol, beta, shares]) => ({ t, name, sector, price, vol, beta, shares }));
+    ['WLST', 'Wall St. Capital', 'Finance', 212.40, 0.024, 1.2, 150],
+    // each city you unlock lists its own companies on the exchange
+    ['LDNB', 'London & Bristol Bank', 'Finance', 64.20, 0.020, 1.0, 420, 'london'],
+    ['TUBE', 'Underground Rail', 'Transport', 22.80, 0.028, 0.9, 260, 'london'],
+    ['TEAC', 'Royal Tea Co.', 'Food', 31.40, 0.022, 0.6, 120, 'london'],
+    ['BIGB', 'Big Ben Media', 'Tech', 47.90, 0.034, 1.3, 210, 'london'],
+    ['SAKR', 'Sakura Robotics', 'Tech', 156.00, 0.036, 1.5, 300, 'tokyo'],
+    ['RAMN', 'Ramen House', 'Food', 14.60, 0.030, 0.7, 90, 'tokyo'],
+    ['SHNK', 'Shinkansen Lines', 'Transport', 88.50, 0.020, 0.8, 500, 'tokyo'],
+    ['KAIJ', 'Kaiju Games', 'Tech', 39.30, 0.048, 1.4, 180, 'tokyo'],
+    ['HRBR', 'Harbour Shipping', 'Transport', 26.70, 0.032, 1.1, 340, 'hongkong'],
+    ['DIMS', 'Dim Sum Group', 'Food', 11.90, 0.030, 0.7, 110, 'hongkong'],
+    ['PEAK', 'Peak Properties', 'Construction', 73.20, 0.030, 1.2, 280, 'hongkong'],
+    ['JADE', 'Jade Bank', 'Finance', 142.80, 0.022, 1.1, 610, 'hongkong'],
+    ['OASS', 'Oasis Energy', 'Energy', 98.40, 0.026, 0.9, 700, 'dubai'],
+    ['DUNE', 'Dune Airways', 'Transport', 33.10, 0.040, 1.2, 240, 'dubai'],
+    ['SOUK', 'Desert Gold Souk', 'Retail', 57.60, 0.028, 0.8, 150, 'dubai'],
+    ['BURJ', 'Burj Builders', 'Construction', 121.30, 0.034, 1.3, 230, 'dubai']
+  ].map(([t, name, sector, price, vol, beta, shares, city = 'nyc']) => ({ t, name, sector, price, vol, beta, shares, city }));
   const SECTORS = [...new Set(COMPANIES.map(c => c.sector))];
+  const listed = t => !!S.cities[company(t).city];
+  const LISTED = () => COMPANIES.filter(c => S.cities[c.city]); // companies you can trade: those of the cities you've opened
 
   const rnd = Math.random;
   const gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
@@ -48,10 +67,10 @@
     { w: 1, run() { return { kind: 'plane', title: 'PLANE CRASHES INTO A MIDTOWN TOWER', text: 'Trading is halted. Airlines plunge, builders jump on rebuilding hopes.', fx: [{ who: 'all', jump: -0.09, drift: -0.002, mins: 20, sticky: true }, { who: 'PGNA', jump: -0.35, sticky: true }, { who: 'Construction', jump: 0.12, sticky: true }], halt: 30, smoke: true }; } },
     { w: 1, run() { return { kind: 'blackout', title: 'CITYWIDE BLACKOUT', text: 'The exchange has closed for the rest of the day.', fx: [{ who: 'all', jump: -0.03, sticky: true }, { who: 'Energy', jump: -0.08, sticky: true }], closeDay: true }; } },
     { w: 2, run() { return { kind: 'fed', title: 'FED SURPRISES WITH A RATE HIKE', text: 'Banks rally, tech and crypto slide.', fx: [{ who: 'Finance', jump: 0.05, sticky: true }, { who: 'Tech', jump: -0.06, drift: -0.0008, mins: 30, sticky: true }, { who: 'Crypto', jump: -0.15, sticky: true }] }; } },
-    { w: 4, run() { const c = pick(COMPANIES), d = 0.25 + rnd() * 0.3; return { kind: 'scandal', title: `${c.name.toUpperCase()} CEO ARRESTED`, text: `Fraud charges send ${c.t} into free fall.`, fx: [{ who: c.t, jump: -d * 0.6, drift: -d * 0.4 / 25, mins: 25, sticky: true }] }; } },
-    { w: 6, run() { const c = pick(COMPANIES), good = rnd() < 0.55, d = (0.06 + rnd() * 0.18) * (good ? 1 : -1); return { kind: 'earnings', title: `${c.t} ${good ? 'SMASHES' : 'MISSES'} EARNINGS`, text: `${c.name} ${good ? 'beat every forecast' : 'came in far below forecasts'}.`, fx: [{ who: c.t, jump: d, sticky: true }] }; } },
-    { w: 2, run() { const c = pick(COMPANIES.filter(x => x.price < 40) .concat([company('MOON')])), d = 0.5 + rnd() * 1.5; return { kind: 'squeeze', title: `${c.t} GOES VIRAL`, text: `Meme traders pile into ${c.name}. This can't last... can it?`, fx: [{ who: c.t, drift: Math.log(1 + d) / 30, mins: 30, sticky: false }] }; } },
-    { w: 2, run() { const c = pick(COMPANIES), d = 0.2 + rnd() * 0.25; return { kind: 'merger', title: `${c.t} TO BE BOUGHT OUT`, text: `A rival offers a big premium for ${c.name}.`, fx: [{ who: c.t, jump: d, sticky: true }] }; } },
+    { w: 4, run() { const c = pick(LISTED()), d = 0.25 + rnd() * 0.3; return { kind: 'scandal', title: `${c.name.toUpperCase()} CEO ARRESTED`, text: `Fraud charges send ${c.t} into free fall.`, fx: [{ who: c.t, jump: -d * 0.6, drift: -d * 0.4 / 25, mins: 25, sticky: true }] }; } },
+    { w: 6, run() { const c = pick(LISTED()), good = rnd() < 0.55, d = (0.06 + rnd() * 0.18) * (good ? 1 : -1); return { kind: 'earnings', title: `${c.t} ${good ? 'SMASHES' : 'MISSES'} EARNINGS`, text: `${c.name} ${good ? 'beat every forecast' : 'came in far below forecasts'}.`, fx: [{ who: c.t, jump: d, sticky: true }] }; } },
+    { w: 2, run() { const c = pick(LISTED().filter(x => x.price < 40).concat([company('MOON')])), d = 0.5 + rnd() * 1.5; return { kind: 'squeeze', title: `${c.t} GOES VIRAL`, text: `Meme traders pile into ${c.name}. This can't last... can it?`, fx: [{ who: c.t, drift: Math.log(1 + d) / 30, mins: 30, sticky: false }] }; } },
+    { w: 2, run() { const c = pick(LISTED()), d = 0.2 + rnd() * 0.25; return { kind: 'merger', title: `${c.t} TO BE BOUGHT OUT`, text: `A rival offers a big premium for ${c.name}.`, fx: [{ who: c.t, jump: d, sticky: true }] }; } },
     { w: 1, run() { return { kind: 'hack', title: 'EXCHANGE HACKED', text: 'Trading is halted while the exchange investigates.', fx: [{ who: 'all', jump: -0.02, sticky: true }], halt: 20 }; } },
     { w: 2, run() { return { kind: 'storm', title: 'HURRICANE HEADS FOR NEW YORK', text: 'Energy and builders up, shops and taxis down.', fx: [{ who: 'Energy', jump: 0.07, sticky: true }, { who: 'Construction', jump: 0.06, sticky: true }, { who: 'Retail', jump: -0.05, sticky: true }, { who: 'Transport', jump: -0.06, sticky: true }] }; } },
     { w: 2, run() { const s = pick(SECTORS), good = rnd() < 0.5, d = (0.05 + rnd() * 0.08) * (good ? 1 : -1); return { kind: 'sector', title: `${s.toUpperCase()} ${good ? 'BOOM' : 'SLUMP'}`, text: `${good ? 'Money floods into' : 'Investors flee'} ${s.toLowerCase()} stocks.`, fx: [{ who: s, jump: d * 0.4, drift: d * 0.6 / 30, mins: 30, sticky: true }] }; } }
@@ -70,27 +89,26 @@
       orders: [], prints: [], news: [],
       halt: 0, closedToday: -1,
       loan: null, credit: 580, loansRepaid: 0, rateBump: 0,
-      props: {}, reIndex: 1, rentIncome: 0,
+      props: {}, reIndex: 1, rentIncome: 0, cities: { nyc: true },
       stocks: {}
     };
-    for (const c of COMPANIES) s.stocks[c.t] = { price: c.price, fair: c.price, open: c.price, prevClose: c.price, hist: [], vol: 0 };
-    // two days of history so the charts aren't empty
-    const days = 2;
-    for (const c of COMPANIES) {
-      let p = c.price * Math.exp(gauss() * c.vol * 1.5);
-      const h = [];
-      for (let d = days; d > 0; d--) for (let m = OPEN; m < CLOSE; m++) {
-        p *= Math.exp(gauss() * c.vol / Math.sqrt(MIN_PER_DAY) + 0.002 * Math.log(c.price / p));
-        h.push({ t: (1 - d) * DAY + m, p: +p.toFixed(2), v: Math.round(rnd() * 900 + 100) });
-      }
-      const st = s.stocks[c.t];
-      st.hist = h; st.price = st.open = st.prevClose = +p.toFixed(2); st.fair = c.price;
-    }
+    for (const c of COMPANIES) s.stocks[c.t] = seedStock(c, 1);
     return s;
+  }
+  function seedStock(c, today) { // two days of history before today, so the charts aren't empty
+    let p = c.price * Math.exp(gauss() * c.vol * 1.5);
+    const h = [];
+    for (let d = 2; d > 0; d--) for (let m = OPEN; m < CLOSE; m++) {
+      p *= Math.exp(gauss() * c.vol / Math.sqrt(MIN_PER_DAY) + 0.002 * Math.log(c.price / p));
+      h.push({ t: (today - d) * DAY + m, p: +p.toFixed(2), v: Math.round(rnd() * 900 + 100) });
+    }
+    return { price: +p.toFixed(2), fair: c.price, open: +p.toFixed(2), prevClose: +p.toFixed(2), hist: h, vol: 0 };
   }
   let S;
   try { S = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { S = null; }
-  if (!S || !S.stocks || Object.keys(S.stocks).length !== COMPANIES.length) S = fresh();
+  if (!S || !S.stocks) S = fresh();
+  for (const c of COMPANIES) if (!S.stocks[c.t]) S.stocks[c.t] = seedStock(c, Math.floor(S.time / DAY) + 1); // companies added since this save
+  if (!S.cities) S.cities = { nyc: true };
   if (S.credit === undefined) Object.assign(S, { loan: null, credit: 580, loansRepaid: 0, rateBump: 0 }); // saves from before the bank opened
   if (!S.props) Object.assign(S, { props: {}, reIndex: 1, rentIncome: 0 }); // saves from before property
   const effects = []; // live event effects (not saved: they finish quickly)
@@ -282,12 +300,14 @@
     shares = Math.floor(shares);
     if (!(shares > 0)) return { ok: false, why: 'Enter how many shares' };
     if (status() === 'EVICTED') return { ok: false, why: 'You were evicted' };
+    if (!listed(t)) return { ok: false, why: `Open your ${window.CITIES[company(t).city].name} branch to trade this` };
     if (type === 'limit') {
       if (!(limit > 0)) return { ok: false, why: 'Set a limit price' };
       S.orders.push({ id: Date.now() + Math.random(), side, t, shares, limit, time: S.time });
       save(); emit('order');
       return { ok: true, queued: true };
     }
+    if (!listed(t)) return { ok: false, why: `Open your ${window.CITIES[company(t).city].name} branch to trade this` };
     if (status() !== 'OPEN') return { ok: false, why: status() === 'HALTED' ? 'Trading is halted' : 'The market is closed' };
     const px = priceOf(t) * (side === 'buy' ? 1.0005 : 0.9995); // a small spread
     return { ok: fill(side, t, shares, +px.toFixed(2)) };
@@ -342,10 +362,20 @@
     while (S.time < target - 1) { const d0 = day(); S.time++; if (day() !== d0) newDay(); accrue(); checkLoan(); checkRent(); if (S.evicted) break; }
     acc = 1; step(0.0001, 1); // lands on 09:30 and opens the market
   }
+  // ---------- cities: open a branch once you're worth enough ----------
+  function unlockCity(id) {
+    const c = window.CITIES[id];
+    if (!c || S.cities[id]) return { ok: false, why: 'Already open' };
+    if (netWorth() < c.need) return { ok: false, why: `You need a net worth of $${c.need.toLocaleString('en-US')}` };
+    if (S.cash < c.fee) return { ok: false, why: `Opening a branch costs $${c.fee.toLocaleString('en-US')} in cash` };
+    S.cash = +(S.cash - c.fee).toFixed(2); S.cities[id] = true;
+    emit('city', { id }); save();
+    return { ok: true };
+  }
   function reset() { S = fresh(); effects.length = 0; save(); emit('reset'); }
 
   window.Market = {
-    COMPANIES, OPEN, CLOSE, DAY, RENT, LOANS, company, borrow, repay, loanStatus, dailyRate, holdings, buyProperty, sellProperty, propValue, floorValue, PROP_YIELD, PROP_FEE, step, placeOrder, cancelOrder, skipToOpen, reset, save,
+    COMPANIES, OPEN, CLOSE, DAY, RENT, LOANS, company, borrow, repay, loanStatus, unlockCity, listed, LISTED, dailyRate, holdings, buyProperty, sellProperty, propValue, floorValue, PROP_YIELD, PROP_FEE, step, placeOrder, cancelOrder, skipToOpen, reset, save,
     on: f => listeners.push(f), get state() { return S; }, day, minuteOfDay, isOpen, status, priceOf, netWorth,
     start() { S.started = true; save(); }, onDay: f => dayHooks.push(f), addWorth: f => worthHooks.push(f), emit, triggerEvent(kind) { const e = EVENTS.find(x => x.run().kind === kind); if (e) applyEvent(e.run()); }
   };

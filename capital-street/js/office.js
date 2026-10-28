@@ -127,7 +127,7 @@ window.Office = (function () {
   }
   function buildScene() {
     clearScene();
-    plan = O() && O().g != null ? makePlan(O().g) : null;
+    plan = hereHQ() != null ? makePlan(hereHQ()) : null;
     if (!plan) return;
     root = new THREE.Group(); scene.add(root);
     // lift the roof off: rooftop machinery and pitched roofs over the office disappear
@@ -226,12 +226,15 @@ window.Office = (function () {
 
   // ---------- actions ----------
   function ensure() { if (!M.state.office) M.state.office = { g: null, items: [], staff: [], nextId: 1, total: 0 }; return M.state.office; }
+  const officeCity = () => (O() && O().city) || 'nyc';
+  const officeKey = () => O() && O().g != null ? (officeCity() === 'nyc' ? String(O().g) : officeCity() + ':' + O().g) : null;
+  const hereHQ = () => O() && O().g != null && officeCity() === CITY.id ? O().g : null; // the office is drawn only in its own city
   function setHQ(g) {
     const o = ensure();
-    if (o.g === g) return;
+    if (o.g === g && officeCity() === CITY.id) return;
     const refund = o.items.reduce((s, it) => s + ITEMS[it.type].cost * 0.5, 0);
     if (refund) M.state.cash = +(M.state.cash + refund).toFixed(2);
-    o.g = g; o.items = []; for (const st of o.staff) st.desk = null;
+    o.g = g; o.city = CITY.id; o.items = []; for (const st of o.staff) st.desk = null;
     M.save(); buildScene(); Property.refreshOwned();
     if (refund) toast('Office moved', `Old furniture sold for ${usd(refund)}.`);
   }
@@ -279,6 +282,7 @@ window.Office = (function () {
   let active = false, tool = null, rot = 0; // tool: item type, or 'remove'
   function enter() {
     if (!O() || O().g == null) { toast('No office yet', 'Buy an office floor first, then make it your office.'); Property.open(); return; }
+    if (hereHQ() == null) { toast('Your office is elsewhere', `It's in ${CITIES[officeCity()].name}. Fly there from the globe, or make a building here your office.`); return; }
     if (!plan) buildScene();
     if (!plan) { toast('Too small', 'This building is too narrow for an office.'); return; }
     active = true; Property.deselect();
@@ -375,12 +379,12 @@ window.Office = (function () {
     }
     if (type === 'property') {
       const o = O();
-      if (d.kind === 'bought' && (!o || o.g == null)) { const it = Property.info(+d.id); if (it && /Office/.test(it.type)) setHQ(+d.id); }
-      if (d.kind === 'sold' && o && o.g != null && !M.state.props[o.g]) closeOffice('You sold the building your office was in.');
+      if (d.kind === 'bought' && (!o || o.g == null) && Property.isHere(d.id)) { const it = Property.info(Property.gOf(d.id)); if (it && /Office/.test(it.type)) setHQ(it.g); }
+      if (d.kind === 'sold' && d.id === officeKey() && !M.state.props[d.id]) closeOffice('You sold the building your office was in.');
     }
     if (type === 'reset') { exit(); clearScene(); plan = null; }
   });
 
   function init(nyc) { NYC = nyc; if (O() && O().g != null) buildScene(); }
-  return { init, enter, exit, tap, setHQ, hq: () => O() && O().g, active: () => active, ITEMS, ROLES, vibe, hire, candidates, debug: () => ({ plan: plan && { cols: plan.cols, rows: plan.rows, ok: plan.ok.reduce((a, b) => a + b, 0), y: plan.y, cx: plan.cx, cz: plan.cz, a: plan.a, u0: plan.u0, v0: plan.v0, okList: [...plan.ok].map((v, i) => v ? i : -1).filter(i => i >= 0) }, hidden: hiddenThings.length }) };
+  return { init, enter, exit, tap, setHQ, hq: hereHQ, active: () => active, ITEMS, ROLES, vibe, hire, candidates, debug: () => ({ plan: plan && { cols: plan.cols, rows: plan.rows, ok: plan.ok.reduce((a, b) => a + b, 0), y: plan.y, cx: plan.cx, cz: plan.cz, a: plan.a, u0: plan.u0, v0: plan.v0, okList: [...plan.ok].map((v, i) => v ? i : -1).filter(i => i >= 0) }, hidden: hiddenThings.length }) };
 })();

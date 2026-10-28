@@ -86,6 +86,17 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 | Vibe | ✅ plants, coffee, sofas, ping-pong and more raise the office vibe (30 to 100), which sets how fast people work (60% to 140%). A gloomy office makes people quit |
 | Promotions and surprises | ✅ interns can be promoted to employees after 5 days, employees to brokers after 10; staff you can't pay quit; selling the building closes the office |
 
+## Goal 7: more cities ✅
+
+| Check | Result |
+|---|---|
+| Cities on the globe | ✅ New York, London, Tokyo, Hong Kong and Dubai have markers on the zoomed-out map and globe: ● where you are, ✓ open, 🔒 locked. Tap one for its card |
+| Unlock with money | ✅ each city needs a net worth and an opening fee in cash: London $150k / $20k, Tokyo $500k / $60k, Hong Kong $1.2M / $150k, Dubai $3M / $350k. The card shows your progress |
+| Real streets and buildings | ✅ every city is baked from Overture Maps like New York: its own buildings, roads, parks, water and coastline, with its own districts and landmarks labelled |
+| Travel | ✅ "Fly to …" zooms out to the globe and flies you into the new city; the house button flies you home to New York. Cash, shares, loans, buildings and staff go with you |
+| Its own companies | ✅ 4 companies per city (16 more in all) join your Share Exchange when you open a branch; until then they can't be traded |
+| Its own property | ✅ buildings in every city can be bought, rented out and sold, and any of them can become your office |
+
 ## Roadmap
 
 1. ✅ The New York map
@@ -94,7 +105,7 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 4. ✅ Bank loan
 5. ✅ Buy property
 6. ✅ Your office and staff
-7. **More cities:** unlock cities on the globe
+7. ✅ More cities
 8. **App stores:** wrap the game for the App Store and Google Play
 
 ## Putting it online
@@ -130,5 +141,7 @@ npm i world-atlas@2 topojson-client@3
 node -e "const t=require('topojson-client'),w=require('world-atlas/countries-50m.json'),fs=require('fs');fs.writeFileSync('$RAW/countries50.geojson',JSON.stringify(t.feature(w,w.objects.countries)));fs.writeFileSync('$RAW/borders50.geojson',JSON.stringify(t.mesh(w,w.objects.countries,(a,b)=>a!==b)))"
 python3 build_map.py $RAW ../data
 ```
+
+The other cities use the same Overture files (building, building_part, land_use, segments, and a wider land and water box for the coastline) saved in `$RAW/cities/<city>/` as `building.parquet`, `building_part.parquet`, `landuse.parquet`, `segments.parquet`, `region-land.parquet` and `region-water.parquet`. Their boxes are in `CITIES` at the top of `build_map.py`. Bake one city with `python3 build_map.py $RAW ../data london`, or the world map with `... world`.
 
 Map data © OpenStreetMap contributors and Overture Maps Foundation (ODbL / CDLA-Permissive-2.0). Country shapes: Natural Earth (public domain).

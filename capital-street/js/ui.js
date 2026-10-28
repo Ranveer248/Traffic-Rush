@@ -19,7 +19,7 @@
   $('skip').onclick = () => M.skipToOpen();
   function drawBar() {
     const s = S(), st = M.status();
-    $('clock').textContent = `NEW YORK · DAY ${M.day()} · ${hhmm(s.time)}`;
+    $('clock').textContent = `${CITY.name.toUpperCase()} · DAY ${M.day()} · ${hhmm(s.time)}`;
     const m = M.minuteOfDay();
     $('mstat').textContent = st === 'OPEN' ? 'MARKET OPEN' : st === 'HALTED' ? `HALTED ${s.halt}m` : st === 'EVICTED' ? 'EVICTED' : s.closedToday === M.day() ? 'CLOSED TODAY' : m < M.OPEN ? 'PRE-MARKET' : 'MARKET CLOSED';
     $('dot').className = 'dot ' + st.toLowerCase();
@@ -42,7 +42,7 @@
     $('bankSt').textContent = `DAY ${M.day()} · ${hhmm(s.time)}`;
   }
   function drawTape() {
-    const one = M.COMPANIES.map(c => { const ch = dayChange(c.t); return `<span><span class="co">${c.name}</span> ${usd(M.priceOf(c.t))} <i class="${cls(ch)}">${ch >= 0 ? '▲' : '▼'}${Math.abs(ch * 100).toFixed(1)}%</i></span>`; }).join('');
+    const one = M.LISTED().map(c => { const ch = dayChange(c.t); return `<span><span class="co">${c.name}</span> ${usd(M.priceOf(c.t))} <i class="${cls(ch)}">${ch >= 0 ? '▲' : '▼'}${Math.abs(ch * 100).toFixed(1)}%</i></span>`; }).join('');
     $('tape').innerHTML = one + one;
   }
 
@@ -72,7 +72,7 @@
   }
   function drawList() {
     const el = $('list');
-    el.innerHTML = M.COMPANIES.map(c => { const ch = dayChange(c.t); return `<div class="row${c.t === sel ? ' on' : ''}" data-t="${c.t}"><canvas></canvas><div><b>${c.t}</b><span>${c.name}</span></div><div class="px"><b>${usd(M.priceOf(c.t))}</b><span class="${cls(ch)}">${pct(ch)}</span></div></div>`; }).join('');
+    el.innerHTML = M.LISTED().map(c => { const ch = dayChange(c.t); return `<div class="row${c.t === sel ? ' on' : ''}" data-t="${c.t}"><canvas></canvas><div><b>${c.t}</b><span>${c.city === 'nyc' ? '' : CITIES[c.city].flag + ' '}${c.name}</span></div><div class="px"><b>${usd(M.priceOf(c.t))}</b><span class="${cls(ch)}">${pct(ch)}</span></div></div>`; }).join('');
     el.querySelectorAll('.row').forEach(r => { r.onclick = () => choose(r.dataset.t); spark(r.querySelector('canvas'), S().stocks[r.dataset.t].hist.slice(-90)); });
   }
   function seriesFor(t) {
@@ -194,12 +194,16 @@
       ${s.loan ? `<div class="cards" style="margin-top:8px"><div>Shares<b>${usd(M.holdings())}</b></div><div>Loan<b class="dn">-${usd(s.loan.balance)}</b></div><div>Credit<b>${s.credit}</b></div></div>` : ''}
       ${Object.keys(s.props).length ? `<div class="cards" style="margin-top:8px"><div>Shares<b>${usd(M.holdings())}</b></div><div>Property<b>${usd(M.propValue())}</b></div><div>Rent earned<b class="up">${usd(s.rentIncome)}</b></div></div>` : ''}
       <div class="sec">POSITIONS</div>${positionsTable(false)}
-      <div class="sec">PROPERTY</div>${Object.keys(s.props).length ? `<table class="tbl"><tr><th>Building</th><th>Floors</th><th>Paid</th><th>Value</th></tr>${Object.entries(s.props).map(([g, p]) => { const v = p.floors * M.floorValue(p); return `<tr data-g="${g}"><td><b>${p.type}</b><br><span class="note">${p.name}</span></td><td>${p.floors}/${p.totalFloors}</td><td>${usd(p.paid, 0)}</td><td class="${cls(v - p.paid)}">${usd(v, 0)}</td></tr>`; }).join('')}</table>` : '<p class="note">None yet. Tap a building on the map to see its listing.</p>'}
+      <div class="sec">PROPERTY</div>${Object.keys(s.props).length ? `<table class="tbl"><tr><th>Building</th><th>Floors</th><th>Paid</th><th>Value</th></tr>${Object.entries(s.props).map(([g, p]) => { const v = p.floors * M.floorValue(p); return `<tr data-g="${g}"><td><b>${p.type}</b><br><span class="note">${CITIES[Property.cityOf(g)].flag} ${p.name}</span></td><td>${p.floors}/${p.totalFloors}</td><td>${usd(p.paid, 0)}</td><td class="${cls(v - p.paid)}">${usd(v, 0)}</td></tr>`; }).join('')}</table>` : '<p class="note">None yet. Tap a building on the map to see its listing.</p>'}
       <div class="sec">OPEN ORDERS</div>${s.orders.length ? `<table class="tbl"><tr><th>Order</th><th>Shares</th><th>Limit</th><th></th></tr>${s.orders.map(o => `<tr><td class="${o.side === 'buy' ? 'up' : 'dn'}">${o.side.toUpperCase()} ${o.t}</td><td>${o.shares}</td><td>${usd(o.limit)}</td><td><button class="mini" data-cancel="${o.id}">Cancel</button></td></tr>`).join('')}</table>` : '<p class="note">None.</p>'}
       <div class="sec">TRADE HISTORY</div>${s.prints.length ? `<table class="tbl"><tr><th>When</th><th>Trade</th><th>Price</th><th>Total</th></tr>${s.prints.slice(0, 30).map(p => `<tr><td>D${dayOf(p.time)} ${hhmm(p.time)}</td><td class="${p.side === 'buy' ? 'up' : 'dn'}">${p.side.toUpperCase()} ${p.shares} ${p.t}</td><td>${usd(p.price)}</td><td>${usd(p.total)}</td></tr>`).join('')}</table>` : '<p class="note">No trades yet.</p>'}
       <div class="sec">GAME</div><button class="mini" id="newGame">Start a new game</button>`;
     bindPosRows($('pf'));
-    $('pf').querySelectorAll('tr[data-g]').forEach(r => r.onclick = () => { ex.hidden = true; Property.select(+r.dataset.g, true); });
+    $('pf').querySelectorAll('tr[data-g]').forEach(r => r.onclick = () => {
+      const k = r.dataset.g;
+      if (!Property.isHere(k)) { toast(`In ${CITIES[Property.cityOf(k)].name}`, 'Fly there from the globe to see it.'); return; }
+      ex.hidden = true; Property.select(Property.gOf(k), true);
+    });
     $('pf').querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => M.cancelOrder(+b.dataset.cancel));
     $('newGame').onclick = () => { if (confirm('Start over from Day 1? Your trades will be lost.')) { M.reset(); location.reload(); } };
   }

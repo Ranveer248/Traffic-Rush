@@ -44,7 +44,12 @@ window.Property = (function () {
     info$.set(g, it);
     return it;
   }
-  const owned = g => M.state.props[g];
+  // building numbers are per city: New York keeps plain numbers (older saves), other cities are "london:123"
+  const key = g => CITY.id === 'nyc' ? String(g) : CITY.id + ':' + g;
+  const isHere = k => CITY.id === 'nyc' ? !k.includes(':') : k.startsWith(CITY.id + ':');
+  const gOf = k => Number(k.includes(':') ? k.split(':')[1] : k);
+  const cityOf = k => k.includes(':') ? k.split(':')[0] : 'nyc';
+  const owned = g => M.state.props[key(g)];
   const wholePrice = it => it.floors * it.floorPrice * M.state.reIndex * (it.floors > 1 ? 0.95 : 1);
   const perFloor = it => it.floorPrice * M.state.reIndex;
 
@@ -78,13 +83,13 @@ window.Property = (function () {
     scene.add(pickMesh);
   }
   function drawOwned() {
-    const have = new Set(Object.keys(M.state.props).map(Number));
+    const have = new Set(Object.keys(M.state.props).filter(isHere).map(gOf));
     const hq = window.Office ? Office.hq() : null; // no green tint over your office: you look into it from above
     for (const [g, m] of ownMeshes) if (!have.has(g) || g === hq) { scene.remove(m); m.geometry.dispose(); ownMeshes.delete(g); }
     for (const [g, l] of ownLabels) if (!have.has(g)) { l.el.remove(); labels.splice(labels.indexOf(l), 1); ownLabels.delete(g); }
     for (const g of have) {
       if (!groups.has(g)) continue;
-      const it = info(g), p = M.state.props[g];
+      const it = info(g), p = owned(g);
       if (!ownMeshes.has(g) && g !== hq) { const m = new THREE.Mesh(shellGeo(g, 0.25), ownMat); m.renderOrder = 11; scene.add(m); ownMeshes.set(g, m); }
       const txt = (g === hq ? 'YOUR OFFICE' : 'YOURS') + (p.floors >= it.floors ? '' : ` · ${p.floors}/${it.floors} floors`);
       if (!ownLabels.has(g)) { const l = label(txt, 'place mine', [it.x, it.z], it.maxH + 6, 0, 9000); l.el.onclick = () => select(g, true); ownLabels.set(g, l); }
@@ -173,9 +178,9 @@ window.Property = (function () {
     sheet.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => {
       const n = +b.dataset.buy, cost = mine || n === 1 || it.floors === 1 ? n * perFloor(it) : wholePrice(it);
       CSUI.story(`<small>BUY PROPERTY</small><b>${it.type} at ${it.name}</b><p>${n === it.floors ? 'The whole building' : n + ' floor' + (n > 1 ? 's' : '')} for ${usd(cost)}. It earns about ${usd(n * perFloor(it) * M.PROP_YIELD * 7)} a week in rent.</p>`,
-        [['Buy it', () => { const r = M.buyProperty(String(it.g), n, { name: it.name, type: it.type, floorPrice: it.floorPrice, totalFloors: it.floors, x: it.x, z: it.z }); if (!r.ok) toast('Can\'t buy', r.why); drawListing(true); }], ['Not now', () => {}]]);
+        [['Buy it', () => { const r = M.buyProperty(key(it.g), n, { name: it.name, type: it.type, floorPrice: it.floorPrice, totalFloors: it.floors, x: it.x, z: it.z, city: CITY.id }); if (!r.ok) toast('Can\'t buy', r.why); drawListing(true); }], ['Not now', () => {}]]);
     });
-    sheet.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { const r = M.sellProperty(String(it.g), +b.dataset.sell); if (!r.ok) toast('Can\'t sell', r.why); if (selected != null) drawListing(true); });
+    sheet.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { const r = M.sellProperty(key(it.g), +b.dataset.sell); if (!r.ok) toast('Can\'t sell', r.why); if (selected != null) drawListing(true); });
   }
   function tap(ray) {
     const meshes = tiles.filter(t => t.mesh.visible).map(t => t.mesh);
@@ -193,6 +198,7 @@ window.Property = (function () {
   const KINDS = [['all', 'All'], ['homes', 'Homes'], ['shops', 'Shops'], ['offices', 'Offices'], ['towers', 'Towers']];
   const PRICES = [[Infinity, 'Any price'], [10000, 'Under $10k'], [50000, 'Under $50k'], [250000, 'Under $250k'], [1e6, 'Under $1M']];
   function goal() { // the dream: an office on Wall Street, the best-placed office building near it
+    if (CITY.id !== 'nyc') return null;
     let best = null, bd = Infinity;
     for (const g of groups.keys()) {
       const p = pieces[groups.get(g)[0]];
@@ -230,9 +236,10 @@ window.Property = (function () {
       list.sort(sort === 'cheap' ? (a, b) => perFloor(a) - perFloor(b) : (a, b) => b.footprint * b.floors - a.footprint * a.floors);
       html += `<p class="note">${list.length.toLocaleString('en-US')} buildings${inView ? ' in view' : ' in Manhattan'}${list.length > 60 ? ', showing 60' : ''}</p><div class="pgrid">${list.slice(0, 60).map(card).join('')}</div>`;
     } else {
-      const mine = Object.entries(s.props);
+      const all = Object.entries(s.props), mine = all.filter(([k]) => isHere(k)).map(([k, p]) => [gOf(k), p]), away = all.length - mine.length;
       const val = M.propValue(), earned = mine.reduce((a, [, p]) => a + p.earned, 0);
       html += `<div class="cards"><div>Property value<b>${usd(val)}</b></div><div>Rent earned<b class="up">${usd(earned, 2)}</b></div><div>Buildings<b>${mine.length}</b></div></div>`;
+      if (away) html += `<p class="note">+ ${away} building${away > 1 ? 's' : ''} in your other cities (see the portfolio).</p>`;
       html += mine.length ? `<div class="pgrid">${mine.map(([g]) => info(+g)).filter(Boolean).map(card).join('')}</div>` : '<p class="note">You don\'t own any property yet. Tap any building on the map to see its listing.</p>';
     }
     $('propsBody').innerHTML = html;
@@ -260,7 +267,7 @@ window.Property = (function () {
       drawOwned();
       if (d.kind === 'bought') {
         toast('Property bought', `${d.floors} floor${d.floors > 1 ? 's' : ''} for ${usd(d.cost)}. Rent starts tonight.`);
-        const it = info(+d.id);
+        const it = isHere(d.id) ? info(gOf(d.id)) : null;
         if (it && /Office/.test(it.type) && it.wallSt && !M.state.wallOffice) {
           M.state.wallOffice = true; M.save();
           CSUI.story(`<small>MILESTONE</small><b>Your first office on Wall Street.</b><p>A few days ago you were counting coins for rent. Now you have a key to ${it.name}. Next: fill it with desks, screens and people.</p>`, [['Go inside', () => Office.enter()]]);
@@ -284,5 +291,5 @@ window.Property = (function () {
     }
     drawOwned();
   }
-  return { init, tap, select, open, info, goal, deselect, refreshOwned: drawOwned, debug: () => ({ meshes: ownMeshes.size, labels: [...ownLabels.values()].map(l => [l.el.textContent, l.on, l.p.y]) }) };
+  return { init, tap, select, open, info, goal, deselect, refreshOwned: drawOwned, key, isHere, gOf, cityOf, debug: () => ({ meshes: ownMeshes.size, labels: [...ownLabels.values()].map(l => [l.el.textContent, l.on, l.p.y]) }) };
 })();
