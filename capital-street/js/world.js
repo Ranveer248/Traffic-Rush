@@ -69,7 +69,7 @@ window.World = (function () {
     };
     if (CITY.id !== 'nyc') {
       $('play').onclick = arrive;
-      document.querySelector('.card .over').textContent = `${CITY.flag} ${CITY.name.toUpperCase()} BRANCH`;
+      document.querySelector('#title .over').textContent = `${CITY.flag} ${CITY.name.toUpperCase()} BRANCH`;
       $('bHome').onclick = () => { toast('Home', 'Flying back to your apartment in New York.'); travel('nyc'); };
     }
     let flyIn = false;

@@ -272,14 +272,124 @@ body.in-office .lab.mine { display: none !important; } /* inside, the office's o
 /* title card */
 .ov { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 16px; padding-bottom: max(24px, env(safe-area-inset-bottom)); background: linear-gradient(to top, rgba(11, 18, 32, .94), rgba(11, 18, 32, 0) 62%); }
 .ov[hidden] { display: none; }
-.card { width: min(360px, 100%); display: grid; gap: 14px; justify-items: center; text-align: center; }
 .over { font: 800 12px/1 Inter, sans-serif; letter-spacing: .24em; color: var(--green); }
 h1 { margin: 0; font: 400 clamp(44px, 15vw, 58px)/.92 'Archivo Black', sans-serif; text-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
 h1 em { font-style: normal; color: var(--green); }
-.card p { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.4; }
-#play { width: 100%; background: var(--green); color: var(--bg); border: 0; font: 400 24px/1 'Archivo Black', sans-serif; letter-spacing: .04em; padding: 18px; border-radius: var(--r-lg); box-shadow: 0 5px 0 var(--green-deep); }
-#play:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--green-deep); }
-.card small { font-size: 12px; color: var(--dim); }
+/* ---------- PC UI (Goal 10), from the Figma file "Capital Street — PC UI": dark glass panels, a green accent, key hints ---------- */
+:root { --glass: rgba(14, 21, 36, .8); --raised: rgba(26, 35, 54, .92); --line: rgba(255, 255, 255, .1); --line2: rgba(255, 255, 255, .22); --tdim: #9aa6b8; --acc: #2fd06a; --acc-ink: #06210f; }
+.glass2 { background: var(--glass); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+kbd { display: inline-block; min-width: 20px; padding: 3px 6px; border-radius: 6px; background: var(--raised); border: 1px solid var(--line2); font: 700 11px/1.1 Inter, sans-serif; color: #eef2f7; text-align: center; white-space: nowrap; }
+@media (hover: none) { kbd, #keys, #sys { display: none !important; } }
+/* main menu: phones get a centred stack with a big green Play; PCs a left column over the slowly turning city */
+.menu-col { width: min(400px, 100%); display: grid; gap: 18px; }
+.brand { display: grid; gap: 10px; justify-items: center; text-align: center; }
+.tagline { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.45; }
+.menu { display: grid; gap: 6px; }
+.mi { display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px 16px; border-radius: 10px; border: 1px solid transparent; background: none; color: var(--ink); text-align: left; text-decoration: none; }
+.mi[hidden] { display: none; }
+.mi .mk { width: 4px; height: 26px; border-radius: 2px; flex: none; }
+.mi .mt { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.mi b { font: 800 18px/1.15 Inter, sans-serif; }
+.mi small { font: 500 12px/1.3 Inter, sans-serif; color: var(--tdim); }
+.mi kbd { color: var(--tdim); background: none; }
+.mi:hover, .mi.sel, .mi:focus-visible { background: var(--raised); border-color: rgba(47, 208, 106, .55); outline: none; }
+.mi:hover .mk, .mi.sel .mk, .mi:focus-visible .mk { background: var(--acc); }
+.mi.warn small { color: #f87171; }
+.menu-foot { display: grid; gap: 8px; justify-items: center; }
+.menu-foot small { font-size: 12px; color: var(--dim); }
+.menu-foot .legal { margin: 0; }
+#mstatus { display: none; }
+#empire { display: none; }
+@media (max-width: 899px) {
+  #play { justify-content: center; padding: 18px; background: var(--green); color: var(--bg); border: 0; border-radius: var(--r-lg); box-shadow: 0 5px 0 var(--green-deep); }
+  #play .mt { justify-items: center; } #play b { font: 400 24px/1 'Archivo Black', sans-serif; letter-spacing: .04em; } #play .mk, #play kbd { display: none; } #play small { color: rgba(11, 18, 32, .75); text-align: center; }
+  #play:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--green-deep); }
+  .mi:not(#play) { padding: 8px 12px; } .mi:not(#play) b { font-size: 15px; }
+}
+@media (min-width: 900px) {
+  #title.ov { align-items: stretch; justify-content: flex-start; padding: 0; background: linear-gradient(90deg, rgba(11, 18, 32, .95) 0, rgba(11, 18, 32, .78) 34%, rgba(11, 18, 32, 0) 60%); }
+  .menu-col { width: min(600px, 46vw); align-content: center; padding: 48px 0 48px clamp(40px, 6vw, 120px); gap: 32px; }
+  .brand { justify-items: start; text-align: left; } h1 { font-size: clamp(72px, 6.4vw, 104px); } .tagline { max-width: 470px; font-size: 17px; }
+  .mi { padding: 12px 20px; } .mi b { font-size: 22px; } .mi small { font-size: 13px; }
+  .menu-foot { justify-items: start; }
+  #mstatus { display: flex; align-items: center; gap: 8px; position: absolute; top: 56px; right: clamp(24px, 5vw, 96px); padding: 8px 16px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); font: 800 12px/1 Inter, sans-serif; letter-spacing: .06em; }
+  #mstatus .dot { width: 8px; height: 8px; border-radius: 4px; background: var(--acc); box-shadow: 0 0 8px var(--acc); }
+  #empire:not([hidden]) { display: grid; gap: 10px; position: absolute; right: clamp(24px, 5vw, 96px); bottom: clamp(24px, 9vh, 96px); width: 400px; padding: 24px; background: var(--glass); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  #empire small { font: 800 12px/1 Inter, sans-serif; letter-spacing: .16em; color: var(--tdim); }
+  #empire > b { font: 800 44px/1 Inter, sans-serif; } #empire > span { font: 700 14px/1 Inter, sans-serif; } #empire .up { color: #34d399; } #empire .dn { color: #f87171; }
+  #empire .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 6px; }
+  #empire .chips div { padding: 8px 14px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); font: 700 11px/1.2 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--tdim); }
+  #empire .chips b { display: block; margin-top: 2px; font: 800 17px/1.2 Inter, sans-serif; letter-spacing: 0; text-transform: none; color: #fff; }
+}
+/* pause menu and settings */
+.ov2 { position: fixed; inset: 0; z-index: 6; display: grid; place-items: center; padding: 16px; background: rgba(5, 9, 18, .62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.ov2[hidden] { display: none; }
+#settings { z-index: 7; } /* above the pause menu it can be opened from */
+.pcard { width: min(510px, 100%); padding: 24px; display: grid; gap: 8px; }
+.pcard h2, .smodal h2 { margin: 0; font: 400 40px/1 'Archivo Black', sans-serif; }
+.pcard > p { margin: 0 0 12px; color: var(--tdim); font: 500 14px/1.3 Inter, sans-serif; }
+.pcard .legal { margin-top: 8px; }
+.smodal { width: min(1040px, 100%); height: min(720px, calc(100vh - 32px)); display: grid; grid-template-columns: 240px 1fr; overflow: hidden; padding: 0; }
+.stabs { display: grid; align-content: start; gap: 4px; padding: 24px 16px; background: var(--raised); }
+.stabs h2 { font-size: 24px; margin-bottom: 16px; }
+.stabs button { text-align: left; padding: 12px 16px; border-radius: 10px; border: 1px solid transparent; background: none; color: var(--tdim); font: 600 15px/1 Inter, sans-serif; }
+.stabs button.on { color: #fff; font-weight: 800; background: rgba(255, 255, 255, .06); border-color: var(--line); }
+.sbody { display: flex; flex-direction: column; padding: 32px; overflow-y: auto; min-width: 0; }
+.sbody h3 { margin: 0; font: 800 26px/1.2 Inter, sans-serif; } .sbody > p { margin: 4px 0 16px; color: var(--tdim); font: 500 14px/1.3 Inter, sans-serif; }
+.srow { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.srow > div:first-child { display: grid; gap: 2px; } .srow b { font: 700 15px/1.2 Inter, sans-serif; } .srow small { font: 500 12px/1.3 Inter, sans-serif; color: var(--tdim); }
+.seg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--raised); flex: none; }
+.seg button { border: 0; border-radius: 7px; padding: 8px 16px; background: none; color: var(--tdim); font: 700 13px/1 Inter, sans-serif; }
+.seg button.on { background: var(--acc); color: var(--acc-ink); }
+.tog { width: 44px; height: 24px; flex: none; border-radius: 12px; border: 1px solid var(--line2); background: var(--raised); position: relative; padding: 0; }
+.tog::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left .15s; }
+.tog[aria-pressed="true"] { background: var(--acc); border-color: var(--acc); } .tog[aria-pressed="true"]::after { left: 22px; }
+.rng { display: flex; align-items: center; gap: 12px; flex: none; } .rng input { width: 220px; accent-color: var(--acc); } .rng b { min-width: 44px; text-align: right; }
+.sfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 24px; color: var(--tdim); font: 600 13px/1 Inter, sans-serif; }
+.sfoot div { display: flex; gap: 8px; }
+.btn { border-radius: 10px; padding: 12px 24px; font: 800 15px/1 Inter, sans-serif; letter-spacing: .04em; border: 1px solid var(--line); background: none; color: #fff; }
+.btn.pri { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+.keylist { display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; align-items: center; font: 600 14px/1.3 Inter, sans-serif; }
+.keylist > span:nth-child(odd) { display: flex; gap: 4px; }
+.note2 { color: #f5b83d; font: 600 12px/1.3 Inter, sans-serif; }
+@media (max-width: 899px) { .smodal { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .stabs { grid-auto-flow: column; justify-content: start; padding: 12px; } .stabs h2 { display: none; } .sbody { padding: 16px; } .srow { flex-wrap: wrap; } .rng input { width: 160px; } }
+/* HUD bits shared by phones and PCs */
+#bMenu { padding: 2px 5px !important; display: grid; place-content: center; } #bMenu svg.i { width: 12px; height: 12px; }
+#sys, #keys { display: none; }
+.dl { display: none; }
+#fps { position: fixed; z-index: 5; top: calc(max(8px, env(safe-area-inset-top)) + 70px); left: 8px; padding: 6px 12px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); font: 700 12px/1 Inter, sans-serif; color: #34d399; pointer-events: none; }
+#fps[hidden] { display: none; } #fps.mid { color: #f5b83d; } #fps.low { color: #f87171; }
+/* PC: a clock bar at top left, money chips at the top centre, system buttons at top right, a labelled dock, panels docked on the right */
+@media (min-width: 1100px) and (hover: hover) {
+  #bMenu { display: none !important; }
+  #bar { left: 24px; top: 24px; transform: none; gap: 12px; padding: 9px 16px; border-radius: 999px; background: var(--glass); border-color: var(--line); font-size: 13px; letter-spacing: .06em; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  #bar button { padding: 5px 10px; border-radius: 7px; font-size: 12px; }
+  #money { top: 24px; gap: 8px; }
+  #money div { display: grid; gap: 2px; padding: 8px 16px; border-radius: 10px; background: var(--glass); border-color: var(--line); font: 700 11px/1.2 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--tdim); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+  #money b { font: 800 18px/1.2 Inter, sans-serif; letter-spacing: 0; text-transform: none; }
+  #sys { display: flex; gap: 8px; position: absolute; top: 28px; right: 24px; pointer-events: auto; }
+  #sys button { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); color: #fff; }
+  #sys svg.i { width: 18px; height: 18px; }
+  #fps { top: 30px; right: 220px; left: auto; }
+  #dock { gap: 22px; padding: 10px 24px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); bottom: 56px; align-items: center; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); transition: left .3s; }
+  body.drawer #dock { left: calc((100vw - var(--drawer-w, 0px)) / 2); }
+  body.drawer #keys { display: none; } /* the dock moves over it */
+  #dock .dk, #dock .avatar { display: grid; justify-items: center; gap: 6px; width: auto; height: auto; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; filter: none; }
+  #dock .dk svg.i { box-sizing: content-box; width: 22px; height: 22px; padding: 14px; border-radius: 50%; background: var(--raised); border: 1px solid var(--line2); }
+  #dock .dk:hover svg.i, #dock .dk.on svg.i { background: var(--acc); color: var(--acc-ink); border-color: var(--acc); }
+  #dock .avatar svg { width: 34px; height: 52px; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .45)); }
+  .dl { display: flex; align-items: center; gap: 5px; font: 600 11px/1 Inter, sans-serif; color: var(--tdim); }
+  .dl kbd { min-width: 16px; padding: 2px 4px; font-size: 10px; }
+  #ticker { height: 32px; } #tape { font-size: 12px; line-height: 32px; }
+  #hint { display: none; }
+  #keys { display: flex; align-items: center; gap: 5px; position: absolute; left: 24px; bottom: 56px; padding: 9px 16px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); font: 600 12px/1 Inter, sans-serif; color: var(--tdim); transition: opacity .6s; }
+  #keys kbd { margin-left: 3px; }
+  #ex { inset: 92px 24px 48px auto; transform: none; width: min(1100px, 62vw); }
+  #bank, #props { inset: 92px 24px 48px auto; transform: none; width: 520px; }
+  #listing, #cityCard { left: auto; right: 24px; bottom: 48px; width: 420px; }
+  #ostaff { left: auto; right: 24px; top: 92px; bottom: 120px; width: 440px; }
+  #breaking { top: 96px; }
+}
 #load { position: fixed; inset: 0; display: grid; place-content: center; gap: 8px; text-align: center; background: var(--bg); font: 400 22px/1.2 'Archivo Black', sans-serif; }
 #load[hidden] { display: none; }
 #load small { font: 600 13px/1.3 Inter, sans-serif; color: var(--dim); }
@@ -303,23 +413,29 @@ h1 em { font-style: normal; color: var(--green); }
   <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7 9h7M7 12h7M7 15h4"/></symbol>
   <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></symbol>
   <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
 </svg>
 <canvas id="c"></canvas>
 <div id="labels"></div>
 <div id="hud" hidden>
-  <div id="bar"><span class="dot" id="dot"></span><span id="clock">NEW YORK · DAY 1 · 09:28</span><b id="mstat">PRE-MARKET</b><button id="speed" aria-label="Game speed">1×</button><button id="skip" hidden>Skip to open ▸</button></div>
+  <div id="bar"><span class="dot" id="dot"></span><span id="clock">NEW YORK · DAY 1 · 09:28</span><b id="mstat">PRE-MARKET</b><button id="speed" aria-label="Game speed">1×</button><button id="skip" hidden>Skip to open ▸</button><button id="bMenu" aria-label="Menu"><svg class="i"><use href="#i-pause"/></svg></button></div>
+  <div id="sys"><button id="bSettings" aria-label="Settings"><svg class="i"><use href="#i-gear"/></svg><kbd>F10</kbd></button><button id="bPause" aria-label="Pause menu"><svg class="i"><use href="#i-pause"/></svg><kbd>Esc</kbd></button></div>
   <div id="money"><div>Cash <b id="cashV">$0</b></div><div>Worth <b id="worthV">$0</b></div><div class="rent" id="rentBox">Rent <b id="rentV">-</b></div><div class="debt" id="debtBox" hidden>Loan <b id="debtV">-</b></div></div>
   <div id="dock">
-    <button id="bBank" class="dk" aria-label="Big Apple Bank"><svg class="i"><use href="#i-bank"/></svg></button>
-    <button id="bExchange" class="dk" aria-label="Share exchange"><svg class="i"><use href="#i-chart"/></svg></button>
-    <button id="bHome" class="avatar" aria-label="Your apartment"><svg viewBox="0 0 40 64"><use href="#i-avatar"/></svg></button>
-    <button id="bProps" class="dk" aria-label="Property"><svg class="i"><use href="#i-key"/></svg></button>
-    <button id="bOffice" class="dk" aria-label="Your office"><svg class="i"><use href="#i-brief"/></svg></button>
+    <button id="bBank" class="dk" aria-label="Big Apple Bank"><svg class="i"><use href="#i-bank"/></svg><span class="dl">Bank<kbd>B</kbd></span></button>
+    <button id="bExchange" class="dk" aria-label="Share exchange"><svg class="i"><use href="#i-chart"/></svg><span class="dl">Exchange<kbd>X</kbd></span></button>
+    <button id="bHome" class="avatar" aria-label="Your apartment"><svg viewBox="0 0 40 64"><use href="#i-avatar"/></svg><span class="dl">Home<kbd>H</kbd></span></button>
+    <button id="bProps" class="dk" aria-label="Property"><svg class="i"><use href="#i-key"/></svg><span class="dl">Property<kbd>P</kbd></span></button>
+    <button id="bOffice" class="dk" aria-label="Your office"><svg class="i"><use href="#i-brief"/></svg><span class="dl">Office<kbd>O</kbd></span></button>
+    <button id="bWorld" class="dk" aria-label="World map"><svg class="i"><use href="#i-globe"/></svg><span class="dl">World<kbd>M</kbd></span></button>
   </div>
   <div id="ticker"><div id="tape"></div></div>
   <div id="hint" class="glass"></div>
+  <div id="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move <kbd>Q</kbd><kbd>E</kbd> turn <kbd>R</kbd><kbd>F</kbd> zoom <kbd>Space</kbd> pause time <kbd>?</kbd> all keys</div>
 </div>
+<div id="fps" hidden>60 FPS</div>
 <div id="toast" class="glass"><div class="badge"><svg class="i"><use href="#i-lock"/></svg></div><div><b id="toastT">Locked</b><span id="toastB">Only New York is open. More cities in a future update.</span></div></div>
 <div id="big"></div>
 <div id="breaking"><small id="brkK">BREAKING NEWS</small><b id="brkT"></b><span id="brkB"></span><button id="brkGo" hidden>Look</button></div>
@@ -354,14 +470,26 @@ h1 em { font-style: normal; color: var(--green); }
 </div>
 <div id="story" hidden><div class="box" id="storyBox"></div></div>
 <div id="title" class="ov" hidden>
-  <div class="card">
-    <div class="over">A WALL STREET STORY</div>
-    <h1>CAPITAL<br><em>STREET</em></h1>
-    <p>You live alone in a tiny New York apartment and the rent is due. You just found some cash. Trade it into a fortune.</p>
-    <button id="play">PLAY</button>
-    <small>Paper trading · fictional companies · anything can happen</small>
-    <nav class="legal"><a href="terms.html" target="_blank" rel="noopener">Terms</a><a href="privacy.html" target="_blank" rel="noopener">Privacy</a><a href="credits.html" target="_blank" rel="noopener">Credits</a></nav>
+  <div class="menu-col">
+    <div class="brand">
+      <div class="over">A WALL STREET STORY</div>
+      <h1>CAPITAL<br><em>STREET</em></h1>
+      <p class="tagline">You live alone in a tiny New York apartment and the rent is due. You just found some cash. Trade it into a fortune.</p>
+    </div>
+    <nav class="menu" aria-label="Main menu">
+      <button id="play" class="mi sel"><span class="mk"></span><span class="mt"><b id="playT">Play</b><small id="playD">Rent is due in 3 days</small></span><kbd>Enter</kbd></button>
+      <button id="mNew" class="mi" hidden><span class="mk"></span><span class="mt"><b>New game</b><small id="newD">Start over from day 1</small></span><kbd>N</kbd></button>
+      <button id="mWorld" class="mi"><span class="mk"></span><span class="mt"><b>World</b><small id="worldD">Your cities on the globe</small></span><kbd>M</kbd></button>
+      <button id="mSettings" class="mi"><span class="mk"></span><span class="mt"><b>Settings</b><small>Graphics and controls</small></span><kbd>S</kbd></button>
+      <a id="mCredits" class="mi" href="credits.html" target="_blank" rel="noopener"><span class="mk"></span><span class="mt"><b>Credits</b></span><kbd>C</kbd></a>
+    </nav>
+    <div class="menu-foot">
+      <nav class="legal"><a href="terms.html" target="_blank" rel="noopener">Terms</a><a href="privacy.html" target="_blank" rel="noopener">Privacy</a><a href="credits.html" target="_blank" rel="noopener">Credits</a></nav>
+      <small>Paper trading · fictional companies · anything can happen</small>
+    </div>
   </div>
+  <div id="mstatus"><span class="dot"></span><span id="mstatusT">NEW YORK</span></div>
+  <div id="empire" hidden><small>YOUR EMPIRE</small><b id="empW">$0</b><span id="empD"></span><div class="chips"><div>Cash<b id="empC">$0</b></div><div>Buildings<b id="empB">0</b></div><div>Staff<b id="empS">0</b></div></div></div>
 </div>
 <div id="load">Loading New York…<small id="loadMsg">Fetching 56,000 real buildings</small></div>
 
@@ -418,13 +546,18 @@ function polyGeo(d, name) {
 
 // ---------- renderer, scene, camera ----------
 const canvas = document.getElementById('c');
+// Graphics settings (the Settings screen is in js/pc.js). Read before the renderer exists: anti-aliasing can't change later.
+const GFX_DEFAULT = { preset: 'high', cap: 2, scale: 1, auto: true, fpsCap: 60, shadows: 'high', aa: true, detail: 'high', showFps: false };
+const GFX = (() => { try { return Object.assign({}, GFX_DEFAULT, JSON.parse(localStorage.getItem('cs-gfx') || '{}')); } catch (e) { return Object.assign({}, GFX_DEFAULT); } })();
+let dynScale = 1; // lowered by "keep 60 fps automatically" when the city gets busy
+const pixelRatio = () => Math.max(0.5, Math.min(devicePixelRatio, GFX.cap) * GFX.scale * dynScale);
 // High-end graphics: physically based materials, filmic tone mapping, sky reflections and real-time sun shadows.
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 3)); // high-end devices: full retina so window grids stay crisp
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: GFX.aa, powerPreference: 'high-performance' });
+renderer.setPixelRatio(pixelRatio());
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.85;
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = GFX.shadows !== 'off';
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
 const OCEAN = 0x2b84c4, LAND = 0x64a04b, HORIZON = 0xd4e4f1, ZENITH = 0x5d9bd6, PAVEMENT = 0x7fb95c, ASPHALT = 0x3e4046, SIDEWALK = 0xcfc8b6; // green lots and beige sidewalks, like the reference // land and sea as on the reference world map
@@ -456,7 +589,7 @@ scene.add(new THREE.HemisphereLight(lin(0xdfeaff), lin(0x4d463e), 0.3));
 const SUN_DIR = new THREE.Vector3(-0.6, 0.5, 0.55).normalize(); // a lower, warmer sun for long shadows
 const sunLight = new THREE.DirectionalLight(lin(0xffeccc), 3.0);
 sunLight.castShadow = true;
-sunLight.shadow.mapSize.set(4096, 4096);
+sunLight.shadow.mapSize.setScalar(GFX.shadows === 'low' ? 2048 : 4096);
 sunLight.shadow.bias = -0.0004;
 sunLight.shadow.camera.near = 10; sunLight.shadow.camera.far = 12000;
 scene.add(sunLight, sunLight.target);
@@ -1039,6 +1172,7 @@ function resize() {
 }
 const cityGrey = lin(PAVEMENT), cityGreen = lin(LAND);
 function frame(now) {
+  if (GFX.fpsCap && now - last < 1000 / GFX.fpsCap - 2) { requestAnimationFrame(frame); return; } // the frame-rate limit in Settings
   const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
   resize();
   if (fly) flyStep(dt);
@@ -1061,10 +1195,11 @@ function frame(now) {
   const sink = 1 - Math.min(1, Math.max(0, Math.log(dist / 6000) / Math.log(70000 / 6000)));
   const hs = Math.max(0.01, sink * sink * (3 - 2 * sink));
   for (const t of tiles) { t.mesh.visible = dist < (t.tall ? 120000 : 40000); t.mesh.scale.y = hs; }
-  for (const t of cityTiles) { t.mesh.visible = dist < (t.kind === 'marks' ? 3000 : t.kind === 'detail' ? 2500 : t.kind === 'crown' ? 6000 : 40000); if (t.kind === 'roof') t.mesh.scale.y = hs; } // crowns go before the city starts sinking at 6 km
+  const lowDetail = GFX.detail === 'low'; // Settings: building detail
+  for (const t of cityTiles) { t.mesh.visible = dist < (t.kind === 'marks' ? 3000 : t.kind === 'detail' ? (lowDetail ? 0 : 2500) : t.kind === 'crown' ? (lowDetail ? 0 : 6000) : 40000); if (t.kind === 'roof') t.mesh.scale.y = hs; } // crowns go before the city starts sinking at 6 km
   for (const f of frameHooks) f(dt, dist);
-  for (const t of trees) t.visible = dist < 4500;
-  for (const t of roofThings) t.visible = dist < 3500;
+  for (const t of trees) t.visible = dist < (lowDetail ? 1500 : 4500);
+  for (const t of roofThings) t.visible = !lowDetail && dist < 3500;
   if (streetLabels) { streetLabels.visible = dist < 2600; streetLabels.material.uniforms.fade.value = 1 - Math.max(0, (dist - 1800) / 800); }
   if (borders) {
     renderer.getDrawingBufferSize(borders.material.uniforms.res.value);
@@ -1115,16 +1250,18 @@ document.getElementById('hint').textContent = touch ? 'Drag to move · Pinch to 
 document.getElementById('bHome').onclick = () => flyTo(V.home());
 // the map button flips between the world and your apartment
 document.getElementById('bOffice').onclick = () => Office.active() ? Office.exit() : Office.enter();
-document.getElementById('play').onclick = () => {
+// into the game from the menu: fly somewhere (your apartment by default), then show the HUD
+function startGame(to = view(PLACE.home, 70, 0.55, AZ, homeTop), msg = window.Market && Market.state.started ? '' : 'WHERE YOU START') {
   document.getElementById('title').hidden = true;
-  flyTo(view(PLACE.home, 70, 0.55, AZ, homeTop), 5, () => {
-    shout('WHERE YOU START');
+  flyTo(to, 5, () => {
+    if (msg) shout(msg);
     document.getElementById('hud').hidden = false;
     setTimeout(() => { document.getElementById('hint').style.opacity = 0; }, 6000);
     setTimeout(() => window.CSUI && CSUI.intro(), 2200);
   });
   homeLabel.hidden = false;
-};
+}
+document.getElementById('play').onclick = () => startGame();
 
 (async () => {
   try {
@@ -1180,7 +1317,7 @@ document.getElementById('play').onclick = () => {
   controls.update();
   document.getElementById('load').hidden = true;
   document.getElementById('title').hidden = false;
-  window.CS = { scene, renderer, tiles, flyTo, view, V, PLACE, current, place, ll, borders, home: () => [homeTop, homeAngle],
+  window.CS = { scene, renderer, tiles, flyTo, view, V, PLACE, current, place, ll, borders, startGame, home: () => [homeTop, homeAngle],
     smoke() { const mid = towers.filter(t => Math.hypot(t[0], t[1]) < 2500), t = (mid.length ? mid : towers)[Math.floor(Math.random() * (mid.length || towers.length))]; smokeAt(t[0], t[1], t[2]); return [t[0], t[1]]; } }; // handy for testing in the console
   requestAnimationFrame(frame);
   // installable app: works offline after the first visit
@@ -1192,6 +1329,7 @@ document.getElementById('play').onclick = () => {
 <script src="js/property.js"></script>
 <script src="js/office.js"></script>
 <script src="js/world.js"></script>
+<script src="js/pc.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

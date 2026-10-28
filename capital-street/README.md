@@ -122,6 +122,20 @@ From the first new reference video ("every building looks like the place it's bu
 | Factories | ✅ sawtooth roofs with rows of north-light windows on big factories and warehouses (129 in New York, 148 in London) |
 | No frame-rate loss | ✅ by draw calls and triangles, measured at the same views before and after: city view 605 draw calls and 4.5M triangles (before: 509 and 4.1M), street view 591 and 7.7M (before: 1,642 and 7.8M). All rooftop things and crowns are now drawn in one batch per kind, and crowns hide before the city sinks into the map. Frame times on this cloud machine's software renderer swing by ±50% between runs, so the heavier facade shader still needs a look on a real PC |
 
+## Goal 10: PC-first, smooth, and a proper main menu ✅
+
+Designed first in Figma ([Capital Street — PC UI](https://www.figma.com/design/U7FfBzmGHr4QYbCReSROtb)): colour, spacing and radius tokens, reusable components (buttons, menu items, stat chips, dock buttons, key caps, toggles, segmented controls) and four 1920×1080 screens: main menu, in-game HUD, settings and pause. Dark glass panels over the city, one green accent, and the keyboard shortcut shown next to everything, like current PC simulators.
+
+| Check | Result |
+|---|---|
+| Main menu | ✅ a left column (title, Play or Continue with your day, city and net worth, New game, World, Settings, Credits) over the city turning slowly behind it; on PC a "Your empire" card and the market status; arrow keys, Enter and each item's letter work; New game asks twice before erasing a save |
+| PC layout | ✅ clock bar top left, money chips top centre, settings and pause buttons top right, a labelled dock with each key (B, X, H, P, O, M), panels docked on the right so the city stays in view, and the dock slides into the visible part of the city |
+| Mouse and keyboard | ✅ W A S D or arrows move, Q E turn, R F zoom, Shift goes faster, Space pauses time, 1 2 3 set the speed, Esc closes a panel or opens the pause menu, F10 settings, F3 frame rate, ? lists every key |
+| Pause menu | ✅ Resume, Settings, World map, Save and quit to menu; time stops while it's open, and in the main menu |
+| Graphics settings | ✅ presets (Low, Medium, High, Ultra), resolution scale, frame-rate limit (30, 60, 120, Max), sun shadows (Off, Low, High), anti-aliasing, building detail, frame-rate counter; saved on the device |
+| Smooth | ✅ "Keep 60 fps automatically" lowers the resolution 10% after 2 slow seconds and raises it again after 5 smooth ones (tested: on this slow cloud machine it stepped down by itself) |
+| Phones still work | ✅ the same menu as a stack with a big green Play, a pause button in the clock bar, no key hints on touch screens |
+
 ## Roadmap
 
 1. ✅ The New York map
@@ -138,7 +152,7 @@ From the first new reference video ("every building looks like the place it's bu
 From the 5 new reference videos (a player-run economy game on the real world map). We build the same kind of game, better, one goal at a time, with our own name, art and code (see Legal below).
 
 9. ✅ **Buildings that look like where they're built:** house, terrace, apartments, shop, office, tower, factory, church; each city's own style; 12 facade materials; attics, chimneys, solar panels, domes, battlements, sawtooth factory roofs, shopfronts
-10. **PC-first and smooth:** a perfect main menu and HUD designed in Figma from trending simulator UIs, mouse and keyboard controls, graphics settings, 60 fps
+10. ✅ **PC-first and smooth:** a perfect main menu and HUD designed in Figma from trending simulator UIs, mouse and keyboard controls, graphics settings, 60 fps
 11. **Multiplayer:** accounts and one shared world; everyone sees who owns what; chat
 12. **Real land and buildings for everyone:** land plots on the map; a Zillow-style property market with photos, filters and auctions with max bids; everything for sale lights up
 13. **Businesses:** farms, mines, oil rigs and shops on your land; NPC income that rewards setup cost and effort without inflating the economy

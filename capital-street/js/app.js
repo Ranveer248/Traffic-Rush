@@ -9,6 +9,8 @@
   if (!P.App) return;
   P.App.addListener('pause', () => window.Market && Market.save());
   P.App.addListener('backButton', () => {
+    if (window.PC && !$('settings').hidden) { PC.closeSettings(); return; }
+    if (window.PC && !$('pause').hidden) { PC.closePause(); return; }
     for (const id of ['listing', 'cityCard', 'ostaff', 'otray', 'props', 'bank', 'ex']) if ($(id) && !$(id).hidden) { $(id).hidden = true; return; }
     if (window.Office && Office.active()) { $('oDone').click(); return; }
     if (window.Market) Market.save();

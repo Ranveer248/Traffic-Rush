@@ -14,14 +14,15 @@
 
   // ---------- banner, money, ticker ----------
   const speeds = [1, 5, 20];
-  let speed = 1;
-  $('speed').onclick = () => { speed = speeds[(speeds.indexOf(speed) + 1) % speeds.length]; $('speed').textContent = speed + '×'; };
+  let speed = 1, paused = false; // paused: Space, or the pause menu (js/pc.js)
+  const setSpeed = v => { speed = v; paused = false; $('speed').textContent = speed + '×'; drawBar(); };
+  $('speed').onclick = () => setSpeed(speeds[(speeds.indexOf(speed) + 1) % speeds.length]);
   $('skip').onclick = () => M.skipToOpen();
   function drawBar() {
     const s = S(), st = M.status();
     $('clock').textContent = `${CITY.name.toUpperCase()} · DAY ${M.day()} · ${hhmm(s.time)}`;
     const m = M.minuteOfDay();
-    $('mstat').textContent = st === 'OPEN' ? 'MARKET OPEN' : st === 'HALTED' ? `HALTED ${s.halt}m` : st === 'EVICTED' ? 'EVICTED' : s.closedToday === M.day() ? 'CLOSED TODAY' : m < M.OPEN ? 'PRE-MARKET' : 'MARKET CLOSED';
+    $('mstat').textContent = paused ? 'PAUSED' : st === 'OPEN' ? 'MARKET OPEN' : st === 'HALTED' ? `HALTED ${s.halt}m` : st === 'EVICTED' ? 'EVICTED' : s.closedToday === M.day() ? 'CLOSED TODAY' : m < M.OPEN ? 'PRE-MARKET' : 'MARKET CLOSED';
     $('dot').className = 'dot ' + st.toLowerCase();
     $('skip').hidden = st !== 'CLOSED' || !s.started;
     $('cashV').textContent = usd(s.cash);
@@ -354,7 +355,7 @@
   let last = performance.now(), redraw = 0, early = false;
   function loop(now) {
     const dt = Math.min(0.25, (now - last) / 1000); last = now;
-    M.step(dt, speed);
+    M.step(dt, paused || !$('title').hidden ? 0 : speed); // time stands still in menus
     // the first morning always brings some news, so you see that anything can happen
     if (!early && S().started && M.day() === 1 && M.minuteOfDay() >= M.OPEN + 25 && !S().news.length) { early = true; M.triggerEvent('earnings'); }
     if ((redraw += dt) > 1) { redraw = 0; drawBar(); drawTape(); tickBank(); if (!ex.hidden) { if (tab === 'companies') { drawList(); drawDetail(); const q = $('qty'); if (!q || document.activeElement !== q) drawTicket(true); } else drawAll(true); } }
@@ -362,5 +363,6 @@
   }
   drawBar(); drawTape();
   requestAnimationFrame(loop);
-  window.CSUI = { intro, openEx, openBank, story, breaking };
+  window.CSUI = { intro, openEx, openBank, story, breaking, speeds, setSpeed, speed: () => speed,
+    paused: () => paused, setPaused(v) { paused = v; drawBar(); } };
 })();
