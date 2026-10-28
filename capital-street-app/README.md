@@ -48,7 +48,7 @@ npm run assets    # after changing assets/*.png: regenerates every icon and spla
 5. Re-run the workflow. The **ios** job archives, signs and uploads the build to App Store Connect. It shows up in **TestFlight** after Apple processes it (10 to 30 minutes), so you can install it on your iPhone with the TestFlight app.
 6. Fill in the listing and screenshots, then submit for review.
 
-The signed Android bundle and the App Store upload are wired up but have only run once the secrets exist. If one fails, the log in the Actions run says why.
+The signed Android bundle and the App Store upload are wired up but have not run yet: they start once the secrets exist. If one fails, the log in the Actions run says why.
 
 ## Store listing
 

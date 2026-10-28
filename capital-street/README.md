@@ -97,6 +97,16 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 | Its own companies | ✅ 4 companies per city (16 more in all) join your Share Exchange when you open a branch; until then they can't be traded |
 | Its own property | ✅ buildings in every city can be bought, rented out and sold, and any of them can become your office |
 
+## Goal 8: the app ✅ (store upload waits on your developer accounts)
+
+| Check | Result |
+|---|---|
+| Works offline | ✅ three.js and the fonts are now inside the game (`lib/`, `fonts/`) instead of loaded from the internet. Tested with every outside request blocked: the game loads with no errors |
+| Android app | ✅ `capital-street-app/` wraps the game with Capacitor. GitHub Actions builds an installable APK on every change (first run: 17.5 MB, all five cities inside) |
+| iPhone app | ✅ the Xcode project builds on GitHub's Mac runner (Xcode 26.6, passes Apple's store validation step) |
+| Feels like an app | ✅ own icon and splash screen, portrait only, no status bar, Android back button closes the open panel, the game saves when you leave the app |
+| Store ready | ✅ privacy policy (`privacy.html`), store listing text, and the signing and upload steps are wired into the build. They switch on once you add your Google Play and Apple keys as GitHub secrets: see `capital-street-app/README.md` |
+
 ## Roadmap
 
 1. ✅ The New York map
@@ -106,7 +116,7 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 5. ✅ Buy property
 6. ✅ Your office and staff
 7. ✅ More cities
-8. **App stores:** wrap the game for the App Store and Google Play
+8. ✅ The app (Android and iPhone builds; publishing needs your store accounts)
 
 ## Putting it online
 
@@ -115,7 +125,7 @@ The game is a static website, so it can be hosted anywhere that serves files:
 - **GitHub Pages (free, already used by this repo):** merge this branch into `main`, then in the repo go to Settings → Pages → Deploy from branch → `main` / root. The game is at `https://ranveer248.github.io/<repo-name>/capital-street/` (the repo is now named `Traffic-Rush`).
 - **Its own address:** a new repo just for Capital Street gives `https://ranveer248.github.io/capital-street/`. Netlify or Cloudflare Pages work too: drag in the `capital-street` folder.
 - **As an app:** open the site on a phone and choose "Add to Home Screen". It installs full-screen with its own icon.
-- **App Store / Google Play:** wrap the same files with Capacitor. This needs an Apple developer account ($99 a year) and a Google Play account ($25 once).
+- **App Store / Google Play:** done with Capacitor in `capital-street-app/`. GitHub Actions builds the apps; publishing needs an Apple developer account ($99 a year) and a Google Play account ($25 once). Step-by-step: `capital-street-app/README.md`.
 
 ## Map data
 
@@ -144,4 +154,4 @@ python3 build_map.py $RAW ../data
 
 The other cities use the same Overture files (building, building_part, land_use, segments, and a wider land and water box for the coastline) saved in `$RAW/cities/<city>/` as `building.parquet`, `building_part.parquet`, `landuse.parquet`, `segments.parquet`, `region-land.parquet` and `region-water.parquet`. Their boxes are in `CITIES` at the top of `build_map.py`. Bake one city with `python3 build_map.py $RAW ../data london`, or the world map with `... world`.
 
-Map data © OpenStreetMap contributors and Overture Maps Foundation (ODbL / CDLA-Permissive-2.0). Country shapes: Natural Earth (public domain).
+Map data © OpenStreetMap contributors and Overture Maps Foundation (ODbL / CDLA-Permissive-2.0). Country shapes: Natural Earth (public domain). three.js: MIT licence (`lib/three-LICENSE.txt`). Fonts: Inter and Archivo Black, SIL Open Font License.
