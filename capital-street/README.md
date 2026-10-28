@@ -107,6 +107,21 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 | Feels like an app | ✅ own icon and splash screen, portrait only, no status bar, Android back button closes the open panel, the game saves when you leave the app |
 | Store ready | ✅ privacy policy (`privacy.html`), store listing text, and the signing and upload steps are wired into the build. They switch on once you add your Google Play and Apple keys as GitHub secrets: see `capital-street-app/README.md` |
 
+## Goal 9: buildings that look like where they're built ✅
+
+From the first new reference video ("every building looks like the place it's built in").
+
+| Check | Result |
+|---|---|
+| Every building has a type | ✅ house, terraced house, apartments, shop, office, tower, factory or landmark, worked out from the map's own tags, the 550,000 real places in the five cities (shops, restaurants, offices, factories, churches, schools) that fall inside each building and the building's size and shape. New York: 1,415 houses, 23,914 terraced and walk-up buildings, 15,945 apartment buildings, 4,500 office buildings, 468 factories, 2,387 landmarks |
+| 12 materials | ✅ red brick, brownstone, yellow brick, grey stone, limestone, white stucco, painted plaster, timber frame, concrete, glass, wood siding and ribbed metal. Up close the shader draws brick courses, stone blocks, oak beams, boards and ribs |
+| Each type looks different | ✅ houses get front doors and small framed windows, terraces tall narrow windows, offices window bands, towers glass or stone piers, landmarks tall arched windows, factories a strip of high windows and loading doors, shops display windows under coloured or striped awnings |
+| Each city has its own style | ✅ New York brownstones, brick walk-ups and water towers; London yellow-brick and white-stucco terraces under slate with rows of chimneys; Tokyo concrete and plaster with dark tile and blue metal roofs; Hong Kong concrete towers; Dubai sandstone and white stucco with domes |
+| Attics, chimneys, solar panels | ✅ pitched roofs get attic dormers along both slopes and an attic window in each gable; chimneys on the ridge; solar panels on sunny slopes and in rows on flat roofs |
+| Domes, spires, battlements | ✅ domes with a drum and lantern (copper, gold or stone) on churches, mosques, civic buildings and some towers; spires on churches; castle battlements on old stone landmarks. New York: 328 domes, 362 spires, 201 battlemented roofs |
+| Factories | ✅ sawtooth roofs with rows of north-light windows on big factories and warehouses (129 in New York, 148 in London) |
+| No frame-rate loss | ✅ by draw calls and triangles, measured at the same views before and after: city view 605 draw calls and 4.5M triangles (before: 509 and 4.1M), street view 591 and 7.7M (before: 1,642 and 7.8M). All rooftop things and crowns are now drawn in one batch per kind, and crowns hide before the city sinks into the map. Frame times on this cloud machine's software renderer swing by ±50% between runs, so the heavier facade shader still needs a look on a real PC |
+
 ## Roadmap
 
 1. ✅ The New York map
@@ -118,6 +133,32 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 7. ✅ More cities
 8. ✅ The app (Android and iPhone builds; publishing needs your store accounts)
 
+### Phase 2: a player-run world, on PC, multiplayer
+
+From the 5 new reference videos (a player-run economy game on the real world map). We build the same kind of game, better, one goal at a time, with our own name, art and code (see Legal below).
+
+9. ✅ **Buildings that look like where they're built:** house, terrace, apartments, shop, office, tower, factory, church; each city's own style; 12 facade materials; attics, chimneys, solar panels, domes, battlements, sawtooth factory roofs, shopfronts
+10. **PC-first and smooth:** a perfect main menu and HUD designed in Figma from trending simulator UIs, mouse and keyboard controls, graphics settings, 60 fps
+11. **Multiplayer:** accounts and one shared world; everyone sees who owns what; chat
+12. **Real land and buildings for everyone:** land plots on the map; a Zillow-style property market with photos, filters and auctions with max bids; everything for sale lights up
+13. **Businesses:** farms, mines, oil rigs and shops on your land; NPC income that rewards setup cost and effort without inflating the economy
+14. **Player-set markets:** an item exchange where players set every price; production chains from raw resources to finished goods; a factory planner
+15. **Inside buildings:** rooms, furniture, renting rooms to players and NPCs, extensions and basements, temperature (heat from machines, cooling, happy tenants and workers)
+16. **Companies and the stock market:** start a company, take it public, players trade its shares
+17. **Logistics:** ports, ships and trucks moving goods between cities
+18. **Wiki, changelog and community**
+19. **Launch on PC:** hosting for a game of any size, then a desktop download (Steam / itch.io)
+
+## Legal
+
+Not legal advice: have a lawyer read these before a paid launch.
+
+- [Terms of Service](terms.html): game money has no real value, no real-money trading, nothing is financial advice, real places appear only as a map and their owners aren't connected to the game, fair-play and chat rules, the game is our own work and not connected to any other game, takedown contact.
+- [Privacy Policy](privacy.html): the game collects nothing today; it will be updated before multiplayer accounts go live.
+- [Credits](credits.html): every outside source and its licence (OpenStreetMap ODbL attribution, Overture, Natural Earth, three.js MIT, fonts OFL, Capacitor MIT).
+- Linked from the title screen.
+- How we avoid copying the reference game: we build the same *kind* of game (game ideas and mechanics can't be owned), but never use its name, logo, art, text, UI layouts or code. Our name, buildings, characters, companies and UI are our own. Real company names and logos stay out of the game.
+
 ## Putting it online
 
 The game is a static website, so it can be hosted anywhere that serves files:
@@ -125,6 +166,8 @@ The game is a static website, so it can be hosted anywhere that serves files:
 - **GitHub Pages (free, already used by this repo):** merge this branch into `main`, then in the repo go to Settings → Pages → Deploy from branch → `main` / root. The game is at `https://ranveer248.github.io/<repo-name>/capital-street/` (the repo is now named `Traffic-Rush`).
 - **Its own address:** a new repo just for Capital Street gives `https://ranveer248.github.io/capital-street/`. Netlify or Cloudflare Pages work too: drag in the `capital-street` folder.
 - **As an app:** open the site on a phone and choose "Add to Home Screen". It installs full-screen with its own icon.
+- **When it gets big (more cities, the whole world):** GitHub refuses single files over 100 MB and slows down past a few GB. Plan: the game itself on **Cloudflare Pages** (free; files up to 25 MB, 20,000 files) and the big map data on **Cloudflare R2** (10 GB free, then $0.015 per GB a month, and no fee for players downloading it). Cities stream in as you visit them, so a multi-gigabyte world never has to download at once.
+- **On PC as a download:** **Steam** ($100 per game, paid back once the game makes $1,000) or **itch.io** (free; downloads up to 1 GB per file). The same files run in a desktop window.
 - **App Store / Google Play:** done with Capacitor in `capital-street-app/`. GitHub Actions builds the apps; publishing needs an Apple developer account ($99 a year) and a Google Play account ($25 once). Step-by-step: `capital-street-app/README.md`.
 
 ## Map data
@@ -138,8 +181,10 @@ pip install pyarrow shapely requests numpy
 cd tools
 RAW=/some/scratch/dir
 # Overture Maps (release 2026-10-21.0), read straight from its public S3 bucket
-python3 grab.py buildings building      -74.03 40.69 -73.90 40.885 $RAW/nyc-building.parquet id,geometry,bbox,height,num_floors,min_height,facade_color,facade_material
-python3 grab.py buildings building_part -74.03 40.69 -73.90 40.885 $RAW/nyc-building_part.parquet id,geometry,bbox,height,num_floors,min_height,building_id,facade_color,facade_material
+python3 grab.py buildings building      -74.03 40.69 -73.90 40.885 $RAW/nyc-building.parquet id,geometry,bbox,height,num_floors,min_height,min_floor,roof_shape,roof_height,class,names,facade_color,roof_color,facade_material,roof_material
+python3 grab.py buildings building_part -74.03 40.69 -73.90 40.885 $RAW/nyc-building_part.parquet id,geometry,bbox,height,num_floors,min_height,min_floor,roof_shape,roof_height,names,building_id,facade_color,roof_color,facade_material,roof_material
+# shops, offices, factories, churches...: used to tell what each building is
+python3 grab.py places place -74.03 40.69 -73.90 40.885 $RAW/nyc-places.parquet id,geometry,bbox,categories,basic_category,taxonomy,names,confidence
 python3 grab.py divisions division_area -74.40 40.40 -73.50 41.10 $RAW/region-areas.parquet id,geometry,bbox,subtype,class,names
 python3 grab.py base land     -74.40 40.40 -73.50 41.10 $RAW/region-land.parquet id,geometry,bbox,subtype,class
 python3 grab.py base water    -74.40 40.40 -73.50 41.10 $RAW/region-water.parquet id,geometry,bbox,subtype,class
@@ -152,6 +197,6 @@ node -e "const t=require('topojson-client'),w=require('world-atlas/countries-50m
 python3 build_map.py $RAW ../data
 ```
 
-The other cities use the same Overture files (building, building_part, land_use, segments, and a wider land and water box for the coastline) saved in `$RAW/cities/<city>/` as `building.parquet`, `building_part.parquet`, `landuse.parquet`, `segments.parquet`, `region-land.parquet` and `region-water.parquet`. Their boxes are in `CITIES` at the top of `build_map.py`. Bake one city with `python3 build_map.py $RAW ../data london`, or the world map with `... world`.
+The other cities use the same Overture files (building, building_part, places, land_use, segments, and a wider land and water box for the coastline) saved in `$RAW/cities/<city>/` as `building.parquet`, `building_part.parquet`, `places.parquet`, `landuse.parquet`, `segments.parquet`, `region-land.parquet` and `region-water.parquet`. Each city's look (materials per building type, roof colours, how often attics, chimneys, solar panels, domes and water towers appear) is in `STYLE` in `build_map.py`. Their boxes are in `CITIES` at the top of `build_map.py`. Bake one city with `python3 build_map.py $RAW ../data london`, or the world map with `... world`.
 
 Map data © OpenStreetMap contributors and Overture Maps Foundation (ODbL / CDLA-Permissive-2.0). Country shapes: Natural Earth (public domain). three.js: MIT licence (`lib/three-LICENSE.txt`). Fonts: Inter and Archivo Black, SIL Open Font License.

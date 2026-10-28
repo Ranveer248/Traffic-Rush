@@ -33,9 +33,10 @@ window.Property = (function () {
     for (const p of list) { maxH = Math.max(maxH, p.h); x += p.x * p.area; z += p.z * p.area; w += p.area; if (p.area > big.area) big = p; }
     x /= w; z /= w;
     const floors = Math.min(120, Math.max(1, Math.round(maxH / 3.6)));
-    const mult = locMult(x, z), business = mult > 2.2, glass = big.sty === 0 || big.sty === 3;
-    const type = floors <= 4 ? (big.sty === 2 && !business ? 'Townhouse' : 'Shop') : floors <= 12 ? (glass || business ? 'Offices' : 'Apartments') : (glass || business ? 'Office tower' : 'Residential tower');
-    const kind = type === 'Townhouse' || type === 'Apartments' || type === 'Residential tower' ? 'homes' : type === 'Shop' ? 'shops' : floors > 12 ? 'towers' : 'offices';
+    const mult = locMult(x, z);
+    // the building's own type, worked out by tools/build_map.py (see the type list above buildingMat in index.html)
+    const type = ['House', 'Townhouse', floors > 12 ? 'Residential tower' : 'Apartments', 'Shop', 'Offices', 'Office tower', 'Factory', 'Landmark'][big.typ];
+    const kind = big.typ <= 2 ? 'homes' : big.typ === 3 ? 'shops' : big.typ === 6 ? 'factories' : floors > 12 ? 'towers' : 'offices';
     const floorPrice = Math.max(800, Math.round(footprint * 10 * mult * (kind === 'shops' ? 1.15 : kind === 'homes' ? 0.9 : 1) / 10) * 10);
     const wallSt = onWallSt(x, z), street = wallSt ? 'Wall Street' : streetNear(x, z);
     const num = 1 + (g * 2654435761 >>> 0) % 140;
@@ -195,7 +196,7 @@ window.Property = (function () {
   // ---------- the listings screen ----------
   const panel = $('props');
   let tab = 'sale', kind = 'all', maxPrice = Infinity, inView = true, sort = 'cheap';
-  const KINDS = [['all', 'All'], ['homes', 'Homes'], ['shops', 'Shops'], ['offices', 'Offices'], ['towers', 'Towers']];
+  const KINDS = [['all', 'All'], ['homes', 'Homes'], ['shops', 'Shops'], ['offices', 'Offices'], ['towers', 'Towers'], ['factories', 'Factories']];
   const PRICES = [[Infinity, 'Any price'], [10000, 'Under $10k'], [50000, 'Under $50k'], [250000, 'Under $250k'], [1e6, 'Under $1M']];
   function goal() { // the dream: an office on Wall Street, the best-placed office building near it
     if (CITY.id !== 'nyc') return null;

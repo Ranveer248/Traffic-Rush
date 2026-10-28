@@ -283,6 +283,8 @@ h1 em { font-style: normal; color: var(--green); }
 #load { position: fixed; inset: 0; display: grid; place-content: center; gap: 8px; text-align: center; background: var(--bg); font: 400 22px/1.2 'Archivo Black', sans-serif; }
 #load[hidden] { display: none; }
 #load small { font: 600 13px/1.3 Inter, sans-serif; color: var(--dim); }
+.legal { display: flex; justify-content: center; gap: 16px; margin-top: 10px; font: 600 12px/1 Inter, sans-serif; }
+.legal a { color: rgba(255, 255, 255, .6); text-decoration: none; pointer-events: auto; } .legal a:hover { color: #fff; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -358,6 +360,7 @@ h1 em { font-style: normal; color: var(--green); }
     <p>You live alone in a tiny New York apartment and the rent is due. You just found some cash. Trade it into a fortune.</p>
     <button id="play">PLAY</button>
     <small>Paper trading · fictional companies · anything can happen</small>
+    <nav class="legal"><a href="terms.html" target="_blank" rel="noopener">Terms</a><a href="privacy.html" target="_blank" rel="noopener">Privacy</a><a href="credits.html" target="_blank" rel="noopener">Credits</a></nav>
   </div>
 </div>
 <div id="load">Loading New York…<small id="loadMsg">Fetching 56,000 real buildings</small></div>
@@ -512,43 +515,100 @@ function thickLines(segs, widthPx, color, order) {
 }
 
 // ---------- buildings: real footprints and heights, extruded here ----------
-// The shader paints each facade from its style (0 glass window bands, 1 stone with punched windows, 2 brick walk-up, 3 all-glass tower),
-// puts shop fronts on the ground floor, a light parapet rim at the top, dark roofs, and lets window glass reflect the sky.
+// Every building has a type and a material (tools/build_map.py works them out from the map data and the city's own style):
+//   types     0 house, 1 terraced house, 2 apartments, 3 shop, 4 office, 5 tower, 6 factory, 7 landmark (church, school, town hall)
+//   materials 0 red brick, 1 brownstone, 2 yellow brick, 3 grey stone, 4 limestone, 5 white stucco, 6 painted plaster,
+//             7 timber frame, 8 concrete, 9 glass, 10 wood siding, 11 metal cladding
+// plus flags: 1 battlements, 2 dome, 4 spire, 8 shops on the ground floor, 16/32/64 awning colour.
+// The shader draws each type's windows, doors and shopfronts, and each material's bricks, stone courses, beams, boards or ribs up close.
 const buildingMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.88, metalness: 0, envMapIntensity: 0.35 });
 buildingMat.onBeforeCompile = sh => {
+  sh.uniforms.awnC = { value: [[0.55, 0.06, 0.05], [0.04, 0.22, 0.12], [0.05, 0.11, 0.32], [0.62, 0.42, 0.05], [0.28, 0.05, 0.18], [0.6, 0.6, 0.58], [0.02, 0.02, 0.025], [0.6, 0.18, 0.04]].map(c => new THREE.Vector3(...c)) }; // awning colours
   sh.vertexShader = sh.vertexShader
     .replace('#include <common>', '#include <common>\nattribute vec3 fac;\nvarying vec3 vFac;\nvarying vec3 vWP;')
     .replace('#include <project_vertex>', '#include <project_vertex>\nvFac = fac;\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
   sh.fragmentShader = sh.fragmentShader
     .replace('#include <common>', `#include <common>
       varying vec3 vFac; varying vec3 vWP;
-      float boxAA(float f, float a, float b, float w) { return clamp(smoothstep(a - w, a + w, f) - smoothstep(b - w, b + w, f), 0.0, 1.0); }`)
+      float boxAA(float f, float a, float b, float w) { return clamp(smoothstep(a - w, a + w, f) - smoothstep(b - w, b + w, f), 0.0, 1.0); }
+      float lineAA(float f, float w, float aa) { return 1.0 - smoothstep(w - aa, w + aa, min(f, 1.0 - f)); } // a thin line at each whole number
+      float hash1(float n) { return fract(sin(n * 12.9898) * 43758.5453); }
+      uniform vec3 awnC[8];`)
     .replace('#include <color_fragment>', `#include <color_fragment>
       vec3 base = pow(diffuseColor.rgb, vec3(2.2)); // stored as sRGB bytes
       vec3 wn = normalize(cross(dFdx(vWP), dFdy(vWP)));
-      float y = vWP.y, u = vFac.x, top = vFac.y, sty = floor(vFac.z + 0.5);
+      float y = vWP.y, u = vFac.x, top = vFac.y, code = floor(vFac.z + 0.5);
+      float flags = floor(code / 256.0), sty = code - flags * 256.0, typ = floor(sty / 16.0), mat = sty - typ * 16.0;
+      float shopF = mod(floor(flags / 8.0), 2.0), awn = floor(flags / 16.0);
       float gMask = 0.0;
       vec3 c = base;
       if (abs(wn.y) > 0.6) {
         c = y > top - 0.6 ? mix(base, vec3(0.74, 0.73, 0.70), 0.7) : mix(vec3(0.016, 0.017, 0.02), base * 0.1, 0.1); // dark roofs, light parapet caps
-      } else if (y > top - 1.25 && top > 9.0) {
-        c = mix(base, vec3(0.78, 0.77, 0.74), sty > 2.5 ? 0.85 : 0.5);
+      } else if (y > top - 1.25 && top > 9.0 && typ != 6.0) {
+        c = mix(base, vec3(0.8, 0.79, 0.76), mat == 9.0 ? 0.85 : 0.55); // cornice
+        c *= 1.0 - 0.25 * boxAA(y, top - 1.25, top - 1.05, fwidth(y));
       } else {
-        float fh = sty < 0.5 ? 3.9 : sty < 1.5 ? 3.6 : sty < 2.5 ? 3.1 : 3.9;
-        float bay = sty < 0.5 ? 1.5 : sty < 1.5 ? 2.6 : sty < 2.5 ? 2.4 : 1.5;
+        // ---- the wall's own surface, only up close ----
+        float px = max(fwidth(u), fwidth(y));
+        float near = 1.0 - smoothstep(0.03, 0.09, px);
+        if (near <= 0.0) {} // too far to see the surface
+        else if (mat < 2.5) { // brick courses and stretcher joints
+          float r = y / 0.3, rr = fract(r), cc = fract(u / 0.6 + mod(floor(r), 2.0) * 0.5);
+          c *= 1.0 - 0.16 * near * max(lineAA(rr, 0.06, fwidth(r)), lineAA(cc, 0.03, fwidth(u / 0.6)));
+          c *= 1.0 + 0.10 * near * (hash1(floor(r) * 7.0 + floor(u / 0.6 + mod(floor(r), 2.0) * 0.5)) - 0.5);
+        } else if (mat < 4.5) { // stone blocks
+          float r = y / 0.62, cc = fract(u / 1.3 + mod(floor(r), 2.0) * 0.5);
+          c *= 1.0 - 0.12 * near * max(lineAA(fract(r), 0.03, fwidth(r)), lineAA(cc, 0.015, fwidth(u / 1.3)));
+        } else if (mat == 7.0) { // timber frame: cream panels between dark oak posts, rails and braces
+          float fy2 = fract(y / 3.0), bx = fract(u / 1.5), b2 = mod(floor(u / 1.5), 2.0);
+          float beam = max(max(lineAA(bx, 0.07, fwidth(u / 1.5)), lineAA(fy2, 0.05, fwidth(y / 3.0))), lineAA(fract(fy2 + (b2 > 0.5 ? bx : 1.0 - bx) * 1.0), 0.06, fwidth(y / 3.0) * 2.0));
+          c = mix(c, vec3(0.06, 0.035, 0.02), beam * mix(1.0, 0.5, 1.0 - near));
+        } else if (mat == 8.0) { // concrete panels
+          c *= 1.0 - 0.1 * near * max(lineAA(fract(u / 3.0), 0.01, fwidth(u / 3.0)), lineAA(fract(y / 3.0), 0.01, fwidth(y / 3.0)));
+        } else if (mat == 10.0) { // wood siding boards
+          float r = y / 0.22;
+          c *= 1.0 - 0.2 * near * (1.0 - smoothstep(0.0, 0.25 + fwidth(r), fract(r)));
+        } else if (mat == 11.0) { // ribbed metal
+          c *= 1.0 - 0.18 * near * lineAA(fract(u / 0.35), 0.15, fwidth(u / 0.35));
+        }
+        // ---- windows, doors and shopfronts by type ----
+        float fh = 3.2, bay = 2.4, wx0 = 0.32, wx1 = 0.68, wy0 = 0.3, wy1 = 0.78, frame = 1.0, glass = mat == 9.0 ? 1.0 : 0.0;
+        if (typ == 0.0) { fh = 3.0; bay = 3.4; wx0 = 0.33; wx1 = 0.67; wy0 = 0.32; wy1 = 0.76; }
+        else if (typ == 1.0) { fh = 3.4; bay = 2.3; wx0 = 0.3; wx1 = 0.7; wy0 = 0.24; wy1 = 0.82; }
+        else if (typ == 3.0) { fh = 3.3; bay = 2.6; }
+        else if (typ == 4.0) { fh = 3.8; bay = 1.6; wx0 = 0.04; wx1 = 0.96; wy0 = 0.22; wy1 = 0.9; frame = 0.0; }
+        else if (typ == 5.0) { fh = 3.9; bay = 1.5; wx0 = 0.06; wx1 = 0.94; wy0 = 0.2; wy1 = 0.92; frame = 0.0; }
+        else if (typ == 7.0) { fh = 5.2; bay = 3.6; wx0 = 0.34; wx1 = 0.66; wy0 = 0.18; wy1 = 0.84; }
+        if (mat == 9.0) { wx0 = 0.02; wx1 = 0.98; wy0 = 0.06; wy1 = 0.98; frame = 0.0; }
         float fy = y / fh, fx = u / bay, wy = fwidth(fy), wx = fwidth(fx), ffy = fract(fy), ffx = fract(fx);
-        float win, cover;
-        if (sty < 0.5) { win = boxAA(ffy, 0.22, 0.9, wy) * (1.0 - boxAA(ffx, 0.0, 0.07, wx)); cover = 0.63; }
-        else if (sty < 1.5) { win = boxAA(ffy, 0.3, 0.8, wy) * boxAA(ffx, 0.26, 0.74, wx); cover = 0.25;
-          c = mix(c, vec3(0.86), (boxAA(ffy, 0.25, 0.85, wy) * boxAA(ffx, 0.21, 0.79, wx) - win) * (1.0 - smoothstep(0.3, 0.7, max(wx, wy)))); } // white window frames
-        else if (sty < 2.5) { win = boxAA(ffy, 0.32, 0.76, wy) * boxAA(ffx, 0.32, 0.68, wx); cover = 0.16;
-          c = mix(c, vec3(0.86), (boxAA(ffy, 0.27, 0.86, wy) * boxAA(ffx, 0.27, 0.73, wx) - win) * (1.0 - smoothstep(0.3, 0.7, max(wx, wy)))); }
-        else { win = 1.0 - 0.75 * boxAA(ffy, 0.0, 0.06, wy); cover = 0.96; }
         float far = smoothstep(0.3, 0.7, max(wx, wy));
+        float win = boxAA(ffy, wy0, wy1, wy) * boxAA(ffx, wx0, wx1, wx);
+        if (typ == 7.0) { vec2 q = vec2((ffx - 0.5) / (wx1 - wx0) * 2.0, (ffy - wy1 + 0.1) * fh / (bay * (wx1 - wx0))); if (ffy > wy1 - 0.1) win *= 1.0 - smoothstep(0.95, 1.05, length(q)); } // arched
+        float cover = (wx1 - wx0) * (wy1 - wy0);
+        if (typ == 6.0) { // factory: a strip of high windows and big loading doors
+          win = boxAA(y, top - 3.4, top - 1.8, fwidth(y)) * (1.0 - lineAA(fract(u / 1.6), 0.06, fwidth(u / 1.6)));
+          float door = boxAA(fract(u / 14.0), 0.35, 0.65, fwidth(u / 14.0)) * boxAA(y, 0.0, 4.6, fwidth(y));
+          c = mix(c, vec3(0.42, 0.43, 0.44) * (1.0 - 0.3 * lineAA(fract(y / 0.4), 0.08, fwidth(y / 0.4))), door);
+          cover = 0.1; frame = 0.0;
+        }
+        if (frame > 0.5) c = mix(c, vec3(0.86), (boxAA(ffy, wy0 - 0.05, wy1 + 0.05, wy) * boxAA(ffx, wx0 - 0.05, wx1 + 0.05, wx) - win) * (1.0 - far)); // window frames
+        if (typ == 5.0 && mat != 9.0) c *= 1.0 - 0.18 * lineAA(fract(u / 4.5), 0.06, fwidth(u / 4.5)) * (1.0 - far); // piers up stone towers
         win = mix(win, cover, far);
-        if (y < 4.6 && sty < 2.5) win = boxAA(y, 0.4, 3.7, fwidth(y)) * (1.0 - boxAA(fract(u / 4.0), 0.0, 0.06, fwidth(u / 4.0))) * (1.0 - far) + 0.45 * far;
+        // ground floor: front doors on houses, shopfronts and fascias where there are shops
+        if ((typ < 1.5) && y < fh) { float dr = boxAA(fract(u / (bay * 3.0)), 0.42, 0.58, fwidth(u / (bay * 3.0))) * boxAA(y, 0.0, 2.3, fwidth(y)); c = mix(c, vec3(0.08, 0.05, 0.035), dr * (1.0 - far)); win *= 1.0 - dr; }
+        if ((shopF > 0.5 || typ == 3.0) && y < 4.6 && typ != 6.0) {
+          float fy4 = fwidth(y), disp = boxAA(y, 0.35, 3.4, fy4) * (1.0 - lineAA(fract(u / 2.2), 0.04, fwidth(u / 2.2)));
+          vec3 aw = awnC[int(mod(awn, 8.0))];
+          float fas = boxAA(y, 3.5, 4.5, fy4);
+          float stripe = step(0.5, fract(u / 0.9)) * (awn > 3.5 ? 0.0 : 1.0);
+          c = mix(c, mix(aw, vec3(0.85), stripe * 0.6 * (1.0 - far)), fas);
+          win = disp * (1.0 - far) + 0.5 * far; win *= 1.0 - fas;
+        } else if (y < 4.6 && typ > 3.5 && typ < 5.5) {
+          win = boxAA(y, 0.4, 3.9, fwidth(y)) * (1.0 - lineAA(fract(u / 3.0), 0.03, fwidth(u / 3.0))) * (1.0 - far) + 0.5 * far; // lobby glass
+        }
         gMask = win;
-        c = mix(c, sty > 2.5 ? base * 0.7 : sty < 0.5 ? vec3(0.05, 0.12, 0.30) : vec3(0.05, 0.08, 0.13), win);
+        vec3 gl = mat == 9.0 ? base * 0.75 : (typ > 3.5 && typ < 5.5) ? vec3(0.05, 0.12, 0.28) : vec3(0.05, 0.08, 0.13);
+        c = mix(c, gl, win);
         c *= mix(0.62, 1.0, smoothstep(0.0, 16.0, y)); // a little ambient occlusion near the street
       }
       c = max(mix(vec3(dot(c, vec3(0.299, 0.587, 0.114))), c, 1.08), 0.0); // a touch of extra colour
@@ -561,18 +621,20 @@ const tiles = []; // { mesh, tall, pid: piece index of every vertex, for tapping
 const pieces = [], groups = new Map(); // every building piece, and building number -> its pieces (used by js/property.js)
 let homeTop = 20, homeAngle = 0;
 const towers = []; // tall buildings, for disasters
+const crowns = []; // buildings topped with battlements, a dome or a spire (built in js/city.js)
 function buildCity(d) {
-  const n = d['b.n'], ni = d['b.ni'], H = d['b.h'], MH = d['b.mh'], C = d['b.c'], S = d['b.s'], XY = d['b.xy'], IXY = d['b.ixy'], G = d['b.g'];
+  const n = d['b.n'], ni = d['b.ni'], H = d['b.h'], MH = d['b.mh'], C = d['b.c'], S = d['b.s'], XY = d['b.xy'], IXY = d['b.ixy'], G = d['b.g'], F = d['b.f'] || new Uint8Array(n.length);
   const bins = new Map();
   const ring = (arr, off, k) => { const r = []; for (let j = 0; j < k; j++) r.push(new THREE.Vector2(arr[off + 2 * j] / 2, arr[off + 2 * j + 1] / 2)); return r; };
   let p = 0, pi = 0, best = Infinity;
   for (let i = 0; i < n.length; i++) {
-    const k = n[i], kin = ni[i], h = H[i] / 10, mh = MH[i] / 10, sty = S[i], tall = h >= TALL;
+    const k = n[i], kin = ni[i], h = H[i] / 10, mh = MH[i] / 10, sty = S[i], typ = sty >> 4, mat = sty & 15, flags = F[i], code = sty + 256 * flags, tall = h >= TALL;
     const outer = ring(XY, p, k), inner = kin ? ring(IXY, pi, kin) : null;
     { // remember the piece: footprint area and centre, for prices and highlights
       let area = 0, cx = 0, cz = 0;
       for (let j = 0; j < k; j++) { const a = outer[j], c = outer[(j + 1) % k]; area += a.x * c.y - c.x * a.y; cx += a.x; cz += a.y; }
-      pieces.push({ i, off: p, k, area: Math.abs(area) / 2, x: cx / k, z: cz / k, h, mh, sty, col: [C[3 * i], C[3 * i + 1], C[3 * i + 2]], g: G[i] });
+      pieces.push({ i, off: p, k, area: Math.abs(area) / 2, x: cx / k, z: cz / k, h, mh, sty, typ, mat, flags, col: [C[3 * i], C[3 * i + 1], C[3 * i + 2]], g: G[i] });
+      if (flags & 7) crowns.push({ i, outer, h, flags, col: [C[3 * i], C[3 * i + 1], C[3 * i + 2]], x: cx / k, z: cz / k });
       if (!groups.has(G[i])) groups.set(G[i], []);
       groups.get(G[i]).push(i);
     }
@@ -605,7 +667,7 @@ function buildCity(d) {
         b.pos.push(a.x, y0, a.y, a.x, y1, a.y);
         b.nor.push(nX, 0, nZ, nX, 0, nZ);
         b.col.push(cr, cg, cb, cr, cg, cb);
-        b.fac.push(u, top, sty, u, top, sty);
+        b.fac.push(u, top, code, u, top, code);
         u += L;
       }
       for (let j = 0; j < m; j++) {
@@ -683,7 +745,15 @@ function mergeGeos(list) {
   return m;
 }
 
-// ---------- rooftops: plant rooms and New York water towers ----------
+// ---------- rooftops: plant rooms, New York water towers, chimneys and solar panels ----------
+function solarTexture() { // dark blue cells with silver lines
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 128;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#c9ced6'; g.fillRect(0, 0, 256, 128);
+  for (let cx = 0; cx < 8; cx++) for (let cy = 0; cy < 4; cy++) { g.fillStyle = cy % 2 ? '#1b2d52' : '#20365f'; g.fillRect(cx * 32 + 2, cy * 32 + 2, 28, 28); }
+  const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+  return t;
+}
 const roofThings = [];
 function buildRoofs(d) {
   const T = d['r.t'], XY = d['r.xy'], Y = d['r.y'], S = d['r.s'], A = d['r.a'];
@@ -693,23 +763,37 @@ function buildRoofs(d) {
   const plantMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }), chimMat = new THREE.MeshStandardMaterial({ color: lin(0x8e4a3a), roughness: 0.9 });
   const woodMat = new THREE.MeshStandardMaterial({ color: lin(0x7a5236), roughness: 0.95 }), roofMat = new THREE.MeshStandardMaterial({ color: lin(0x34302c), roughness: 0.9 }), legMat = new THREE.MeshStandardMaterial({ color: lin(0x2b2c30), roughness: 0.8 });
   const at = i => [XY[2 * i] / 2, XY[2 * i + 1] / 2], tint = new THREE.Color();
+  const solarMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: solarTexture(), roughness: 0.25, metalness: 0.5, envMapIntensity: 1.2 });
   const clear = i => (XY[2 * i] / 2 - PLACE.home[0]) ** 2 + (XY[2 * i + 1] / 2 - PLACE.home[1]) ** 2 > 40 * 40; // keep your roof free
-  for (const { list: all, sphere } of tiled(T.length, at)) {
-    const list = all.filter(clear);
-    const boxes = list.filter(i => T[i] === 0), towers = list.filter(i => T[i] === 1), chimneys = list.filter(i => T[i] === 2);
-    const place = (i, o) => { const [x, z] = at(i); o.position.set(x, Y[i] / 10, z); o.rotation.set(0, -A[i] / 255 * Math.PI, 0); };
-    if (boxes.length) roofThings.push(instanced(boxGeo, plantMat, boxes, sphere, (i, o, m, j) => {
-      place(i, o); o.scale.set(S[3 * i] / 10, S[3 * i + 2] / 10, S[3 * i + 1] / 10);
-      m.setColorAt(j, tint.setScalar(0.55 + (i % 5) * 0.07));
-    }));
-    if (chimneys.length) roofThings.push(instanced(boxGeo, chimMat, chimneys, sphere, (i, o) => { place(i, o); o.scale.set(S[3 * i] / 10, S[3 * i + 2] / 10, S[3 * i + 1] / 10); }));
-    if (towers.length) {
-      const sz = i => [S[3 * i] / 10, S[3 * i + 2] / 10];
-      roofThings.push(instanced(legGeo, legMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.scale.set(w, h * 0.38, w); }));
-      roofThings.push(instanced(tankGeo, woodMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.position.y += h * 0.38; o.scale.set(w, h * 0.47, w); }));
-      roofThings.push(instanced(coneGeo, roofMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.position.y += h * 0.85; o.scale.set(w, h * 0.15, w); }));
-    }
+  // one batch per kind for the whole city: thousands of small boxes drawn in one call beat hundreds of culled tiles
+  const list = [...T.keys()].filter(clear), sphere = allSphere(list.map(at));
+  const boxes = list.filter(i => T[i] === 0), towers = list.filter(i => T[i] === 1), chimneys = list.filter(i => T[i] === 2);
+  const solar = list.filter(i => T[i] === 3), arrays = list.filter(i => T[i] === 4);
+  const place = (i, o) => { const [x, z] = at(i); o.position.set(x, Y[i] / 10, z); o.rotation.set(0, -A[i] / 255 * Math.PI, 0); };
+  if (boxes.length) roofThings.push(instanced(boxGeo, plantMat, boxes, sphere, (i, o, m, j) => {
+    place(i, o); o.scale.set(S[3 * i] / 10, S[3 * i + 2] / 10, S[3 * i + 1] / 10);
+    m.setColorAt(j, tint.setScalar(0.55 + (i % 5) * 0.07));
+  }));
+  if (chimneys.length) roofThings.push(instanced(boxGeo, chimMat, chimneys, sphere, (i, o) => { place(i, o); o.scale.set(S[3 * i] / 10, S[3 * i + 2] / 10, S[3 * i + 1] / 10); }));
+  if (towers.length) {
+    const sz = i => [S[3 * i] / 10, S[3 * i + 2] / 10];
+    roofThings.push(instanced(legGeo, legMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.scale.set(w, h * 0.38, w); }));
+    roofThings.push(instanced(tankGeo, woodMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.position.y += h * 0.38; o.scale.set(w, h * 0.47, w); }));
+    roofThings.push(instanced(coneGeo, roofMat, towers, sphere, (i, o) => { place(i, o); const [w, h] = sz(i); o.position.y += h * 0.85; o.scale.set(w, h * 0.15, w); }));
   }
+  if (solar.length) roofThings.push(instanced(boxGeo, solarMat, solar, sphere, (i, o) => { // a panel on one slope of a pitched roof
+    const [x, z] = at(i), y = Y[i] / 10, w = S[3 * i] / 10, W = S[3 * i + 1] / 10, rise = S[3 * i + 2] / 10, a = A[i] / 255 * Math.PI;
+    const th = Math.atan2(rise, W / 2), lz = W / 4, side = i % 2 ? 1 : -1;
+    o.position.set(x - Math.sin(a) * lz * side, y + rise / 2 + 0.025, z + Math.cos(a) * lz * side);
+    o.rotation.order = 'YXZ'; o.rotation.set(th * side, -a, 0);
+    o.scale.set(w, 0.07, W / 2 * 0.7 / Math.cos(th));
+  }));
+  if (arrays.length) for (const k of [-1, 0, 1]) roofThings.push(instanced(boxGeo, solarMat, arrays, sphere, (i, o) => { // rows of tilted panels on a flat roof
+    const [x, z] = at(i), y = Y[i] / 10, w = S[3 * i] / 10, d = S[3 * i + 1] / 10, a = A[i] / 255 * Math.PI, gap = d / 3;
+    o.position.set(x - Math.sin(a) * gap * k, y + 0.5, z + Math.cos(a) * gap * k);
+    o.rotation.order = 'YXZ'; o.rotation.set(0.35, -a, 0);
+    o.scale.set(w, 0.08, gap * 0.8);
+  }));
 }
 
 // ---------- street names painted on the map ----------
@@ -977,7 +1061,7 @@ function frame(now) {
   const sink = 1 - Math.min(1, Math.max(0, Math.log(dist / 6000) / Math.log(70000 / 6000)));
   const hs = Math.max(0.01, sink * sink * (3 - 2 * sink));
   for (const t of tiles) { t.mesh.visible = dist < (t.tall ? 120000 : 40000); t.mesh.scale.y = hs; }
-  for (const t of cityTiles) { t.mesh.visible = t.kind === 'marks' ? dist < 3000 : dist < 40000; if (t.kind === 'roof') t.mesh.scale.y = hs; }
+  for (const t of cityTiles) { t.mesh.visible = dist < (t.kind === 'marks' ? 3000 : t.kind === 'detail' ? 2500 : t.kind === 'crown' ? 6000 : 40000); if (t.kind === 'roof') t.mesh.scale.y = hs; } // crowns go before the city starts sinking at 6 km
   for (const f of frameHooks) f(dt, dist);
   for (const t of trees) t.visible = dist < 4500;
   for (const t of roofThings) t.visible = dist < 3500;
@@ -1068,6 +1152,8 @@ document.getElementById('play').onclick = () => {
     buildCity(nyc);
     buildRoofs(nyc);
     buildPitched(nyc);
+    buildCrowns();
+    buildSaw(nyc);
     buildTrees(nyc);
     const streetLines = lines(nyc);
     buildMarkings(nyc, streetLines);

@@ -19,7 +19,7 @@ function geoMesh(pos, nor, col, extra, mat) {
 }
 
 // ---------- pitched roofs: gables and hips with tile rows ----------
-const roofMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0, envMapIntensity: 0.35 });
+const roofMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0, envMapIntensity: 0.35, side: THREE.DoubleSide, shadowSide: THREE.FrontSide }); // double-sided: dormers and sawtooth teeth face every way; shadows from one side
 roofMat.onBeforeCompile = sh => {
   sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec2 rt;\nvarying vec2 vRt;\nvarying vec3 vRP;')
     .replace('#include <project_vertex>', '#include <project_vertex>\nvRt = rt;\nvRP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
@@ -37,9 +37,10 @@ roofMat.onBeforeCompile = sh => {
       }
       diffuseColor.rgb = c;`);
 };
-const pitched = { F: null, G: null, C: null, tiles: new Map(), hidden: () => false }; // tile -> { mesh, list of roofs }
+const pitched = { F: null, G: null, C: null, X: null, tiles: new Map(), hidden: () => false }; // tile -> { mesh, list of roofs }
+const GLASS = [22, 34, 52];
 function pitchedGeo(list) {
-  const { F, G, C } = pitched, b = { pos: [], nor: [], col: [], rt: [] };
+  const { F, G, C, X } = pitched, b = { pos: [], nor: [], col: [], rt: [] };
   for (const i of list) {
     const [x, z, a, L, W, y, rise] = F.subarray(7 * i, 7 * i + 7), gable = G[i];
     if (pitched.hidden(x, z)) continue; // the roof over your office is lifted off
@@ -58,11 +59,37 @@ function pitchedGeo(list) {
     const endC = gable ? wallC : roofC, endR = gable ? 0 : 1;
     const ac = v => (v[0] - x) * -sa + (v[2] - z) * ca; // across the ridge, for hip tiles
     tri(B, R2, Cc, endC, endR, [ac(B), ac(R2), ac(Cc)]); tri(D, R1, A, endC, endR, [ac(D), ac(R1), ac(A)]);
+    const quad = (p, q, s2, t, colr) => { tri(p, q, s2, colr, 0, [0, 0, 0]); tri(p, s2, t, colr, 0, [0, 0, 0]); };
+    if (gable && rise >= 2.2) for (const e of [-1, 1]) { // an attic window in each gable end
+      const ex = e * (hl + 0.04), w2 = Math.min(0.55, hw * 0.2), y0 = rise * 0.22, y1 = rise * 0.22 + Math.min(1.3, rise * 0.4);
+      const q = [P(ex, y0, -w2 * e), P(ex, y0, w2 * e), P(ex, y1, w2 * e), P(ex, y1, -w2 * e)];
+      quad(q[0], q[1], q[2], q[3], GLASS);
+    }
+    if (X && X[i] & 1) { // attic dormers along both long slopes
+      const n = Math.max(1, Math.min(4, Math.floor((L - (gable ? 2 : W)) / 3.4))), dw = 0.75, h2 = 1.25;
+      const yAt = a2 => rise * (1 - a2 / hw), aAt = yy => hw * (1 - yy / rise); // roof height at a distance from the ridge, and back
+      for (const sd of [-1, 1]) for (let k = 0; k < n; k++) {
+        const lx = (n === 1 ? 0 : (k / (n - 1) - 0.5) * Math.min(L - 3, (n - 1) * 3.4));
+        const af = hw * 0.55, yb = yAt(af) - 0.15, yt = yb + h2, ap = Math.max(0.2, aAt(yt + 0.55)), as2 = Math.max(0.2, aAt(yt));
+        const F = (dx, yy, a2) => P(lx + dx, yy, sd * a2);
+        const fl = F(-dw, yb, af), fr = F(dw, yb, af), tl = F(-dw, yt, af), tr = F(dw, yt, af), pk = F(0, yt + 0.55, af + 0.12);
+        const s1 = sd > 0;
+        const tw = (p, q, s2) => s1 ? tri(p, q, s2, wallC, 0, [0, 0, 0]) : tri(p, s2, q, wallC, 0, [0, 0, 0]);
+        tw(fl, fr, tr); tw(fl, tr, tl); tw(tl, tr, pk); // front wall and its little gable
+        tw(F(-dw, yb, as2), fl, tl); tw(fr, F(dw, yb, as2), tr); // sides, down into the roof
+        const gw = 0.42, gy0 = yb + 0.3, gy1 = yt - 0.15, ga = af + 0.03;
+        if (s1) quad(F(-gw, gy0, ga), F(gw, gy0, ga), F(gw, gy1, ga), F(-gw, gy1, ga), GLASS); else quad(F(-gw, gy0, ga), F(-gw, gy1, ga), F(gw, gy1, ga), F(gw, gy0, ga), GLASS);
+        const bp = F(0, yt + 0.55, ap), bl = F(-dw - 0.1, yt, Math.max(0.2, as2)), br = F(dw + 0.1, yt, Math.max(0.2, as2));
+        const el = F(-dw - 0.1, yt - 0.05, af + 0.15), er = F(dw + 0.1, yt - 0.05, af + 0.15);
+        if (s1) { tri(el, pk, bp, roofC, 1, [0, 1, 1]); tri(el, bp, bl, roofC, 1, [0, 1, 0]); tri(er, br, bp, roofC, 1, [0, 0, 1]); tri(er, bp, pk, roofC, 1, [0, 1, 1]); }
+        else { tri(el, bp, pk, roofC, 1, [0, 1, 1]); tri(el, bl, bp, roofC, 1, [0, 0, 1]); tri(er, bp, br, roofC, 1, [0, 1, 0]); tri(er, pk, bp, roofC, 1, [0, 1, 1]); }
+      }
+    }
   }
   return geoMesh(b.pos, b.nor, b.col, { rt: [b.rt, 2] }, roofMat).geometry;
 }
 function buildPitched(d) {
-  Object.assign(pitched, { F: d['p.f'], G: d['p.g'], C: d['p.c'] });
+  Object.assign(pitched, { F: d['p.f'], G: d['p.g'], C: d['p.c'], X: d['p.x'] });
   const lists = new Map();
   for (let i = 0; i < pitched.G.length; i++) {
     const key = tileOf(pitched.F[7 * i], pitched.F[7 * i + 1]);
@@ -81,6 +108,90 @@ function refreshPitched(x, z) {
   for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
     const t = pitched.tiles.get(tileOf(x + dx * 1000, z + dz * 1000));
     if (t) { t.mesh.geometry.dispose(); t.mesh.geometry = pitchedGeo(t.list); }
+  }
+}
+
+// a bounding sphere round a set of ground points, tall enough for the buildings on them
+function allSphere(pts) {
+  const box = new THREE.Box3(), v = new THREE.Vector3();
+  for (const [x, z] of pts) box.expandByPoint(v.set(x, 0, z));
+  box.max.y = 600;
+  const s = box.getBoundingSphere(new THREE.Sphere()); s.radius += 60;
+  return s;
+}
+
+// ---------- crowns: domes, spires and castle battlements on the buildings that have them ----------
+function buildCrowns() {
+  const boxGeo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
+  const drumGeo = new THREE.CylinderGeometry(1, 1, 1, 16, 1, true).translate(0, 0.5, 0);
+  const domeGeo = new THREE.SphereGeometry(1, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+  const lanternGeo = mergeGeos([new THREE.CylinderGeometry(0.16, 0.16, 0.32, 10, 1).translate(0, 0.16, 0), new THREE.ConeGeometry(0.2, 0.34, 10).translate(0, 0.49, 0)]);
+  const spireGeo = new THREE.ConeGeometry(1, 1, 4).rotateY(Math.PI / 4).translate(0, 0.5, 0);
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0.15, envMapIntensity: 0.6 });
+  const stone = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
+  const DOME = [[0x5f9e84, 6], [0xc9a24a, 2], [0xd8d2c4, 3], [0x3f4a52, 1]], DUBAI = [[0xf0ead8, 4], [0xc9a24a, 3], [0x5f9e84, 1]];
+  const pickC = (list, i) => { const t = list.reduce((s, [, w]) => s + w, 0); let r = (i * 2654435761 >>> 0) % 1000 / 1000 * t; for (const [c, w] of list) { r -= w; if (r < 0) return c; } return list[0][0]; };
+  const inscribed = c => { // the largest circle round the centre that stays inside the outline
+    let m = Infinity;
+    for (let j = 0; j < c.outer.length; j++) {
+      const a = c.outer[j], b = c.outer[(j + 1) % c.outer.length], dx = b.x - a.x, dz = b.y - a.y, l2 = dx * dx + dz * dz || 1;
+      const t = Math.max(0, Math.min(1, ((c.x - a.x) * dx + (c.z - a.y) * dz) / l2));
+      m = Math.min(m, Math.hypot(c.x - a.x - t * dx, c.z - a.y - t * dz));
+    }
+    return m;
+  };
+  const domes = [], spires = [], merlons = [];
+  for (const c of crowns) {
+    const r = Math.min(22, inscribed(c) * 0.9);
+    if (c.flags & 2 && r > 1.6) domes.push({ c, r });
+    else if (c.flags & 4 && r > 1.2) spires.push({ c, r });
+    if (c.flags & 1) for (let j = 0; j < c.outer.length; j++) { // merlons every 1.7 m round the roof edge
+      const a = c.outer[j], b = c.outer[(j + 1) % c.outer.length], len = a.distanceTo(b), ang = Math.atan2(b.y - a.y, b.x - a.x);
+      for (let t = 0.6; t + 0.9 < len; t += 1.7) merlons.push({ c, x: a.x + (b.x - a.x) * (t + 0.45) / len, z: a.y + (b.y - a.y) * (t + 0.45) / len, ang });
+    }
+  }
+  const tint = new THREE.Color(), lin3 = rgb => tint.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255).convertSRGBToLinear();
+  // one batch per kind for the whole city: a few hundred crowns are cheaper drawn together than culled in tiles
+  const add = (list, at, geo, m, set, kind = 'crown') => { if (!list.length) return; const mesh = instanced(geo, m, list.map((_, i) => i), allSphere(list.map(at)), (i, o, im, j) => set(list[i], o, im, j)); cityTiles.push({ mesh, kind }); };
+  const dc = d => lin(pickC(CITY.id === 'dubai' ? DUBAI : DOME, d.c.i));
+  add(domes, d => [d.c.x, d.c.z], drumGeo, stone, (d, o, m, j) => { o.position.set(d.c.x, d.c.h, d.c.z); o.scale.set(d.r * 0.92, d.r * 0.4, d.r * 0.92); m.setColorAt(j, lin3(d.c.col)); });
+  add(domes, d => [d.c.x, d.c.z], domeGeo, mat, (d, o, m, j) => { o.position.set(d.c.x, d.c.h + d.r * 0.4, d.c.z); o.scale.set(d.r * 0.9, d.r * 0.95, d.r * 0.9); m.setColorAt(j, dc(d)); });
+  add(domes, d => [d.c.x, d.c.z], lanternGeo, mat, (d, o, m, j) => { o.position.set(d.c.x, d.c.h + d.r * 1.33, d.c.z); o.scale.setScalar(d.r); m.setColorAt(j, dc(d)); });
+  add(spires, d => [d.c.x, d.c.z], spireGeo, mat, (d, o, m, j) => {
+    o.position.set(d.c.x, d.c.h, d.c.z); const h2 = Math.min(48, Math.max(8, d.r * 5)); o.scale.set(d.r * 0.75, h2, d.r * 0.75);
+    m.setColorAt(j, lin(pickC([[0x4b4f57, 3], [0x5f9e84, 2], [0x8a8f96, 1]], d.c.i)));
+  });
+  add(merlons, d => [d.x, d.z], boxGeo, stone, (d, o, m, j) => { o.position.set(d.x, d.c.h, d.z); o.rotation.set(0, -d.ang, 0); o.scale.set(0.9, 1.0, 0.55); m.setColorAt(j, lin3(d.c.col)); }, 'detail');
+}
+
+// ---------- sawtooth factory roofs: rows of north lights ----------
+function buildSaw(d) {
+  const F = d['s.f'];
+  if (!F || !F.length) return;
+  const bins = new Map();
+  const METAL = [128, 134, 140], GL = [40, 62, 88], END = [150, 154, 158];
+  for (let i = 0; i < F.length / 6; i++) {
+    const [x, z, a, L, W, y] = F.subarray(6 * i, 6 * i + 6), key = tileOf(x, z);
+    let b = bins.get(key); if (!b) bins.set(key, b = { pos: [], nor: [], col: [], rt: [] });
+    const ca = Math.cos(a), sa = Math.sin(a), P = (lx, ly, lz) => [x + ca * lx - sa * lz, y + ly, z + sa * lx + ca * lz];
+    const tri = (p, q, s, colr) => {
+      const e1 = [q[0] - p[0], q[1] - p[1], q[2] - p[2]], e2 = [s[0] - p[0], s[1] - p[1], s[2] - p[2]];
+      const nx = e1[1] * e2[2] - e1[2] * e2[1], ny = e1[2] * e2[0] - e1[0] * e2[2], nz = e1[0] * e2[1] - e1[1] * e2[0], l = Math.hypot(nx, ny, nz) || 1;
+      for (const v of [p, q, s]) { b.pos.push(...v); b.nor.push(nx / l, ny / l, nz / l); b.col.push(...colr); b.rt.push(0, 0); }
+    };
+    const n = Math.max(2, Math.round(W / 7)), step = W / n, hl = L / 2, th = Math.min(3.2, step * 0.45);
+    for (let k = 0; k < n; k++) { // each tooth: a sloped metal back and an upright glazed face
+      const z0 = -W / 2 + k * step, z1 = z0 + step;
+      const a0 = P(-hl, 0, z0), b0 = P(hl, 0, z0), a1 = P(-hl, th, z1), b1 = P(hl, th, z1), c1 = P(-hl, 0, z1), d1 = P(hl, 0, z1);
+      tri(a0, a1, b1, METAL); tri(a0, b1, b0, METAL);
+      tri(c1, d1, b1, GL); tri(c1, b1, a1, GL);
+      tri(a0, c1, a1, END); tri(b0, b1, d1, END);
+    }
+  }
+  for (const b of bins.values()) {
+    const m = geoMesh(b.pos, b.nor, b.col, { rt: [b.rt, 2] }, roofMat);
+    m.castShadow = m.receiveShadow = true; m.renderOrder = 10;
+    scene.add(m); cityTiles.push({ mesh: m, kind: 'roof' });
   }
 }
 
