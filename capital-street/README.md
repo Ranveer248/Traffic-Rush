@@ -53,12 +53,23 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 | People and traffic | ✅ ball-headed people walking the sidewalks and boxy cars driving the streets wherever you look |
 | Zoom out like the videos | ✅ the city sinks into the map, then the map turns into a 3D globe with a glowing atmosphere in starry space, with countries, borders and New York marked |
 
+## Goal 4: the bank loan ✅
+
+| Check | Result |
+|---|---|
+| A bank on Wall Street | ✅ Big Apple Bank is marked on the map by Wall Street; the bank button (or tapping the marker) flies you there and opens it. The loan officer explains the starter loan the first time |
+| Start small | ✅ only the $1,000 Starter Loan is open at first. Four bigger loans ($5k, $25k, $100k, $500k) unlock with a better credit score and more net worth; each shows what it needs |
+| Interest and a due date | ✅ interest grows every game minute (1.2% a day at a poor score, down to 0.3% at an excellent one; a Fed rate hike makes new loans dearer); 7 to 30 day terms |
+| Repay early or in parts | ✅ repay any amount (25/50/75%/all); paying on time raises your score (+45) |
+| Miss it and there are consequences | ✅ on the due date the bank takes your cash and sells your shares. If that isn't enough: a 10% late fee, a higher rate, −90 score and 3 more days. Miss again: default, score 300 |
+| The loan on screen | ✅ a Loan pill on the top bar shows what you owe and when (tap it to open the bank); net worth subtracts the debt; the portfolio shows the loan and your score |
+
 ## Roadmap
 
 1. ✅ The New York map
 2. ✅ City-builder foundation (since replaced by the trading UI from the reference videos)
 3. ✅ The trading game and the reference style
-4. **Bank loan:** borrow to trade bigger; interest and due dates
+4. ✅ Bank loan
 5. **Buy property:** buy real buildings in Manhattan, starting with an office on Wall Street
 6. **Customise your building:** rooms, desks and decor, seen from above with the roof off; hire brokers, employees and interns
 7. **More cities:** unlock cities on the globe

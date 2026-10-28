@@ -73,9 +73,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #bar .dot.open { background: var(--x-up); box-shadow: 0 0 6px var(--x-up); } #bar .dot.closed { background: #6b7280; box-shadow: none; } #bar .dot.halted, #bar .dot.evicted { background: var(--x-dn); box-shadow: 0 0 6px var(--x-dn); }
 #bar b { color: #fff; }
 #bar button { border: 1px solid rgba(255, 255, 255, .15); background: rgba(255, 255, 255, .06); color: #fff; border-radius: 5px; padding: 2px 6px; font: 800 10px/1.2 Inter, sans-serif; }
-#money { position: absolute; left: 50%; top: calc(max(8px, env(safe-area-inset-top)) + 34px); transform: translateX(-50%); display: flex; gap: 6px; pointer-events: auto; }
+#money { position: absolute; left: 50%; top: calc(max(8px, env(safe-area-inset-top)) + 34px); transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: max-content; max-width: calc(100vw - 16px); pointer-events: auto; }
 #money div { padding: 5px 10px; border-radius: 8px; background: rgba(16, 18, 22, .82); border: 1px solid rgba(255, 255, 255, .08); font: 700 11px/1.2 Inter, sans-serif; color: var(--x-dim); white-space: nowrap; }
 #money b { color: #fff; font-size: 12px; } #money .rent b { color: var(--x-acc); } #money .rent.late b { color: var(--x-dn); }
+#money .debt { cursor: pointer; } #money .debt b { color: #fca5a5; } #money .debt.late { border-color: var(--x-dn); }
 #breaking { position: fixed; left: 50%; top: calc(max(8px, env(safe-area-inset-top)) + 70px); transform: translate(-50%, -8px); width: min(420px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 10px; background: #b91c1c; border: 1px solid #f87171; box-shadow: 0 8px 24px rgba(0, 0, 0, .45); color: #fff; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 4; }
 #breaking.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 #breaking.good { background: #15803d; border-color: #4ade80; }
@@ -88,8 +89,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #dock .avatar { width: 34px; height: 56px; }
 #tape .co { color: #7dd3fc; }
 /* exchange panel */
-#ex { position: fixed; inset: max(8px, env(safe-area-inset-top)) 8px calc(env(safe-area-inset-bottom) + 30px); display: flex; flex-direction: column; background: var(--x-bg); border: 1px solid var(--x-line); border-radius: 10px; color: var(--x-ink); font: 600 12px/1.35 Inter, sans-serif; z-index: 3; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); overflow: hidden; }
-#ex[hidden] { display: none; }
+#ex, #bank { position: fixed; inset: max(8px, env(safe-area-inset-top)) 8px calc(env(safe-area-inset-bottom) + 30px); display: flex; flex-direction: column; background: var(--x-bg); border: 1px solid var(--x-line); border-radius: 10px; color: var(--x-ink); font: 600 12px/1.35 Inter, sans-serif; z-index: 3; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); overflow: hidden; }
+#ex[hidden], #bank[hidden] { display: none; }
 .exh { display: flex; align-items: center; gap: 10px; padding: 10px 12px 6px; }
 .exh > b { font: 800 11px/1 Inter, sans-serif; letter-spacing: .12em; }
 .exh .st { font: 800 10px/1 Inter, sans-serif; letter-spacing: .08em; color: var(--x-dim); margin-left: auto; }
@@ -158,10 +159,34 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 @media (min-width: 900px) {
   #ex { left: 50%; transform: translateX(-50%); width: min(1180px, calc(100vw - 32px)); }
+  #bank { left: 50%; transform: translateX(-50%); width: min(560px, calc(100vw - 32px)); }
   #exBody { grid-template-columns: 270px 1fr 290px; }
   #list { border-right: 1px solid var(--x-line); } #ticket { border-left: 1px solid var(--x-line); }
   .back { display: none; }
 }
+
+/* Big Apple Bank: same dark panel as the exchange */
+#bankBody { flex: 1; overflow-y: auto; padding: 12px; display: grid; gap: 12px; align-content: start; }
+.score { background: var(--x-panel); border: 1px solid var(--x-line); border-radius: 8px; padding: 12px; }
+.score .top { display: flex; align-items: baseline; justify-content: space-between; }
+.score .top b { font: 800 26px/1 Inter, sans-serif; } .score .top span { font: 800 12px/1 Inter, sans-serif; }
+.gauge { position: relative; height: 8px; border-radius: 4px; margin: 10px 0 4px; background: linear-gradient(90deg, #ef4444, #f59e0b 40%, #eab308 60%, #22c55e); }
+.gauge i { position: absolute; top: -4px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px; background: #fff; box-shadow: 0 0 0 2px #111; }
+.gauge + div { display: flex; justify-content: space-between; font-size: 10px; color: var(--x-dim); }
+.lcard { background: var(--x-panel); border: 1px solid var(--x-line); border-radius: 8px; padding: 12px; display: grid; gap: 8px; }
+.lcard.active { border-color: var(--x-acc); }
+.lcard.locked { opacity: .55; }
+.lcard .row1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.lcard .row1 b { font: 800 14px/1.2 Inter, sans-serif; } .lcard .row1 strong { font: 800 20px/1 Inter, sans-serif; }
+.lcard .terms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.lcard .terms div { font-size: 10px; color: var(--x-dim); text-transform: uppercase; letter-spacing: .05em; }
+.lcard .terms b { display: block; font: 700 12px/1.3 Inter, sans-serif; color: #fff; text-transform: none; letter-spacing: 0; }
+.lcard .why { font-size: 11px; color: var(--x-dim); }
+.lcard button.main { border: 0; border-radius: 8px; padding: 12px; font: 800 13px/1 Inter, sans-serif; background: var(--x-up); color: #052e16; }
+.lcard button.main.pay { background: var(--x-acc); color: #1a1300; }
+.lcard button.main:disabled { background: #2b313c; color: var(--x-dim); }
+.bar2 { height: 6px; border-radius: 3px; background: #111318; overflow: hidden; } .bar2 i { display: block; height: 100%; background: var(--x-acc); }
+.lab.place.bank { pointer-events: auto; cursor: pointer; background: #1d4ed8; border-color: #93c5fd; }
 /* story cards */
 #story { position: fixed; inset: 0; display: grid; place-items: end center; padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom) + 40px); background: linear-gradient(to top, rgba(8, 10, 16, .85), rgba(8, 10, 16, 0) 60%); z-index: 4; }
 #story[hidden] { display: none; }
@@ -213,12 +238,12 @@ h1 em { font-style: normal; color: var(--green); }
 <div id="labels"></div>
 <div id="hud" hidden>
   <div id="bar"><span class="dot" id="dot"></span><span id="clock">NEW YORK · DAY 1 · 09:28</span><b id="mstat">PRE-MARKET</b><button id="speed" aria-label="Game speed">1×</button><button id="skip" hidden>Skip to open ▸</button></div>
-  <div id="money"><div>Cash <b id="cashV">$0</b></div><div>Worth <b id="worthV">$0</b></div><div class="rent" id="rentBox">Rent <b id="rentV">-</b></div></div>
+  <div id="money"><div>Cash <b id="cashV">$0</b></div><div>Worth <b id="worthV">$0</b></div><div class="rent" id="rentBox">Rent <b id="rentV">-</b></div><div class="debt" id="debtBox" hidden>Loan <b id="debtV">-</b></div></div>
   <div id="dock">
-    <button id="bPortfolio" class="dk" aria-label="Portfolio"><svg class="i"><use href="#i-wallet"/></svg></button>
+    <button id="bBank" class="dk" aria-label="Big Apple Bank"><svg class="i"><use href="#i-bank"/></svg></button>
     <button id="bExchange" class="dk" aria-label="Share exchange"><svg class="i"><use href="#i-chart"/></svg></button>
     <button id="bHome" class="avatar" aria-label="Your apartment"><svg viewBox="0 0 40 64"><use href="#i-avatar"/></svg></button>
-    <button id="bNews" class="dk" aria-label="News"><svg class="i"><use href="#i-news"/></svg></button>
+    <button id="bPortfolio" class="dk" aria-label="Portfolio"><svg class="i"><use href="#i-wallet"/></svg></button>
     <button id="bWorld" class="dk" aria-label="Map"><svg class="i"><use href="#i-globe"/></svg></button>
   </div>
   <div id="ticker"><div id="tape"></div></div>
@@ -237,6 +262,10 @@ h1 em { font-style: normal; color: var(--green); }
   </div>
   <div id="pf" hidden></div>
   <div id="nf" hidden></div>
+</div>
+<div id="bank" hidden>
+  <div class="exh"><b>BIG APPLE BANK · WALL STREET</b><span class="st" id="bankSt"></span><button id="bankX" aria-label="Close">✕</button></div>
+  <div id="bankBody"></div>
 </div>
 <div id="story" hidden><div class="box" id="storyBox"></div></div>
 <div id="title" class="ov" hidden>
@@ -268,6 +297,7 @@ const ll = (lat, lon) => [R * K * (lon - LON0) * Math.PI / 180, -R * K * (mercY(
 const PLACE = {
   home: ll(40.7097, -74.0087),            // as in the reference: a rooftop room on a tower by John Street and Broadway
   wall: ll(40.7064, -74.0094),
+  bank: ll(40.7061, -74.0087),            // Big Apple Bank, on Wall Street
   manhattan: ll(40.7680, -73.9750),
   world: ll(36.0, -82.0)
 };
@@ -682,6 +712,8 @@ function cityLabels() {
   [['Empire State Building', 40.7484, -73.9857, 460], ['One World Trade', 40.7130, -74.0132, 560], ['Chrysler Building', 40.7516, -73.9755, 330],
    ['Statue of Liberty', 40.6892, -74.0445, 110], ['Stock Exchange', 40.7069, -74.0113, 50], ['Times Square', 40.7580, -73.9855, 40]]
     .forEach(([t, a, b, y]) => label(t, 'place', ll(a, b), y, 0, 7000));
+  bankLabel = label('🏦 Big Apple Bank', 'place bank', PLACE.bank, 45, 0, 9000);
+  bankLabel.el.onclick = () => window.CSUI && CSUI.openBank();
 }
 function countryLabels(list) {
   for (const [name, x, z, km2] of list) {
@@ -694,7 +726,7 @@ function countryLabels(list) {
     .forEach(([t, a, b]) => label(t, 'continent', ll(a, b), 0, 2.5e6, 3e7));
 }
 const nycMarker = label('<svg class="iso" viewBox="0 0 48 48"><use href="#i-iso"/></svg><span class="badge">1</span>', 'city', PLACE.manhattan, 0, 30000, 3e7);
-let homeLabel;
+let homeLabel, bankLabel;
 
 // ---------- camera: everything is driven by target + distance + polar + azimuth ----------
 const controls = new THREE.MapControls(camera, canvas);
@@ -732,7 +764,8 @@ const V = {
   world: () => view(PLACE.world, 6.5e6, 0.02, 0),
   city: () => view(PLACE.manhattan, 16000, 0.7, AZ),
   home: () => view(PLACE.home, 70, 0.55, current().az, homeTop),
-  wall: () => view(PLACE.wall, 700, 0.5, current().az)
+  wall: () => view(PLACE.wall, 700, 0.5, current().az),
+  bank: () => view(PLACE.bank, 260, 0.75, current().az)
 };
 
 // ---------- taps: locked places ----------

@@ -5,6 +5,15 @@
   const OPEN = 9 * 60 + 30, CLOSE = 16 * 60, DAY = 1440, MIN_PER_DAY = CLOSE - OPEN;
   const RENT = 1850, RENT_EVERY = 7;
 
+  // Big Apple Bank: one loan at a time; bigger loans unlock with a better credit score and more net worth
+  const LOANS = [
+    { id: 'starter', name: 'Starter Loan', amount: 1000, days: 7, minScore: 0, minWorth: 0 },
+    { id: 'small', name: 'Small Trader Loan', amount: 5000, days: 10, minScore: 620, minWorth: 3000 },
+    { id: 'line', name: 'Trader Credit Line', amount: 25000, days: 14, minScore: 680, minWorth: 15000 },
+    { id: 'private', name: 'Private Banking Loan', amount: 100000, days: 21, minScore: 740, minWorth: 60000 },
+    { id: 'street', name: 'Wall Street Credit', amount: 500000, days: 30, minScore: 800, minWorth: 300000 }
+  ];
+
   // [ticker, name, sector, starting price, daily volatility, beta, shares outstanding (millions)]
   const COMPANIES = [
     ['HDSN', 'Hudson Hardware', 'Retail', 42.10, 0.022, 0.9, 180],
@@ -60,6 +69,7 @@
       positions: {}, // ticker -> { shares, cost }
       orders: [], prints: [], news: [],
       halt: 0, closedToday: -1,
+      loan: null, credit: 580, loansRepaid: 0, rateBump: 0,
       stocks: {}
     };
     for (const c of COMPANIES) s.stocks[c.t] = { price: c.price, fair: c.price, open: c.price, prevClose: c.price, hist: [], vol: 0 };
@@ -80,6 +90,7 @@
   let S;
   try { S = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { S = null; }
   if (!S || !S.stocks || Object.keys(S.stocks).length !== COMPANIES.length) S = fresh();
+  if (S.credit === undefined) Object.assign(S, { loan: null, credit: 580, loansRepaid: 0, rateBump: 0 }); // saves from before the bank opened
   const effects = []; // live event effects (not saved: they finish quickly)
   const listeners = [];
   const emit = (type, data) => { for (const f of listeners) f(type, data); };
@@ -90,7 +101,71 @@
   const isOpen = () => minuteOfDay() >= OPEN && minuteOfDay() < CLOSE && S.closedToday !== day() && !S.evicted;
   const status = () => S.evicted ? 'EVICTED' : !isOpen() ? 'CLOSED' : S.halt > 0 ? 'HALTED' : 'OPEN';
   const priceOf = t => S.stocks[t].price;
-  const netWorth = () => S.cash + Object.entries(S.positions).reduce((sum, [t, p]) => sum + p.shares * priceOf(t), 0);
+  const holdings = () => Object.entries(S.positions).reduce((sum, [t, p]) => sum + p.shares * priceOf(t), 0);
+  const netWorth = () => S.cash + holdings() - (S.loan ? S.loan.balance : 0);
+
+  // ---------- the bank ----------
+  const clampScore = v => Math.max(300, Math.min(850, Math.round(v)));
+  const dailyRate = () => (S.credit < 600 ? 0.012 : S.credit < 680 ? 0.008 : S.credit < 750 ? 0.005 : 0.003) + S.rateBump; // interest per game day
+  function loanStatus(o) {
+    if (S.evicted) return 'You were evicted';
+    if (S.loan) return 'Repay your current loan first';
+    if (S.credit < o.minScore) return `Needs a credit score of ${o.minScore}`;
+    if (netWorth() < o.minWorth) return `Needs a net worth of $${o.minWorth.toLocaleString('en-US')}`;
+    return '';
+  }
+  function borrow(id) {
+    const o = LOANS.find(x => x.id === id), why = o ? loanStatus(o) : 'No such loan';
+    if (why) return { ok: false, why };
+    S.loan = { id, name: o.name, amount: o.amount, balance: o.amount, interest: 0, rate: dailyRate(), taken: S.time, due: S.time + o.days * DAY, late: 0 };
+    S.cash = +(S.cash + o.amount).toFixed(2);
+    emit('loan', { kind: 'taken', amount: o.amount }); save();
+    return { ok: true };
+  }
+  function closeLoan(onTime) {
+    const l = S.loan;
+    S.loan = null;
+    if (onTime) { S.credit = clampScore(S.credit + (l.late ? 15 : 45)); S.loansRepaid++; }
+    emit('loan', { kind: 'repaid', name: l.name, onTime }); save();
+  }
+  function repay(amount) {
+    const l = S.loan;
+    if (!l) return { ok: false, why: 'You have no loan' };
+    amount = Math.min(+amount || 0, l.balance, S.cash);
+    if (!(amount > 0)) return { ok: false, why: S.cash <= 0 ? 'You have no cash' : 'Enter an amount' };
+    S.cash = +(S.cash - amount).toFixed(2); l.balance = +(l.balance - amount).toFixed(2);
+    if (l.balance < 0.01) closeLoan(true); else { emit('loan', { kind: 'paid', amount }); save(); }
+    return { ok: true };
+  }
+  function sellToRaise(need) { // sell the biggest positions first until there is enough cash
+    const held = Object.entries(S.positions).sort((a, b) => b[1].shares * priceOf(b[0]) - a[1].shares * priceOf(a[0]));
+    for (const [t, p] of held) {
+      if (S.cash >= need) break;
+      fill('sell', t, Math.min(p.shares, Math.ceil((need - S.cash) / priceOf(t))), priceOf(t));
+    }
+  }
+  function accrue() { // interest grows every game minute
+    const l = S.loan; if (!l) return;
+    const add = l.balance * l.rate / DAY;
+    l.balance += add; l.interest += add;
+  }
+  function checkLoan() {
+    const l = S.loan;
+    if (!l || S.time < l.due) return;
+    // the bank collects: first your cash, then it sells your shares
+    if (S.cash < l.balance) sellToRaise(l.balance);
+    const paid = Math.min(S.cash, l.balance);
+    S.cash = +(S.cash - paid).toFixed(2); l.balance = +(l.balance - paid).toFixed(2);
+    if (l.balance < 0.01) { S.credit = clampScore(S.credit + 5); emit('loan', { kind: 'collected', name: l.name }); S.loan = null; save(); return; }
+    if (!l.late) { // first miss: late fee, worse rate, three more days
+      l.late = 1; l.balance = +(l.balance * 1.1).toFixed(2); l.rate *= 1.5; l.due = S.time + 3 * DAY;
+      S.credit = clampScore(S.credit - 90);
+      emit('loan', { kind: 'late', balance: l.balance }); save(); return;
+    }
+    // second miss: default. The bank writes the rest off and your credit is ruined
+    S.credit = 300; S.loan = null;
+    emit('loan', { kind: 'default', lost: l.balance }); save();
+  }
   const matches = (who, c) => who === 'all' || who === c.t || who === c.sector;
 
   function applyEvent(ev) {
@@ -102,6 +177,7 @@
       if (f.drift) effects.push({ who: f.who, drift: f.drift, left: f.mins, sticky: f.sticky });
     }
     if (ev.halt) S.halt = Math.max(S.halt, ev.halt);
+    if (ev.kind === 'fed') S.rateBump = +(S.rateBump + 0.001).toFixed(4); // new loans cost more after a rate hike
     if (ev.closeDay) S.closedToday = day();
     const item = { time: S.time, kind: ev.kind, title: ev.title, text: ev.text };
     S.news.unshift(item); S.news.length = Math.min(S.news.length, 60);
@@ -180,14 +256,7 @@
   }
   function checkRent() {
     if (S.time < S.rentDue || S.evicted) return;
-    if (S.cash < RENT) { // sell positions to cover rent, biggest first
-      const held = Object.entries(S.positions).sort((a, b) => b[1].shares * priceOf(b[0]) - a[1].shares * priceOf(a[0]));
-      for (const [t, p] of held) {
-        if (S.cash >= RENT) break;
-        const need = Math.ceil((RENT - S.cash) / priceOf(t));
-        fill('sell', t, Math.min(p.shares, need), priceOf(t));
-      }
-    }
+    if (S.cash < RENT) sellToRaise(RENT);
     if (S.cash >= RENT) {
       S.cash = +(S.cash - RENT).toFixed(2); S.rentPaid++; S.rentDue += RENT_EVERY * DAY;
       emit('rent', { paid: true });
@@ -208,6 +277,8 @@
       if (before === OPEN - 1 && minuteOfDay() === OPEN && S.closedToday !== day()) marketOpens();
       if (isOpen()) minute();
       if (before === CLOSE - 1 && minuteOfDay() === CLOSE) emit('close');
+      accrue();
+      checkLoan();
       checkRent();
       emit('tick');
     }
@@ -217,13 +288,13 @@
     if (isOpen()) return;
     const m = minuteOfDay();
     const target = m < OPEN ? S.time - m + OPEN : S.time - m + DAY + OPEN;
-    while (S.time < target - 1) { const d0 = day(); S.time++; if (day() !== d0) dayRollover(); checkRent(); if (S.evicted) break; }
+    while (S.time < target - 1) { const d0 = day(); S.time++; if (day() !== d0) dayRollover(); accrue(); checkLoan(); checkRent(); if (S.evicted) break; }
     acc = 1; step(0.0001, 1); // lands on 09:30 and opens the market
   }
   function reset() { S = fresh(); effects.length = 0; save(); emit('reset'); }
 
   window.Market = {
-    COMPANIES, OPEN, CLOSE, DAY, RENT, company, step, placeOrder, cancelOrder, skipToOpen, reset, save,
+    COMPANIES, OPEN, CLOSE, DAY, RENT, LOANS, company, borrow, repay, loanStatus, dailyRate, holdings, step, placeOrder, cancelOrder, skipToOpen, reset, save,
     on: f => listeners.push(f), get state() { return S; }, day, minuteOfDay, isOpen, status, priceOf, netWorth,
     start() { S.started = true; save(); }, triggerEvent(kind) { const e = EVENTS.find(x => x.run().kind === kind); if (e) applyEvent(e.run()); }
   };

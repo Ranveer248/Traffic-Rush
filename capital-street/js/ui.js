@@ -32,6 +32,14 @@
     $('rentV').textContent = `${usd(M.RENT, 0)} in ${d ? d + 'd ' : ''}${h}h`;
     $('rentBox').classList.toggle('late', left < 1440 && s.cash < M.RENT);
     $('exSt').textContent = $('mstat').textContent + ' · ' + hhmm(s.time);
+    const l = s.loan;
+    $('debtBox').hidden = !l;
+    if (l) {
+      const ll = l.due - s.time, ld = Math.floor(ll / 1440), lh = Math.floor((ll % 1440) / 60);
+      $('debtV').textContent = `${usd(l.balance)} · ${ld ? ld + 'd ' : ''}${lh}h`;
+      $('debtBox').classList.toggle('late', !!l.late || ll < 1440);
+    }
+    $('bankSt').textContent = `DAY ${M.day()} · ${hhmm(s.time)}`;
   }
   function drawTape() {
     const one = M.COMPANIES.map(c => { const ch = dayChange(c.t); return `<span><span class="co">${c.name}</span> ${usd(M.priceOf(c.t))} <i class="${cls(ch)}">${ch >= 0 ? '▲' : '▼'}${Math.abs(ch * 100).toFixed(1)}%</i></span>`; }).join('');
@@ -41,7 +49,7 @@
   // ---------- exchange panel ----------
   let tab = 'companies', sel = 'HDSN', range = '1D', ctype = 'line', side = 'buy', otype = 'market';
   const ex = $('ex');
-  function openEx(t, which = 'companies') { ex.hidden = false; setTab(which); if (t) choose(t); else drawAll(); }
+  function openEx(t, which = 'companies') { $('bank').hidden = true; ex.hidden = false; setTab(which); if (t) choose(t); else drawAll(); }
   $('exX').onclick = () => { ex.hidden = true; };
   document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
   function setTab(t) {
@@ -182,6 +190,7 @@
     $('posN').textContent = Object.keys(s.positions).length || '';
     $('pf').innerHTML = `
       <div class="cards"><div>Net worth<b>${usd(worth)}</b></div><div>Cash<b>${usd(s.cash)}</b></div><div>Profit<b class="${cls(pl)}">${usd(pl)}</b></div></div>
+      ${s.loan ? `<div class="cards" style="margin-top:8px"><div>Shares<b>${usd(M.holdings())}</b></div><div>Loan<b class="dn">-${usd(s.loan.balance)}</b></div><div>Credit<b>${s.credit}</b></div></div>` : ''}
       <div class="sec">POSITIONS</div>${positionsTable(false)}
       <div class="sec">OPEN ORDERS</div>${s.orders.length ? `<table class="tbl"><tr><th>Order</th><th>Shares</th><th>Limit</th><th></th></tr>${s.orders.map(o => `<tr><td class="${o.side === 'buy' ? 'up' : 'dn'}">${o.side.toUpperCase()} ${o.t}</td><td>${o.shares}</td><td>${usd(o.limit)}</td><td><button class="mini" data-cancel="${o.id}">Cancel</button></td></tr>`).join('')}</table>` : '<p class="note">None.</p>'}
       <div class="sec">TRADE HISTORY</div>${s.prints.length ? `<table class="tbl"><tr><th>When</th><th>Trade</th><th>Price</th><th>Total</th></tr>${s.prints.slice(0, 30).map(p => `<tr><td>D${dayOf(p.time)} ${hhmm(p.time)}</td><td class="${p.side === 'buy' ? 'up' : 'dn'}">${p.side.toUpperCase()} ${p.shares} ${p.t}</td><td>${usd(p.price)}</td><td>${usd(p.total)}</td></tr>`).join('')}</table>` : '<p class="note">No trades yet.</p>'}
@@ -220,7 +229,7 @@
   function intro() {
     if (S().started) { toast('Welcome back', `Day ${M.day()}: you have ${usd(M.netWorth())}.`); return; }
     story(`<small>DAY 1 · YOUR APARTMENT</small><b>Rent is due.</b><p>Just you, a mattress, a laptop and a stack of bills. The landlord wants ${usd(M.RENT, 0)} by the end of day 3.</p>${facts([['Bank account', '$340'], ['Rent due', usd(M.RENT, 0) + ' · 3 days', true]])}`,
-      [['Look around', () => story(`<small>WAIT…</small><b>You found $2,000.</b><p>Taped under a loose floorboard: an envelope stuffed with cash. It covers the rent, but not much else. Unless you make it grow.</p>${facts([['Cash now', '$2,340'], ['Rent', usd(M.RENT, 0), true]])}<p>Your laptop has a paper-trading app with fictional New York companies. Prices move every minute, and anything can happen.</p>`,
+      [['Look around', () => story(`<small>WAIT…</small><b>You found $2,000.</b><p>Taped under a loose floorboard: an envelope stuffed with cash. It covers the rent, but not much else. Unless you make it grow.</p>${facts([['Cash now', '$2,340'], ['Rent', usd(M.RENT, 0), true]])}<p>Your laptop has a paper-trading app with fictional New York companies. Prices move every minute, and anything can happen. Need more to trade with? Big Apple Bank on Wall Street gives small starter loans.</p>`,
         [['Open the trading app', () => { M.start(); openEx(null, 'companies'); }]])]]);
   }
   M.on((type, d) => {
@@ -241,14 +250,95 @@
       if (d.paid) story(`<small>RENT DAY</small><b>Rent paid.</b><p>The landlord nods and takes ${usd(M.RENT, 0)}. You get to keep your apartment, for another week.</p>${facts([['Cash left', usd(S().cash)], ['Next rent', 'in 7 days', true]])}<p>Keep growing your money. Your dream: an office on Wall Street.</p>`, [['Back to trading', () => openEx()]]);
       else story(`<small>RENT DAY</small><b>Evicted.</b><p>You couldn't cover the rent. The landlord changed the locks.</p>${facts([['You had', usd(M.netWorth())], ['Rent was', usd(M.RENT, 0), true]])}`, [['Start over', () => { M.reset(); location.reload(); }]]);
     }
+    if (type === 'loan') {
+      if (d.kind === 'taken') toast('Loan received', `${usd(d.amount, 0)} is in your account. Spend it wisely.`);
+      if (d.kind === 'paid') toast('Payment made', `${usd(d.amount)} paid to Big Apple Bank.`);
+      if (d.kind === 'repaid') breaking('BIG APPLE BANK', 'LOAN REPAID', d.onTime ? 'Paid on time. Your credit score went up.' : 'The loan is closed.', true);
+      if (d.kind === 'collected') breaking('BIG APPLE BANK', 'LOAN COLLECTED', 'The due date came, so the bank took what you owed from your account.', true);
+      if (d.kind === 'late') { ex.hidden = true; story(`<small>BIG APPLE BANK</small><b>Payment missed.</b><p>The bank sold what it could and you still owe money. A 10% late fee was added and your rate went up.</p>${facts([['You still owe', usd(d.balance)], ['New due date', 'in 3 days', true]])}<p>Miss it again and your credit is ruined.</p>`, [['Go to the bank', () => openBank()], ['Back to trading', () => openEx()]]); }
+      if (d.kind === 'default') { ex.hidden = true; story(`<small>BIG APPLE BANK</small><b>Loan defaulted.</b><p>You missed the payment twice. The bank wrote off ${usd(d.lost)} and your credit score fell to 300. Only the starter loan is open to you now.</p>`, [['Back to trading', () => openEx()]]); }
+      drawBank(true);
+    }
     if (type === 'reset') drawAll();
   });
 
+
+  // ---------- Big Apple Bank ----------
+  const bank = $('bank');
+  const scoreWord = v => v >= 750 ? ['Excellent', 'up'] : v >= 680 ? ['Good', 'up'] : v >= 600 ? ['Fair', ''] : ['Poor', 'dn'];
+  const rateTxt = r => (r * 100).toFixed(1) + '% a day';
+  function drawBank(keepInput) {
+    if (bank.hidden) return;
+    const s = S(), l = s.loan, [word, wc] = scoreWord(s.credit);
+    const prev = keepInput && $('payAmt') && +$('payAmt').value > 0 ? (+$('payAmt').value).toFixed(2) : '';
+    let html = `<div class="score"><div class="top"><div><div class="sec" style="margin:0 0 6px">CREDIT SCORE</div><b>${s.credit}</b></div><span class="${wc}">${word}</span></div>
+      <div class="gauge"><i style="left:${(s.credit - 300) / 550 * 100}%"></i></div><div><span>300</span><span>${s.loansRepaid} loan${s.loansRepaid === 1 ? '' : 's'} repaid on time</span><span>850</span></div></div>`;
+    if (l) {
+      const left = l.due - s.time, d = Math.floor(left / 1440), h = Math.floor((left % 1440) / 60), done = 1 - Math.min(1, l.balance / (l.amount + l.interest || 1));
+      html += `<div class="sec" style="margin:0">YOUR LOAN</div><div class="lcard active">
+        <div class="row1"><b>${l.name}${l.late ? ' · <span class="dn">LATE</span>' : ''}</b><strong id="lBal">${usd(l.balance)}</strong></div>
+        <div class="bar2"><i style="width:${done * 100}%"></i></div>
+        <div class="terms"><div>Borrowed<b>${usd(l.amount, 0)}</b></div><div>Interest so far<b class="dn" id="lInt">${usd(l.interest)}</b></div><div>Due in<b class="${left < 1440 ? 'dn' : ''}" id="lDue">${d ? d + 'd ' : ''}${h}h</b></div></div>
+        <div class="terms"><div>Rate<b>${rateTxt(l.rate)}</b></div><div>Due<b>Day ${dayOf(l.due)} ${hhmm(l.due)}</b></div><div>Your cash<b id="lCash">${usd(s.cash)}</b></div></div>
+        <div class="fld"><label>Repay</label><div class="step"><button data-pa="-">−</button><input id="payAmt" inputmode="decimal" placeholder="0.00" value="${prev}"><button data-pa="+">+</button></div></div>
+        <div class="pct"><button data-pp=".25">25%</button><button data-pp=".5">50%</button><button data-pp=".75">75%</button><button data-pp="1">ALL</button></div>
+        <button class="main pay" id="payGo">Repay</button>
+        <p class="why">Interest grows every minute, so paying early is cheaper. On the due date the bank takes your cash and sells your shares to collect. Miss it and you pay a 10% late fee and your score drops; miss it twice and your credit is ruined.</p>
+      </div>`;
+    }
+    html += `<div class="sec" style="margin:0">LOANS${l ? '' : ' FOR YOU'}</div>` + M.LOANS.map(o => {
+      const why = M.loanStatus(o), rate = M.dailyRate(), cost = o.amount * (Math.pow(1 + rate, o.days) - 1);
+      return `<div class="lcard${why && why !== 'Repay your current loan first' ? ' locked' : ''}">
+        <div class="row1"><b>${o.name}</b><strong>${usd(o.amount, 0)}</strong></div>
+        <div class="terms"><div>Term<b>${o.days} days</b></div><div>Rate<b>${rateTxt(rate)}</b></div><div>Interest if held<b>~${usd(cost, 0)}</b></div></div>
+        ${why ? `<p class="why">🔒 ${why}</p>` : ''}
+        <button class="main" data-borrow="${o.id}" ${why ? 'disabled' : ''}>Borrow ${usd(o.amount, 0)}</button></div>`;
+    }).join('') + `<p class="note">Better credit means bigger loans and lower rates. Repay on time to raise your score.</p>`;
+    $('bankBody').innerHTML = html;
+    $('bankBody').querySelectorAll('[data-borrow]').forEach(b => b.onclick = () => {
+      const o = M.LOANS.find(x => x.id === b.dataset.borrow);
+      story(`<small>BIG APPLE BANK</small><b>Borrow ${usd(o.amount, 0)}?</b><p>You'll owe it back in ${o.days} days, plus interest of ${rateTxt(M.dailyRate())}. If you can't pay, the bank sells your shares.</p>${facts([['You get', usd(o.amount, 0)], ['Due', `in ${o.days} days`, true]])}`,
+        [['Sign the loan', () => { const r = M.borrow(o.id); if (!r.ok) toast('Loan refused', r.why); openBank(); }], ['Not now', () => openBank()]]);
+    });
+    const amt = $('payAmt');
+    if (amt) {
+      $('bankBody').querySelectorAll('[data-pp]').forEach(b => b.onclick = () => { const v = Math.min(l.balance * +b.dataset.pp, s.cash); amt.value = v > 0 ? (Math.ceil(v * 100) / 100).toFixed(2) : ''; });
+      $('bankBody').querySelectorAll('[data-pa]').forEach(b => b.onclick = () => { amt.value = Math.max(0, (+amt.value || 0) + (b.dataset.pa === '+' ? 100 : -100)).toFixed(2); });
+      $('payGo').onclick = () => { const r = M.repay(+amt.value); if (!r.ok) toast('Payment failed', r.why); amt.value = ''; drawBank(); };
+    }
+  }
+  // every second only the live numbers change; the panel is rebuilt when the loan, score or offers change
+  let bankKey = '';
+  function tickBank() {
+    if (bank.hidden) return;
+    const s = S(), l = s.loan;
+    const key = JSON.stringify([l && [l.id, l.late, l.due, l.rate], s.credit, s.loansRepaid, M.LOANS.map(o => M.loanStatus(o)), M.dailyRate()]);
+    if (key !== bankKey) { bankKey = key; drawBank(true); return; }
+    if (!l || !$('lBal')) return;
+    const left = l.due - s.time, d = Math.floor(left / 1440), h = Math.floor((left % 1440) / 60);
+    $('lBal').textContent = usd(l.balance); $('lInt').textContent = usd(l.interest); $('lDue').textContent = `${d ? d + 'd ' : ''}${h}h`; $('lCash').textContent = usd(s.cash);
+  }
+  let bankSeen = false;
+  function openBank() {
+    ex.hidden = true; bank.hidden = false; drawBank();
+    if (!bankSeen && !S().loan && !S().loansRepaid) {
+      bankSeen = true;
+      story(`<small>BIG APPLE BANK · WALL STREET</small><b>"Thin file, huh?"</b><p>The loan officer looks at your bank statement: $340 and a lot of rent payments. "We can do a starter loan. Pay it back on time and we'll talk about bigger numbers."</p>${facts([['Starter loan', '$1,000'], ['Your score', String(S().credit), true]])}`, [['See the loans', () => drawBank()]]);
+    }
+  }
+  $('bankX').onclick = () => { bank.hidden = true; };
+  $('debtBox').onclick = () => openBank();
+  function goToBank() {
+    ex.hidden = true; bank.hidden = true;
+    if (current().dist < 1500 && (controls.target.x - PLACE.bank[0]) ** 2 + (controls.target.z - PLACE.bank[1]) ** 2 < 600 ** 2) openBank();
+    else flyTo(V.bank(), 2.6, openBank);
+  }
+  $('bBank').onclick = () => bank.hidden ? goToBank() : (bank.hidden = true);
+
   // ---------- dock ----------
-  $('bExchange').onclick = () => ex.hidden ? openEx() : (ex.hidden = true);
+  $('bExchange').onclick = () => { bank.hidden = true; ex.hidden ? openEx() : (ex.hidden = true); };
   $('bPortfolio').onclick = () => openEx(null, 'portfolio');
-  $('bNews').onclick = () => openEx(null, 'news');
-  $('bHome').onclick = () => { ex.hidden = true; flyTo(V.home()); };
+  $('bHome').onclick = () => { ex.hidden = true; bank.hidden = true; flyTo(V.home()); };
 
   // ---------- clock ----------
   let last = performance.now(), redraw = 0, early = false;
@@ -257,10 +347,10 @@
     M.step(dt, speed);
     // the first morning always brings some news, so you see that anything can happen
     if (!early && S().started && M.day() === 1 && M.minuteOfDay() >= M.OPEN + 25 && !S().news.length) { early = true; M.triggerEvent('earnings'); }
-    if ((redraw += dt) > 1) { redraw = 0; drawBar(); drawTape(); if (!ex.hidden) { if (tab === 'companies') { drawList(); drawDetail(); const q = $('qty'); if (!q || document.activeElement !== q) drawTicket(true); } else drawAll(true); } }
+    if ((redraw += dt) > 1) { redraw = 0; drawBar(); drawTape(); tickBank(); if (!ex.hidden) { if (tab === 'companies') { drawList(); drawDetail(); const q = $('qty'); if (!q || document.activeElement !== q) drawTicket(true); } else drawAll(true); } }
     requestAnimationFrame(loop);
   }
   drawBar(); drawTape();
   requestAnimationFrame(loop);
-  window.CSUI = { intro, openEx };
+  window.CSUI = { intro, openEx, openBank };
 })();
