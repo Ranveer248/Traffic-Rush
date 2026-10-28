@@ -187,6 +187,35 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lcard button.main:disabled { background: #2b313c; color: var(--x-dim); }
 .bar2 { height: 6px; border-radius: 3px; background: #111318; overflow: hidden; } .bar2 i { display: block; height: 100%; background: var(--x-acc); }
 .lab.place.bank { pointer-events: auto; cursor: pointer; background: #1d4ed8; border-color: #93c5fd; }
+
+/* property: the listings screen and the listing card, like the reference videos' property auctions */
+#props { position: fixed; inset: max(8px, env(safe-area-inset-top)) 8px calc(env(safe-area-inset-bottom) + 30px); display: flex; flex-direction: column; background: var(--x-bg); border: 1px solid var(--x-line); border-radius: 10px; color: var(--x-ink); font: 600 12px/1.35 Inter, sans-serif; z-index: 3; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); overflow: hidden; }
+#props[hidden], #listing[hidden] { display: none; }
+#propsBody { flex: 1; overflow-y: auto; padding: 12px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.chips button { border: 1px solid var(--x-line); background: none; color: var(--x-dim); border-radius: 999px; padding: 6px 10px; font: 700 11px/1 Inter, sans-serif; }
+.chips button.on { background: var(--x-acc); border-color: var(--x-acc); color: #1a1300; }
+.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.pcard { text-align: left; border: 1px solid var(--x-line); background: var(--x-panel); border-radius: 8px; padding: 0 0 8px; color: var(--x-ink); overflow: hidden; display: grid; gap: 2px; }
+.pcard .pp { position: relative; height: 96px; background: #2b313c; margin-bottom: 4px; }
+.pcard .pp img, .pcard .pp svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pcard b { padding: 0 8px; font: 800 13px/1.2 Inter, sans-serif; } .pcard span { padding: 0 8px; font-size: 10px; color: var(--x-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tag { position: absolute; left: 8px; top: 8px; padding: 3px 7px; border-radius: 5px; background: var(--x-acc); color: #1a1300; font: 800 9px/1.2 Inter, sans-serif; letter-spacing: .06em; }
+.tag.own { background: #2fd47a; color: #052e16; }
+.goal { border: 1px solid var(--x-acc); background: rgba(245, 197, 24, .1); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; cursor: pointer; display: grid; gap: 2px; }
+.goal small { font: 800 10px/1 Inter, sans-serif; letter-spacing: .12em; color: var(--x-acc); } .goal b { font: 800 14px/1.2 Inter, sans-serif; } .goal span { color: var(--x-dim); font-size: 11px; }
+#listing { position: fixed; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 30px); max-height: calc(100% - 120px); overflow-y: auto; background: var(--x-bg); border: 1px solid var(--x-line); border-radius: 10px; color: var(--x-ink); font: 600 12px/1.35 Inter, sans-serif; z-index: 3; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); }
+.lsh { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 6px; } .lsh b { font: 800 11px/1 Inter, sans-serif; letter-spacing: .12em; }
+.lsh button { border: 0; background: none; color: var(--x-dim); font: 700 16px/1 Inter, sans-serif; }
+.lpic { position: relative; margin: 0 12px; height: 150px; border-radius: 8px; overflow: hidden; background: #2b313c; }
+.lpic img, .lpic svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lbody { padding: 10px 12px 12px; }
+.lt { display: flex; justify-content: space-between; gap: 10px; } .lt b { display: block; font: 800 16px/1.2 Inter, sans-serif; } .lt span { color: var(--x-dim); font-size: 11px; }
+.lp { text-align: right; } .lp strong { display: block; font: 800 20px/1.1 Inter, sans-serif; color: var(--x-acc); }
+.lbtns { display: grid; gap: 6px; } .lbtns button { border: 0; border-radius: 8px; padding: 12px; font: 800 13px/1 Inter, sans-serif; }
+.lbtns .buy { background: var(--x-acc); color: #1a1300; } .lbtns .sell { background: #7f1d1d; color: #fecaca; } .lbtns .plain { background: #2b313c; color: #fff; }
+.lab.place.mine { pointer-events: auto; cursor: pointer; background: #15803d; border-color: #4ade80; }
+@media (min-width: 900px) { #props { left: 50%; transform: translateX(-50%); width: min(900px, calc(100vw - 32px)); } #listing { left: auto; right: 16px; width: 380px; } }
 /* story cards */
 #story { position: fixed; inset: 0; display: grid; place-items: end center; padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom) + 40px); background: linear-gradient(to top, rgba(8, 10, 16, .85), rgba(8, 10, 16, 0) 60%); z-index: 4; }
 #story[hidden] { display: none; }
@@ -232,6 +261,7 @@ h1 em { font-style: normal; color: var(--green); }
   <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7h15a3 3 0 0 1 3 3v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 7l12-4v4"/><circle cx="16.5" cy="14" r="1.3"/></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></symbol>
   <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7 9h7M7 12h7M7 15h4"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
 </svg>
 <canvas id="c"></canvas>
@@ -243,7 +273,7 @@ h1 em { font-style: normal; color: var(--green); }
     <button id="bBank" class="dk" aria-label="Big Apple Bank"><svg class="i"><use href="#i-bank"/></svg></button>
     <button id="bExchange" class="dk" aria-label="Share exchange"><svg class="i"><use href="#i-chart"/></svg></button>
     <button id="bHome" class="avatar" aria-label="Your apartment"><svg viewBox="0 0 40 64"><use href="#i-avatar"/></svg></button>
-    <button id="bPortfolio" class="dk" aria-label="Portfolio"><svg class="i"><use href="#i-wallet"/></svg></button>
+    <button id="bProps" class="dk" aria-label="Property"><svg class="i"><use href="#i-key"/></svg></button>
     <button id="bWorld" class="dk" aria-label="Map"><svg class="i"><use href="#i-globe"/></svg></button>
   </div>
   <div id="ticker"><div id="tape"></div></div>
@@ -267,6 +297,12 @@ h1 em { font-style: normal; color: var(--green); }
   <div class="exh"><b>BIG APPLE BANK · WALL STREET</b><span class="st" id="bankSt"></span><button id="bankX" aria-label="Close">✕</button></div>
   <div id="bankBody"></div>
 </div>
+<div id="props" hidden>
+  <div class="exh"><b>PROPERTY · NEW YORK</b><span class="st"></span><button id="propsX" aria-label="Close">✕</button></div>
+  <div class="tabs"><button data-pt="sale" class="on">For sale</button><button data-pt="mine">Yours</button></div>
+  <div id="propsBody"></div>
+</div>
+<div id="listing" hidden></div>
 <div id="story" hidden><div class="box" id="storyBox"></div></div>
 <div id="title" class="ov" hidden>
   <div class="card">
@@ -473,17 +509,25 @@ buildingMat.onBeforeCompile = sh => {
     .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.25, gMask);');
 };
 const TILE = 1000, TALL = 45;
-const tiles = []; // { mesh, tall }
+const tiles = []; // { mesh, tall, pid: piece index of every vertex, for tapping }
+const pieces = [], groups = new Map(); // every building piece, and building number -> its pieces (used by js/property.js)
 let homeTop = 20, homeAngle = 0;
 const towers = []; // tall buildings, for disasters
 function buildCity(d) {
-  const n = d['b.n'], ni = d['b.ni'], H = d['b.h'], MH = d['b.mh'], C = d['b.c'], S = d['b.s'], XY = d['b.xy'], IXY = d['b.ixy'];
+  const n = d['b.n'], ni = d['b.ni'], H = d['b.h'], MH = d['b.mh'], C = d['b.c'], S = d['b.s'], XY = d['b.xy'], IXY = d['b.ixy'], G = d['b.g'];
   const bins = new Map();
   const ring = (arr, off, k) => { const r = []; for (let j = 0; j < k; j++) r.push(new THREE.Vector2(arr[off + 2 * j] / 2, arr[off + 2 * j + 1] / 2)); return r; };
   let p = 0, pi = 0, best = Infinity;
   for (let i = 0; i < n.length; i++) {
     const k = n[i], kin = ni[i], h = H[i] / 10, mh = MH[i] / 10, sty = S[i], tall = h >= TALL;
     const outer = ring(XY, p, k), inner = kin ? ring(IXY, pi, kin) : null;
+    { // remember the piece: footprint area and centre, for prices and highlights
+      let area = 0, cx = 0, cz = 0;
+      for (let j = 0; j < k; j++) { const a = outer[j], c = outer[(j + 1) % k]; area += a.x * c.y - c.x * a.y; cx += a.x; cz += a.y; }
+      pieces.push({ i, off: p, k, area: Math.abs(area) / 2, x: cx / k, z: cz / k, h, mh, sty, col: [C[3 * i], C[3 * i + 1], C[3 * i + 2]], g: G[i] });
+      if (!groups.has(G[i])) groups.set(G[i], []);
+      groups.get(G[i]).push(i);
+    }
     p += 2 * k; pi += 2 * kin;
     if (h > 150 && mh === 0 && towers.length < 400) towers.push([outer[0].x, outer[0].y, h]);
     if (h > 90 && mh === 0) { // the start: a tower by the home spot
@@ -499,7 +543,8 @@ function buildCity(d) {
     }
     const key = Math.floor(outer[0].x / TILE) + ',' + Math.floor(outer[0].y / TILE) + (tall ? 'T' : 'L');
     let b = bins.get(key);
-    if (!b) bins.set(key, b = { tall, pos: [], nor: [], col: [], fac: [], idx: [] });
+    if (!b) bins.set(key, b = { tall, pos: [], nor: [], col: [], fac: [], idx: [], pid: [] });
+    const v0 = b.pos.length / 3;
     const cr = C[3 * i], cg = C[3 * i + 1], cb = C[3 * i + 2];
     // a wall ring; corners are shared, with one extra vertex where the wall coordinate wraps round
     const top = kin ? h : h + 2; // the shader's parapet height; buildings without one get a plain dark roof
@@ -535,6 +580,7 @@ function buildCity(d) {
     } else {
       for (const t of THREE.ShapeUtils.triangulateShape(outer, [])) up(outer, t, v => o + 2 * v + 1);
     }
+    for (let v = v0; v < b.pos.length / 3; v++) b.pid.push(i);
   }
   for (const b of bins.values()) {
     const g = new THREE.BufferGeometry();
@@ -547,7 +593,7 @@ function buildCity(d) {
     const m = new THREE.Mesh(g, buildingMat);
     m.renderOrder = 10; m.castShadow = m.receiveShadow = true;
     scene.add(m);
-    tiles.push({ mesh: m, tall: b.tall });
+    tiles.push({ mesh: m, tall: b.tall, pid: Uint32Array.from(b.pid) });
   }
   if (PLACE.homeSnap) PLACE.home = PLACE.homeSnap;
 }
@@ -784,6 +830,7 @@ canvas.addEventListener('pointerup', e => {
   if (moved > 8 || !quick) return;
   ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
+  if (current().dist < 6000 && !document.getElementById('hud').hidden && window.Property && Property.tap(ray)) return; // a building: open its listing
   const hit = ray.ray.intersectPlane(ground, new THREE.Vector3());
   if (!hit) return;
   const r = Math.hypot(hit.x, hit.z), dist = current().dist;
@@ -976,6 +1023,7 @@ document.getElementById('play').onclick = () => {
     buildTraffic(streetLines);
     buildGlobe(world);
     await buildStreetLabels(nyc, streets);
+    if (window.Property) Property.init(nyc, streets);
     buildApartment(PLACE.home, homeTop, homeAngle); // your studio, with the ceiling off
     pin = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({ color: lin(0xffcc4d), emissive: lin(0x885500), roughness: 0.35, metalness: 0.3 });
@@ -1003,5 +1051,6 @@ document.getElementById('play').onclick = () => {
 </script>
 <script src="js/city.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/property.js"></script>
 </body>
 </html>

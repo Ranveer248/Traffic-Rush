@@ -70,6 +70,7 @@
       orders: [], prints: [], news: [],
       halt: 0, closedToday: -1,
       loan: null, credit: 580, loansRepaid: 0, rateBump: 0,
+      props: {}, reIndex: 1, rentIncome: 0,
       stocks: {}
     };
     for (const c of COMPANIES) s.stocks[c.t] = { price: c.price, fair: c.price, open: c.price, prevClose: c.price, hist: [], vol: 0 };
@@ -91,6 +92,7 @@
   try { S = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { S = null; }
   if (!S || !S.stocks || Object.keys(S.stocks).length !== COMPANIES.length) S = fresh();
   if (S.credit === undefined) Object.assign(S, { loan: null, credit: 580, loansRepaid: 0, rateBump: 0 }); // saves from before the bank opened
+  if (!S.props) Object.assign(S, { props: {}, reIndex: 1, rentIncome: 0 }); // saves from before property
   const effects = []; // live event effects (not saved: they finish quickly)
   const listeners = [];
   const emit = (type, data) => { for (const f of listeners) f(type, data); };
@@ -102,7 +104,45 @@
   const status = () => S.evicted ? 'EVICTED' : !isOpen() ? 'CLOSED' : S.halt > 0 ? 'HALTED' : 'OPEN';
   const priceOf = t => S.stocks[t].price;
   const holdings = () => Object.entries(S.positions).reduce((sum, [t, p]) => sum + p.shares * priceOf(t), 0);
-  const netWorth = () => S.cash + holdings() - (S.loan ? S.loan.balance : 0);
+  // ---------- property: whole buildings or single floors; values follow a citywide property index ----------
+  const PROP_YIELD = 0.004, PROP_FEE = 0.06; // rent per floor per game day as a share of its value; selling costs 6%
+  const floorValue = p => p.floorPrice * S.reIndex;
+  const propValue = () => Object.values(S.props).reduce((sum, p) => sum + p.floors * floorValue(p), 0);
+  function buyProperty(id, floors, info) { // info: { name, floorPrice, totalFloors, x, z, type, street }
+    const have = S.props[id] ? S.props[id].floors : 0;
+    floors = Math.min(Math.floor(floors), info.totalFloors - have);
+    if (!(floors > 0)) return { ok: false, why: 'You already own every floor' };
+    const whole = have === 0 && floors === info.totalFloors && floors > 1;
+    const cost = +(floors * info.floorPrice * S.reIndex * (whole ? 0.95 : 1)).toFixed(2); // whole buildings get 5% off
+    if (S.evicted) return { ok: false, why: 'You were evicted' };
+    if (cost > S.cash) return { ok: false, why: `You need ${'$' + cost.toLocaleString('en-US', { maximumFractionDigits: 0 })} in cash` };
+    S.cash = +(S.cash - cost).toFixed(2);
+    const p = S.props[id] || (S.props[id] = Object.assign({ floors: 0, paid: 0, bought: S.time, earned: 0 }, info));
+    p.floors += floors; p.paid += cost;
+    emit('property', { kind: 'bought', id, floors, cost, first: Object.keys(S.props).length === 1 && have === 0 }); save();
+    return { ok: true, cost };
+  }
+  function sellProperty(id, floors) {
+    const p = S.props[id];
+    if (!p) return { ok: false, why: 'You don\'t own this' };
+    floors = Math.min(Math.floor(floors), p.floors);
+    if (!(floors > 0)) return { ok: false, why: 'Choose how many floors' };
+    const gets = +(floors * floorValue(p) * (1 - PROP_FEE)).toFixed(2);
+    p.paid -= p.paid * floors / p.floors; p.floors -= floors;
+    if (!p.floors) delete S.props[id];
+    S.cash = +(S.cash + gets).toFixed(2);
+    emit('property', { kind: 'sold', id, floors, gets }); save();
+    return { ok: true, gets };
+  }
+  function propertyDay() { // each midnight: the index drifts and your tenants pay rent
+    S.reIndex *= Math.exp(gauss() * 0.006 + 0.0006);
+    let income = 0;
+    for (const p of Object.values(S.props)) { const r = p.floors * floorValue(p) * PROP_YIELD; p.earned += r; income += r; }
+    if (income > 0) { S.cash = +(S.cash + income).toFixed(2); S.rentIncome += income; emit('property', { kind: 'income', income }); }
+  }
+  const PROP_SHOCK = { crash: 0.95, rally: 1.02, plane: 0.92, blackout: 0.99, fed: 0.97, storm: 0.96, hack: 1 };
+
+  const netWorth = () => S.cash + holdings() + propValue() - (S.loan ? S.loan.balance : 0);
 
   // ---------- the bank ----------
   const clampScore = v => Math.max(300, Math.min(850, Math.round(v)));
@@ -143,6 +183,11 @@
       if (S.cash >= need) break;
       fill('sell', t, Math.min(p.shares, Math.ceil((need - S.cash) / priceOf(t))), priceOf(t));
     }
+    // still short: sell property, one floor at a time, cheapest floors first
+    for (const [id, p] of Object.entries(S.props).sort((a, b) => a[1].floorPrice - b[1].floorPrice)) {
+      while (S.cash < need && S.props[id]) sellProperty(id, 1);
+      if (S.cash >= need) break;
+    }
   }
   function accrue() { // interest grows every game minute
     const l = S.loan; if (!l) return;
@@ -177,6 +222,7 @@
       if (f.drift) effects.push({ who: f.who, drift: f.drift, left: f.mins, sticky: f.sticky });
     }
     if (ev.halt) S.halt = Math.max(S.halt, ev.halt);
+    if (PROP_SHOCK[ev.kind]) S.reIndex *= PROP_SHOCK[ev.kind]; // property prices feel it too
     if (ev.kind === 'fed') S.rateBump = +(S.rateBump + 0.001).toFixed(4); // new loans cost more after a rate hike
     if (ev.closeDay) S.closedToday = day();
     const item = { time: S.time, kind: ev.kind, title: ev.title, text: ev.text };
@@ -273,7 +319,7 @@
       acc -= 1;
       const before = minuteOfDay(), d0 = day();
       S.time++;
-      if (day() !== d0) dayRollover();
+      if (day() !== d0) { dayRollover(); propertyDay(); }
       if (before === OPEN - 1 && minuteOfDay() === OPEN && S.closedToday !== day()) marketOpens();
       if (isOpen()) minute();
       if (before === CLOSE - 1 && minuteOfDay() === CLOSE) emit('close');
@@ -288,13 +334,13 @@
     if (isOpen()) return;
     const m = minuteOfDay();
     const target = m < OPEN ? S.time - m + OPEN : S.time - m + DAY + OPEN;
-    while (S.time < target - 1) { const d0 = day(); S.time++; if (day() !== d0) dayRollover(); accrue(); checkLoan(); checkRent(); if (S.evicted) break; }
+    while (S.time < target - 1) { const d0 = day(); S.time++; if (day() !== d0) { dayRollover(); propertyDay(); } accrue(); checkLoan(); checkRent(); if (S.evicted) break; }
     acc = 1; step(0.0001, 1); // lands on 09:30 and opens the market
   }
   function reset() { S = fresh(); effects.length = 0; save(); emit('reset'); }
 
   window.Market = {
-    COMPANIES, OPEN, CLOSE, DAY, RENT, LOANS, company, borrow, repay, loanStatus, dailyRate, holdings, step, placeOrder, cancelOrder, skipToOpen, reset, save,
+    COMPANIES, OPEN, CLOSE, DAY, RENT, LOANS, company, borrow, repay, loanStatus, dailyRate, holdings, buyProperty, sellProperty, propValue, floorValue, PROP_YIELD, PROP_FEE, step, placeOrder, cancelOrder, skipToOpen, reset, save,
     on: f => listeners.push(f), get state() { return S; }, day, minuteOfDay, isOpen, status, priceOf, netWorth,
     start() { S.started = true; save(); }, triggerEvent(kind) { const e = EVENTS.find(x => x.run().kind === kind); if (e) applyEvent(e.run()); }
   };

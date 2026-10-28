@@ -49,7 +49,8 @@
   // ---------- exchange panel ----------
   let tab = 'companies', sel = 'HDSN', range = '1D', ctype = 'line', side = 'buy', otype = 'market';
   const ex = $('ex');
-  function openEx(t, which = 'companies') { $('bank').hidden = true; ex.hidden = false; setTab(which); if (t) choose(t); else drawAll(); }
+  const closeProps = () => { $('props').hidden = true; $('listing').hidden = true; };
+  function openEx(t, which = 'companies') { $('bank').hidden = true; closeProps(); ex.hidden = false; setTab(which); if (t) choose(t); else drawAll(); }
   $('exX').onclick = () => { ex.hidden = true; };
   document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
   function setTab(t) {
@@ -191,11 +192,14 @@
     $('pf').innerHTML = `
       <div class="cards"><div>Net worth<b>${usd(worth)}</b></div><div>Cash<b>${usd(s.cash)}</b></div><div>Profit<b class="${cls(pl)}">${usd(pl)}</b></div></div>
       ${s.loan ? `<div class="cards" style="margin-top:8px"><div>Shares<b>${usd(M.holdings())}</b></div><div>Loan<b class="dn">-${usd(s.loan.balance)}</b></div><div>Credit<b>${s.credit}</b></div></div>` : ''}
+      ${Object.keys(s.props).length ? `<div class="cards" style="margin-top:8px"><div>Shares<b>${usd(M.holdings())}</b></div><div>Property<b>${usd(M.propValue())}</b></div><div>Rent earned<b class="up">${usd(s.rentIncome)}</b></div></div>` : ''}
       <div class="sec">POSITIONS</div>${positionsTable(false)}
+      <div class="sec">PROPERTY</div>${Object.keys(s.props).length ? `<table class="tbl"><tr><th>Building</th><th>Floors</th><th>Paid</th><th>Value</th></tr>${Object.entries(s.props).map(([g, p]) => { const v = p.floors * M.floorValue(p); return `<tr data-g="${g}"><td><b>${p.type}</b><br><span class="note">${p.name}</span></td><td>${p.floors}/${p.totalFloors}</td><td>${usd(p.paid, 0)}</td><td class="${cls(v - p.paid)}">${usd(v, 0)}</td></tr>`; }).join('')}</table>` : '<p class="note">None yet. Tap a building on the map to see its listing.</p>'}
       <div class="sec">OPEN ORDERS</div>${s.orders.length ? `<table class="tbl"><tr><th>Order</th><th>Shares</th><th>Limit</th><th></th></tr>${s.orders.map(o => `<tr><td class="${o.side === 'buy' ? 'up' : 'dn'}">${o.side.toUpperCase()} ${o.t}</td><td>${o.shares}</td><td>${usd(o.limit)}</td><td><button class="mini" data-cancel="${o.id}">Cancel</button></td></tr>`).join('')}</table>` : '<p class="note">None.</p>'}
       <div class="sec">TRADE HISTORY</div>${s.prints.length ? `<table class="tbl"><tr><th>When</th><th>Trade</th><th>Price</th><th>Total</th></tr>${s.prints.slice(0, 30).map(p => `<tr><td>D${dayOf(p.time)} ${hhmm(p.time)}</td><td class="${p.side === 'buy' ? 'up' : 'dn'}">${p.side.toUpperCase()} ${p.shares} ${p.t}</td><td>${usd(p.price)}</td><td>${usd(p.total)}</td></tr>`).join('')}</table>` : '<p class="note">No trades yet.</p>'}
       <div class="sec">GAME</div><button class="mini" id="newGame">Start a new game</button>`;
     bindPosRows($('pf'));
+    $('pf').querySelectorAll('tr[data-g]').forEach(r => r.onclick = () => { ex.hidden = true; Property.select(+r.dataset.g, true); });
     $('pf').querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => M.cancelOrder(+b.dataset.cancel));
     $('newGame').onclick = () => { if (confirm('Start over from Day 1? Your trades will be lost.')) { M.reset(); location.reload(); } };
   }
@@ -320,6 +324,7 @@
   }
   let bankSeen = false;
   function openBank() {
+    closeProps();
     ex.hidden = true; bank.hidden = false; drawBank();
     if (!bankSeen && !S().loan && !S().loansRepaid) {
       bankSeen = true;
@@ -337,8 +342,9 @@
 
   // ---------- dock ----------
   $('bExchange').onclick = () => { bank.hidden = true; ex.hidden ? openEx() : (ex.hidden = true); };
-  $('bPortfolio').onclick = () => openEx(null, 'portfolio');
-  $('bHome').onclick = () => { ex.hidden = true; bank.hidden = true; flyTo(V.home()); };
+  $('bProps').onclick = () => { ex.hidden = true; bank.hidden = true; $('props').hidden ? Property.open() : ($('props').hidden = true); };
+  $('worthV').parentElement.onclick = () => openEx(null, 'portfolio');
+  $('bHome').onclick = () => { ex.hidden = true; bank.hidden = true; closeProps(); flyTo(V.home()); };
 
   // ---------- clock ----------
   let last = performance.now(), redraw = 0, early = false;
@@ -352,5 +358,5 @@
   }
   drawBar(); drawTape();
   requestAnimationFrame(loop);
-  window.CSUI = { intro, openEx, openBank };
+  window.CSUI = { intro, openEx, openBank, story };
 })();

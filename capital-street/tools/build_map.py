@@ -138,7 +138,9 @@ def rand_in(poly, margin, n=12):
     c = rng.uniform([x0, z0], [x1, z1], size=(n, 2))
     ok = c[shapely.contains_xy(inner, c[:, 0], c[:, 1])]
     return ok[0] if len(ok) else None
+GROUP = {}  # Overture building id -> building number, so all parts of one building can be bought together
 def add(geom, h, mh, key, given, material):
+    gid = GROUP.setdefault(key, len(GROUP))
     style = style_of(key, h, material)
     col = colour(key, style, given)
     for p in polys(proj_geom(geom)):
@@ -164,14 +166,14 @@ def add(geom, h, mh, key, given, material):
                     off = (k - 0.5 * (L > 14)) * L * 0.5 + (rng.uniform(-0.15, 0.15) * L)
                     side = rng.uniform(-0.2, 0.2) * W
                     roof.append((2, cx + math.cos(ang) * off - math.sin(ang) * side, cz + math.sin(ang) * off + math.cos(ang) * side, h + rise * 0.55, 0.9, 0.9, rise * 0.45 + 1.4, ang))
-                recs.append((np.asarray(q.exterior.coords)[:-1], None, h, mh, col, style))
+                recs.append((np.asarray(q.exterior.coords)[:-1], None, h, mh, col, style, gid))
                 continue
             if h - mh >= 10 and q.area >= 150:  # a parapet: a low rim around the roof
                 ib = q.buffer(-0.8, join_style=2)
                 ib = max(polys(ib), key=lambda g: g.area) if not ib.is_empty else None
                 if ib is not None and ib.area > 40:
                     inner = shapely.geometry.polygon.orient(Polygon(ib.simplify(0.3).exterior), 1.0)
-            recs.append((np.asarray(q.exterior.coords)[:-1], None if inner is None else np.asarray(inner.exterior.coords)[:-1], h, mh, col, style))
+            recs.append((np.asarray(q.exterior.coords)[:-1], None if inner is None else np.asarray(inner.exterior.coords)[:-1], h, mh, col, style, gid))
             top = inner if inner is not None else q
             ang, roofy = axis_angle(q), h - (1.2 if inner is not None else 0)
             r = hnum(key, 'r') % 100
@@ -206,6 +208,7 @@ nyc = {
     'b.mh': np.array([min(65535, round(r[3] * 10)) for r in recs], dtype=np.uint16),
     'b.c': np.array([hex3(r[4]) for r in recs], dtype=np.uint8).ravel(),
     'b.s': np.array([r[5] for r in recs], dtype=np.uint8),
+    'b.g': np.array([r[6] for r in recs], dtype=np.uint32),
     'b.xy': q16(xy),
     'b.ixy': q16(np.concatenate(inner_xy)),
     'r.t': roof_a[:, 0].astype(np.uint8),

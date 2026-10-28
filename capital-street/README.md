@@ -64,13 +64,24 @@ Modelled on SimCity BuildIt's systems (see [RESEARCH.md](RESEARCH.md)), with our
 | Miss it and there are consequences | ✅ on the due date the bank takes your cash and sells your shares. If that isn't enough: a 10% late fee, a higher rate, −90 score and 3 more days. Miss again: default, score 300 |
 | The loan on screen | ✅ a Loan pill on the top bar shows what you owe and when (tap it to open the bank); net worth subtracts the debt; the portfolio shows the loan and your score |
 
+## Goal 5: buy property ✅
+
+| Check | Result |
+|---|---|
+| Tap any real building | ✅ any of Manhattan's buildings can be tapped (all parts of a building count as one): it turns yellow, like the reference video, and its listing opens with a photo of the building, its type, street, floors, floor area, height, price and weekly rent income |
+| Browse listings | ✅ a property screen (key button in the dock) lists buildings with photos; filter by Homes, Shops, Offices or Towers and by price, show only what's in view, sort by cheapest or biggest |
+| Your first office on Wall Street | ✅ the listings open with the goal: the cheapest office floor in a building on Wall Street. Buy a single floor of a tower, or a whole building (5% off). Owning an office on Wall Street triggers a milestone |
+| Yours on the map | ✅ owned buildings are tinted green with a "YOURS" marker (or "YOURS · 3/47 floors"); tap it to open the listing |
+| Rent and prices | ✅ tenants pay rent every night (about 2.8% of the value a week); prices follow a New York property index that drifts daily and falls in crashes, plane crashes, hurricanes, blackouts and rate hikes |
+| Sell, and it counts | ✅ sell a floor or everything (6% fee); property counts toward net worth and shows in the portfolio. If rent or a loan can't be paid, shares are sold first, then property |
+
 ## Roadmap
 
 1. ✅ The New York map
 2. ✅ City-builder foundation (since replaced by the trading UI from the reference videos)
 3. ✅ The trading game and the reference style
 4. ✅ Bank loan
-5. **Buy property:** buy real buildings in Manhattan, starting with an office on Wall Street
+5. ✅ Buy property
 6. **Customise your building:** rooms, desks and decor, seen from above with the roof off; hire brokers, employees and interns
 7. **More cities:** unlock cities on the globe
 8. **App stores:** wrap the game for the App Store and Google Play
