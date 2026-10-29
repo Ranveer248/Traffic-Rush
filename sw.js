@@ -1,10 +1,11 @@
 // Offline support for the 2D game. Increment this cache name with each asset release.
 // Online accounts, saves and leaderboards always go directly to their own server.
-var CACHE = 'traffic-rush-2026-10-29.4';
+var CACHE = 'traffic-rush-2026-10-29.5';
 self.addEventListener('install', function(e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function(c) {
-    return c.addAll(['./', './index.html', './privacy.html', './terms.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png']);
+    // (each file on its own: one missing file, like an icon that wasn't uploaded, must not stop the game being saved for offline play)
+    return Promise.all(['./', './index.html', './privacy.html', './terms.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'].map(function(u) { return c.add(u).catch(function() {}); }));
   }).catch(function() {}));
 });
 self.addEventListener('activate', function(e) {
