@@ -1,10 +1,10 @@
 // Offline support for the 2D game. Increment this cache name with each asset release.
 // Online accounts, saves and leaderboards always go directly to their own server.
-var CACHE = 'traffic-rush-2026-10-27.7';
+var CACHE = 'traffic-rush-2026-10-29.2';
 self.addEventListener('install', function(e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function(c) {
-    return c.addAll(['./', './privacy.html', './cars/detail/hauler-top.webp']);
+    return c.addAll(['./', './index.html', './privacy.html', './terms.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png']);
   }).catch(function() {}));
 });
 self.addEventListener('activate', function(e) {
@@ -30,7 +30,9 @@ self.addEventListener('fetch', function(e) {
     }).catch(function(){return new Response('',{status:503});}));
     return;
   }
-  e.respondWith(fetch(req).then(function(res) {
+  // (a page load that hangs on a bad connection falls back to the saved copy after 4 s, so the game opens offline)
+  var net=req.mode==='navigate'?Promise.race([fetch(req),new Promise(function(_,rej){setTimeout(function(){rej(new Error('slow'));},4000);})]):fetch(req);
+  e.respondWith(net.then(function(res) {
     if(res.ok&&!url.search){var copy=res.clone();e.waitUntil(caches.open(CACHE).then(function(c){return c.put(req,copy);}));}
     return res;
   }).catch(function() {
