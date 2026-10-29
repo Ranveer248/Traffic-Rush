@@ -1,0 +1,3 @@
+# Private build kit (readable game source, patches, build tools). Never publish it:
+# this repo is public and GitHub Pages serves every file in it.
+dev/
