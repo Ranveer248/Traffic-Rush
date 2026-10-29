@@ -153,7 +153,7 @@ From the 5 new reference videos (a player-run economy game on the real world map
 
 9. ✅ **Buildings that look like where they're built:** house, terrace, apartments, shop, office, tower, factory, church; each city's own style; 12 facade materials; attics, chimneys, solar panels, domes, battlements, sawtooth factory roofs, shopfronts
 10. ✅ **PC-first and smooth:** a perfect main menu and HUD designed in Figma from trending simulator UIs, mouse and keyboard controls, graphics settings, 60 fps
-11. **Multiplayer:** accounts and one shared world; everyone sees who owns what; chat
+11. ✅ **Multiplayer:** accounts and one shared world; everyone sees who owns what; chat
 12. **Real land and buildings for everyone:** land plots on the map; a Zillow-style property market with photos, filters and auctions with max bids; everything for sale lights up
 13. **Businesses:** farms, mines, oil rigs and shops on your land; NPC income that rewards setup cost and effort without inflating the economy
 14. **Player-set markets:** an item exchange where players set every price; production chains from raw resources to finished goods; a factory planner
@@ -168,12 +168,22 @@ From the 5 new reference videos (a player-run economy game on the real world map
 Not legal advice: have a lawyer read these before a paid launch.
 
 - [Terms of Service](terms.html): game money has no real value, no real-money trading, nothing is financial advice, real places appear only as a map and their owners aren't connected to the game, fair-play and chat rules, the game is our own work and not connected to any other game, takedown contact.
-- [Privacy Policy](privacy.html): the game collects nothing today; it will be updated before multiplayer accounts go live.
-- [Credits](credits.html): every outside source and its licence (OpenStreetMap ODbL attribution, Overture, Natural Earth, three.js MIT, fonts OFL, Capacitor MIT).
+- [Privacy Policy](privacy.html): playing alone collects nothing; playing online keeps only a player name, owned buildings, chat, reported net worth and (optionally) an email, on Supabase as our processor; delete-my-account in the game removes it all; age rules match the Terms.
+- [Credits](credits.html): every outside source and its licence (OpenStreetMap ODbL attribution, Overture, Natural Earth, three.js MIT, supabase-js MIT, fonts OFL, Capacitor MIT).
 - Linked from the title screen.
 - How we avoid copying the reference game: we build the same *kind* of game (game ideas and mechanics can't be owned), but never use its name, logo, art, text, UI layouts or code. Our name, buildings, characters, companies and UI are our own. Real company names and logos stay out of the game.
 
-## Putting it online
+## Turning on multiplayer
+
+Online play needs a free [Supabase](https://supabase.com) project. Until one is set, the game plays alone exactly as before and the menu says "Solo".
+
+1. Create a project (free plan is fine), open **SQL Editor**, paste all of [`server/schema.sql`](server/schema.sql) and run it. It is safe to run again after updates.
+2. **Authentication → Sign In / Providers:** turn on **Allow anonymous sign-ins** (for "Play online as a guest") and keep **Email** on. Optional: turn off "Confirm email" while testing.
+3. **Project Settings → API Keys:** copy the project URL and the **publishable** key (`sb_publishable_...`, or the legacy `anon` key) into [`js/net-config.js`](js/net-config.js). Never put the `service_role` / secret key in the game: everything in it is public.
+4. Reload the game. The chip next to your cash turns into "Sign in"; press **O** in the menu or **T** in the game.
+
+Who may change what is enforced by the database itself (row-level security plus two checked functions), not by the game, so a modified game can't take someone else's building, post as someone else or rename them.
+
 
 The game is a static website, so it can be hosted anywhere that serves files:
 

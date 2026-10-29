@@ -97,10 +97,39 @@ window.Property = (function () {
       else ownLabels.get(g).el.textContent = txt;
     }
   }
+  // other players' buildings (multiplayer, js/net.js): one blue tint over them all, and their owner's name up close
+  const theirMat = new THREE.MeshStandardMaterial({ color: lin(0x4c8dff), emissive: lin(0x0b1f4a), roughness: 0.6, transparent: true, opacity: 0.45, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  let theirMesh = null, theirT = 0;
+  const theirLabels = new Map();
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const theirs = g => window.Net ? Net.ownerOf(key(g)) : null;
+  function drawTheirs() {
+    clearTimeout(theirT);
+    theirT = setTimeout(() => { // many changes at once (a city loading) are drawn together
+      if (theirMesh) { scene.remove(theirMesh); theirMesh.geometry.dispose(); theirMesh = null; }
+      const gs = [];
+      for (const [k] of Net.owners) if (isHere(k) && theirs(gOf(k)) && !owned(gOf(k)) && groups.has(gOf(k))) gs.push(gOf(k));
+      for (const [g, l] of theirLabels) if (!gs.includes(g)) { l.el.remove(); labels.splice(labels.indexOf(l), 1); theirLabels.delete(g); }
+      if (!gs.length) return;
+      const pos = [], idx = [];
+      for (const g of gs) {
+        const geo = shellGeo(g, 0.25), base = pos.length / 3;
+        pos.push(...geo.attributes.position.array); for (const i of geo.index.array) idx.push(base + i); geo.dispose();
+        const it = info(g), o = theirs(g), txt = esc(o.name).toUpperCase();
+        if (!theirLabels.has(g)) { const l = label(txt, 'place theirs', [it.x, it.z], it.maxH + 6, 0, 2500); l.el.onclick = () => select(g, true); theirLabels.set(g, l); }
+        else theirLabels.get(g).el.innerHTML = txt;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); geo.computeBoundingSphere();
+      theirMesh = new THREE.Mesh(geo, theirMat); theirMesh.renderOrder = 11; scene.add(theirMesh);
+    }, 300);
+  }
+  if (window.Net) Net.on(t => { if (t === 'owners' || t === 'me') { drawTheirs(); if (!sheet.hidden && selected != null) drawListing(false); if (!panel.hidden) drawPanel(); } });
   frameHooks.push(() => { // sink with the city when zooming out
     const hs = tiles.length ? tiles[0].mesh.scale.y : 1;
     if (pickMesh) pickMesh.scale.y = hs;
     for (const m of ownMeshes.values()) m.scale.y = hs;
+    if (theirMesh) theirMesh.scale.y = hs;
   });
 
   // ---------- a photo of the building for its listing ----------
@@ -149,13 +178,13 @@ window.Property = (function () {
   function deselect() { selected = null; highlight(null); sheet.hidden = true; }
   function drawListing(withPhoto) {
     const it = info(selected); if (!it) return;
-    const p = owned(selected), s = M.state, mine = p ? p.floors : 0, left = it.floors - mine;
+    const p = owned(selected), s = M.state, mine = p ? p.floors : 0, other = theirs(selected), left = other ? 0 : it.floors - mine;
     const income = it.floors * perFloor(it) * M.PROP_YIELD * 7;
     const pic = photos.get(it.g) || (withPhoto ? photo(it) : null);
     const trend = (s.reIndex - 1) * 100;
     sheet.innerHTML = `
       <div class="lsh"><b>PROPERTY LISTING</b><button id="lsX" aria-label="Close">✕</button></div>
-      <div class="lpic">${pic ? `<img src="${pic}" alt="">` : isoArt(it)}<span class="tag ${p ? 'own' : ''}">${p ? (left ? `You own ${mine} of ${it.floors} floors` : 'YOURS') : 'FOR SALE'}</span></div>
+      <div class="lpic">${pic ? `<img src="${pic}" alt="">` : isoArt(it)}<span class="tag ${p ? 'own' : other ? 'theirs' : ''}">${p ? (left ? `You own ${mine} of ${it.floors} floors` : 'YOURS') : other ? `OWNED BY ${esc(other.name).toUpperCase()}` : 'FOR SALE'}</span></div>
       <div class="lbody">
         <div class="lt"><div><b>${it.type}</b><span>${it.name}</span></div><div class="lp"><strong>${usd(wholePrice(it))}</strong><span>${it.floors > 1 ? usd(perFloor(it)) + ' a floor' : 'whole building'}</span></div></div>
         <div class="stats">
@@ -170,6 +199,7 @@ window.Property = (function () {
           ${p && window.Office ? (Office.hq() === it.g ? '<button class="buy" id="lsOffice">Enter your office</button>' : '<button class="plain" id="lsOffice">Make this my office</button>') : ''}
           <button class="plain" id="lsFly">Fly there</button>
         </div>
+        ${other ? `<p class="note"><b>${esc(other.name)}</b> owns this building. Buying from other players comes with the property market.</p>` : ''}
         <p class="note">Tenants pay rent every night. Prices follow the New York property market, which crashes and booms with everything else. Selling costs ${M.PROP_FEE * 100}%.</p>
       </div>`;
     sheet.hidden = false;
@@ -179,7 +209,13 @@ window.Property = (function () {
     sheet.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => {
       const n = +b.dataset.buy, cost = mine || n === 1 || it.floors === 1 ? n * perFloor(it) : wholePrice(it);
       CSUI.story(`<small>BUY PROPERTY</small><b>${it.type} at ${it.name}</b><p>${n === it.floors ? 'The whole building' : n + ' floor' + (n > 1 ? 's' : '')} for ${usd(cost)}. It earns about ${usd(n * perFloor(it) * M.PROP_YIELD * 7)} a week in rent.</p>`,
-        [['Buy it', () => { const r = M.buyProperty(key(it.g), n, { name: it.name, type: it.type, floorPrice: it.floorPrice, totalFloors: it.floors, x: it.x, z: it.z, city: CITY.id }); if (!r.ok) toast('Can\'t buy', r.why); drawListing(true); }], ['Not now', () => {}]]);
+        [['Buy it', async () => {
+          if (cost > M.state.cash) { toast('Can\'t buy', `You need ${usd(cost)} in cash`); return; }
+          if (window.Net) { const c = await Net.claim(key(it.g), mine + n, it.name); if (!c.ok) { toast('Can\'t buy', c.why); drawListing(false); return; } } // the shared world first
+          const r = M.buyProperty(key(it.g), n, { name: it.name, type: it.type, floorPrice: it.floorPrice, totalFloors: it.floors, x: it.x, z: it.z, city: CITY.id });
+          if (!r.ok) { toast('Can\'t buy', r.why); if (window.Net) { if (mine) Net.claim(key(it.g), mine, it.name); else Net.release(key(it.g)); } }
+          drawListing(true);
+        }], ['Not now', () => {}]]);
     });
     sheet.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { const r = M.sellProperty(key(it.g), +b.dataset.sell); if (!r.ok) toast('Can\'t sell', r.why); if (selected != null) drawListing(true); });
   }
@@ -230,7 +266,7 @@ window.Property = (function () {
         const p = pieces[groups.get(g)[0]];
         if (inView && (p.x - t.x) ** 2 + (p.z - t.z) ** 2 > R * R) continue;
         const it = info(g);
-        if (!it || it.footprint < 60 || (kind !== 'all' && it.kind !== kind)) continue;
+        if (!it || it.footprint < 60 || (kind !== 'all' && it.kind !== kind) || theirs(g)) continue;
         if ((it.floors > 1 ? perFloor(it) : wholePrice(it)) > maxPrice) continue;
         list.push(it);
       }

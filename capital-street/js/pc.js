@@ -6,8 +6,8 @@
   const M = window.Market, $ = id => document.getElementById(id);
   const usd = v => (v < 0 ? '-$' : '$') + Math.round(Math.abs(v)).toLocaleString('en-US');
   const hhmm = t => { const m = ((t % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
-  const PANELS = ['listing', 'cityCard', 'ostaff', 'otray', 'props', 'bank', 'ex']; // closed in this order by Esc
-  const DRAWERS = ['ex', 'bank', 'props', 'listing', 'cityCard', 'ostaff'];
+  const PANELS = ['net', 'listing', 'cityCard', 'ostaff', 'otray', 'props', 'bank', 'ex']; // closed in this order by Esc
+  const DRAWERS = ['ex', 'bank', 'props', 'listing', 'cityCard', 'ostaff', 'net'];
   const shown = id => $(id) && !$(id).hidden;
   const inGame = () => $('title').hidden && !$('hud').hidden;
 
@@ -166,6 +166,8 @@
     const open = Object.keys(CITIES).filter(k => s.cities[k]), locked = Object.keys(CITIES).length - open.length;
     $('worldD').textContent = open.map(k => CITIES[k].name).join(', ') + (locked ? ` · ${locked} more ${locked === 1 ? 'city' : 'cities'} to unlock` : '');
     $('mstatusT').textContent = `${CITY.name.toUpperCase()} · ${st === 'OPEN' ? 'MARKET OPEN' : 'MARKET CLOSED'} · ${hhmm(s.time)}`;
+    const ns = window.Net ? Net.status : 'off';
+    $('onlineD').textContent = ns === 'off' ? 'Not set up yet: playing solo' : ns === 'online' ? `Signed in as ${Net.me.name} · ${Net.online.length} online` : ns === 'connecting' ? 'Connecting…' : ns === 'no-player' ? 'Pick your player name' : 'Share the world with everyone and chat';
     $('empire').hidden = !started;
     if (started) {
       $('empW').textContent = usd(M.netWorth());
@@ -183,6 +185,7 @@
   };
   $('mWorld').onclick = () => CS.startGame(V.world(), '');
   $('mSettings').onclick = () => openSettings();
+  $('mOnline').onclick = () => window.Net && Net.open('account');
   // keyboard and mouse share one highlighted item
   const items = root => [...root.querySelectorAll('.mi')].filter(b => !b.hidden);
   function select(root, i) { const list = items(root); list.forEach((b, j) => b.classList.toggle('sel', j === i)); }
@@ -219,6 +222,7 @@
   const typing = e => /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.target.isContentEditable;
   addEventListener('keydown', e => {
     shift = e.shiftKey;
+    if (typing(e) && e.key === 'Escape') { e.target.blur(); if (shown('net')) $('net').hidden = true; return; } // leave the chat box
     if (typing(e) || e.ctrlKey || e.metaKey || e.altKey || $('load').hidden === false) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     if (k === 'F10') { e.preventDefault(); sets.hidden ? openSettings() : closeSettings(); return; }
@@ -233,7 +237,7 @@
     }
     if (!$('title').hidden) {
       if (menuKeys($('title'), k, e)) return;
-      const act = { n: 'mNew', m: 'mWorld', s: 'mSettings', c: 'mCredits' }[k];
+      const act = { n: 'mNew', m: 'mWorld', o: 'mOnline', s: 'mSettings', c: 'mCredits' }[k];
       if (act && !$(act).hidden) { e.preventDefault(); $(act).click(); }
       return;
     }
@@ -247,6 +251,7 @@
     }
     if (k === ' ') { e.preventDefault(); CSUI.setPaused(!CSUI.paused()); return; }
     if (k === '1' || k === '2' || k === '3') { CSUI.setSpeed(CSUI.speeds[+k - 1]); return; }
+    if ((k === 't' || k === 'Enter') && window.Net) { e.preventDefault(); Net.open('chat'); return; } // chat, like most PC games
     if (DOCK[k] && !fly) { $(DOCK[k]).click(); return; }
     if (MOVE.has(k)) { held.add(k); e.preventDefault(); }
   });

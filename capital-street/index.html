@@ -205,6 +205,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pcard b { padding: 0 8px; font: 800 13px/1.2 Inter, sans-serif; } .pcard span { padding: 0 8px; font-size: 10px; color: var(--x-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tag { position: absolute; left: 8px; top: 8px; padding: 3px 7px; border-radius: 5px; background: var(--x-acc); color: #1a1300; font: 800 9px/1.2 Inter, sans-serif; letter-spacing: .06em; }
 .tag.own { background: #2fd47a; color: #052e16; }
+.tag.theirs { background: #4c8dff; color: #fff; }
 .goal { border: 1px solid var(--x-acc); background: rgba(245, 197, 24, .1); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; cursor: pointer; display: grid; gap: 2px; }
 .goal small { font: 800 10px/1 Inter, sans-serif; letter-spacing: .12em; color: var(--x-acc); } .goal b { font: 800 14px/1.2 Inter, sans-serif; } .goal span { color: var(--x-dim); font-size: 11px; }
 #listing { position: fixed; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 30px); max-height: calc(100% - 120px); overflow-y: auto; background: var(--x-bg); border: 1px solid var(--x-line); border-radius: 10px; color: var(--x-ink); font: 600 12px/1.35 Inter, sans-serif; z-index: 3; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); }
@@ -218,6 +219,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lbtns { display: grid; gap: 6px; } .lbtns button { border: 0; border-radius: 8px; padding: 12px; font: 800 13px/1 Inter, sans-serif; }
 .lbtns .buy { background: var(--x-acc); color: #1a1300; } .lbtns .sell { background: #7f1d1d; color: #fecaca; } .lbtns .plain { background: #2b313c; color: #fff; }
 .lab.place.mine { pointer-events: auto; cursor: pointer; background: #15803d; border-color: #4ade80; }
+.lab.place.theirs { pointer-events: auto; cursor: pointer; background: #1d4ed8; border-color: #93b4ff; }
 @media (min-width: 900px) { #props { left: 50%; transform: translateX(-50%); width: min(900px, calc(100vw - 32px)); } #listing { left: auto; right: 16px; width: 380px; } }
 
 /* office mode: the dock gives way to the office toolbar */
@@ -395,6 +397,31 @@ kbd { display: inline-block; min-width: 20px; padding: 3px 6px; border-radius: 6
 #load small { font: 600 13px/1.3 Inter, sans-serif; color: var(--dim); }
 .legal { display: flex; justify-content: center; gap: 16px; margin-top: 10px; font: 600 12px/1 Inter, sans-serif; }
 .legal a { color: rgba(255, 255, 255, .6); text-decoration: none; pointer-events: auto; } .legal a:hover { color: #fff; text-decoration: underline; }
+/* ---------- multiplayer (Goal 11): the Online panel, chat and players ---------- */
+#netChip { cursor: pointer; } #netChip.on b { color: #34d399; }
+#net { position: fixed; inset: max(8px, env(safe-area-inset-top)) 8px calc(env(safe-area-inset-bottom) + 30px); display: flex; flex-direction: column; background: var(--x-bg); border: 1px solid var(--x-line); border-radius: 10px; color: var(--x-ink); font: 600 12px/1.35 Inter, sans-serif; z-index: 5; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); overflow: hidden; }
+#net[hidden] { display: none; }
+#netBody { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; padding: 12px; }
+#net input { user-select: text; -webkit-user-select: text; background: var(--x-panel); border: 1px solid var(--x-line); border-radius: 8px; padding: 10px 12px; color: #fff; font: 600 14px/1.2 Inter, sans-serif; min-width: 0; }
+#net input:focus { outline: 2px solid rgba(47, 208, 106, .6); }
+.rooms { display: flex; gap: 6px; margin-bottom: 8px; }
+.rooms button { border: 1px solid var(--x-line); background: none; color: var(--x-dim); border-radius: 999px; padding: 6px 12px; font: 700 12px/1 Inter, sans-serif; }
+.rooms button.on { background: #fff; color: #111; border-color: #fff; }
+.msgs { flex: 1; min-height: 160px; overflow-y: auto; display: grid; align-content: start; gap: 6px; }
+.msg { font: 500 13px/1.4 Inter, sans-serif; overflow-wrap: anywhere; } .msg .mt { color: var(--x-dim); font-size: 11px; margin-right: 6px; } .msg b { margin-right: 4px; }
+.say { display: flex; gap: 6px; margin-top: 8px; } .say input { flex: 1; }
+.say button { border: 0; border-radius: 8px; padding: 0 16px; background: var(--acc); color: var(--acc-ink); font: 800 13px/1 Inter, sans-serif; }
+.netp { display: grid; gap: 10px; } .netp > b { font: 800 18px/1.2 Inter, sans-serif; } .netp p { margin: 0; color: #c3c9d3; font: 500 13px/1.45 Inter, sans-serif; } .netp p.note { color: var(--x-dim); font-size: 12px; }
+.netp small { color: var(--x-dim); font: 800 10px/1 Inter, sans-serif; letter-spacing: .12em; margin-top: 6px; }
+.netp a, .lnk { color: var(--acc); } .lnk { background: none; border: 0; padding: 0; text-decoration: underline; font: inherit; }
+.prow { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--x-line); font: 600 13px/1.2 Inter, sans-serif; }
+.prow i { width: 10px; height: 10px; border-radius: 50%; flex: none; } .prow span { margin-left: auto; color: var(--x-dim); } .prow .rk { margin-left: 0; width: 18px; }
+.prow.big { font-size: 18px; border: 0; } .prow.big i { width: 16px; height: 16px; }
+.cols { display: grid; gap: 8px; } .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn.wide { width: 100%; } .btn.danger { border-color: #7f1d1d; color: #fca5a5; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; } .swatches button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; padding: 0; } .swatches button.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, .3); }
+@media (min-width: 900px) { #net { left: auto; right: 16px; width: 400px; } }
+@media (min-width: 1100px) and (hover: hover) { #net { inset: 92px 24px 48px auto; width: 420px; } }
 </style>
 </head>
 <body>
@@ -422,7 +449,7 @@ kbd { display: inline-block; min-width: 20px; padding: 3px 6px; border-radius: 6
 <div id="hud" hidden>
   <div id="bar"><span class="dot" id="dot"></span><span id="clock">NEW YORK · DAY 1 · 09:28</span><b id="mstat">PRE-MARKET</b><button id="speed" aria-label="Game speed">1×</button><button id="skip" hidden>Skip to open ▸</button><button id="bMenu" aria-label="Menu"><svg class="i"><use href="#i-pause"/></svg></button></div>
   <div id="sys"><button id="bSettings" aria-label="Settings"><svg class="i"><use href="#i-gear"/></svg><kbd>F10</kbd></button><button id="bPause" aria-label="Pause menu"><svg class="i"><use href="#i-pause"/></svg><kbd>Esc</kbd></button></div>
-  <div id="money"><div>Cash <b id="cashV">$0</b></div><div>Worth <b id="worthV">$0</b></div><div class="rent" id="rentBox">Rent <b id="rentV">-</b></div><div class="debt" id="debtBox" hidden>Loan <b id="debtV">-</b></div></div>
+  <div id="money"><div>Cash <b id="cashV">$0</b></div><div>Worth <b id="worthV">$0</b></div><div class="rent" id="rentBox">Rent <b id="rentV">-</b></div><div class="debt" id="debtBox" hidden>Loan <b id="debtV">-</b></div><div id="netChip">Online <b id="netV">Solo</b></div></div>
   <div id="dock">
     <button id="bBank" class="dk" aria-label="Big Apple Bank"><svg class="i"><use href="#i-bank"/></svg><span class="dl">Bank<kbd>B</kbd></span></button>
     <button id="bExchange" class="dk" aria-label="Share exchange"><svg class="i"><use href="#i-chart"/></svg><span class="dl">Exchange<kbd>X</kbd></span></button>
@@ -480,6 +507,7 @@ kbd { display: inline-block; min-width: 20px; padding: 3px 6px; border-radius: 6
       <button id="play" class="mi sel"><span class="mk"></span><span class="mt"><b id="playT">Play</b><small id="playD">Rent is due in 3 days</small></span><kbd>Enter</kbd></button>
       <button id="mNew" class="mi" hidden><span class="mk"></span><span class="mt"><b>New game</b><small id="newD">Start over from day 1</small></span><kbd>N</kbd></button>
       <button id="mWorld" class="mi"><span class="mk"></span><span class="mt"><b>World</b><small id="worldD">Your cities on the globe</small></span><kbd>M</kbd></button>
+      <button id="mOnline" class="mi"><span class="mk"></span><span class="mt"><b>Online</b><small id="onlineD">Playing solo</small></span><kbd>O</kbd></button>
       <button id="mSettings" class="mi"><span class="mk"></span><span class="mt"><b>Settings</b><small>Graphics and controls</small></span><kbd>S</kbd></button>
       <a id="mCredits" class="mi" href="credits.html" target="_blank" rel="noopener"><span class="mk"></span><span class="mt"><b>Credits</b></span><kbd>C</kbd></a>
     </nav>
@@ -1326,6 +1354,9 @@ document.getElementById('play').onclick = () => startGame();
 </script>
 <script src="js/city.js"></script>
 <script src="js/ui.js"></script>
+<script src="lib/supabase.js"></script>
+<script src="js/net-config.js"></script>
+<script src="js/net.js"></script>
 <script src="js/property.js"></script>
 <script src="js/office.js"></script>
 <script src="js/world.js"></script>
