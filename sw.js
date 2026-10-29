@@ -1,6 +1,6 @@
 // Offline support for the 2D game. Increment this cache name with each asset release.
 // Online accounts, saves and leaderboards always go directly to their own server.
-var CACHE = 'traffic-rush-2026-10-29.5';
+var CACHE = 'traffic-rush-2026-10-29.6';
 self.addEventListener('install', function(e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function(c) {
